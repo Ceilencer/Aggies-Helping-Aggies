@@ -24,6 +24,7 @@ export default async function DashboardPage() {
   let profile = null
   let channels = null
   let posts = null
+  let announcements = null
 
   if (user) {
     // Real Supabase authentication - fetch from database
@@ -50,6 +51,18 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false })
       .limit(20)
     posts = postsData
+
+    const { data: announcementsData } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        author:profiles!posts_author_id_fkey(*),
+        channel:channels(*)
+      `)
+      .eq('channel.slug', 'announcements')
+      .order('created_at', { ascending: false })
+      .limit(5)
+    announcements = announcementsData
   } else {
     // Mock data for local testing with admin session
     profile = {
@@ -60,13 +73,54 @@ export default async function DashboardPage() {
     }
 
     channels = [
-      { id: 1, name: 'Job Opportunities', slug: 'jobs', icon: '💼', requires_mfa: false },
-      { id: 2, name: 'Aggie Ring Fund', slug: 'aggie-ring', icon: '💍', requires_mfa: false },
-      { id: 3, name: 'Networking', slug: 'networking', icon: '🤝', requires_mfa: false },
-      { id: 4, name: 'Mentorship', slug: 'mentorship', icon: '🎓', requires_mfa: false }
+      { id: 1, name: 'General', slug: 'general', icon: '💬', requires_mfa: false },
+      { id: 2, name: 'Promotions', slug: 'promotions', icon: '📢', requires_mfa: false },
+      { id: 3, name: 'Job/Internship/Networking', slug: 'jobs-networking', icon: '💼', requires_mfa: false },
+      { id: 4, name: 'Fundraising', slug: 'fundraising', icon: '💍', requires_mfa: false },
+      { id: 5, name: 'Football Tickets', slug: 'football-tickets', icon: '🎟️', requires_mfa: true }
     ]
 
-    posts = []
+    posts = [
+      {
+        id: 1,
+        title: 'Welcome to the Aggie Community!',
+        content: 'Excited to be part of this platform connecting current and former students. Looking forward to networking and helping fellow Aggies succeed!',
+        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+        author: { full_name: 'John Smith', role: 'Personal' },
+        channel: { name: 'General', icon: '💬' },
+        is_pinned: false
+      },
+      {
+        id: 2,
+        title: 'Job Opportunity: Software Engineer at Tech Company',
+        content: 'We\'re hiring! Looking for talented software engineers with experience in React and Node.js. Competitive salary and benefits. Remote work available.',
+        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
+        author: { full_name: 'Jane Doe', role: 'Business' },
+        channel: { name: 'Job/Internship/Networking', icon: '💼' },
+        is_pinned: false
+      },
+      {
+        id: 3,
+        title: 'Aggie Ring Fundraiser',
+        content: 'Help a fellow Aggie achieve their ring! We\'re raising funds for graduation rings. Every contribution makes a difference. #AggiePride',
+        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
+        author: { full_name: 'Bob Johnson', role: 'Charity' },
+        channel: { name: 'Fundraising', icon: '💍' },
+        is_pinned: false
+      }
+    ]
+
+    announcements = [
+      {
+        id: 1,
+        title: 'Welcome to Aggies Helping Aggies!',
+        content: 'We\'re excited to launch this platform connecting current and former Aggies. Remember to follow our community guidelines and help fellow Aggies succeed.',
+        created_at: new Date().toISOString(),
+        author: { full_name: 'Admin', role: 'Admin' },
+        channel: { name: 'Announcements', icon: '📌' },
+        is_pinned: true
+      }
+    ]
   }
 
   return (
@@ -85,7 +139,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex flex-wrap gap-4">
-              <Link href="/dashboard/create-post">
+              <Link href="/post-creation">
                 <Button size="lg">
                   Create New Post
                 </Button>
@@ -100,6 +154,62 @@ export default async function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Announcements Section */}
+        {announcements && announcements.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-maroon">📌 Announcements</h2>
+              {profile?.role === 'Admin' && (
+                <Link href="/post-creation?channel=announcements">
+                  <Button variant="outline" size="sm">
+                    Post Announcement
+                  </Button>
+                </Link>
+              )}
+            </div>
+            
+            {announcements.map((announcement: any) => (
+              <Card key={announcement.id} className="border-amber-200 bg-amber-50">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-800 font-semibold">
+                        📌
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <p className="font-semibold text-gray-900">
+                            {announcement.author?.full_name}
+                          </p>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
+                            {announcement.author?.role}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                          <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
+                          <span>•</span>
+                          <span>{formatRelativeTime(announcement.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {announcement.is_pinned && (
+                      <span className="text-amber-600 text-sm font-medium">📌 Pinned</span>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {announcement.title}
+                  </h3>
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {announcement.content}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         {/* Posts Feed */}
         <div className="space-y-4">
@@ -169,7 +279,7 @@ export default async function DashboardPage() {
                 <p className="text-gray-500 mb-4">
                   No posts yet. Be the first to share something with the community!
                 </p>
-                <Link href="/dashboard/create-post">
+                <Link href="/post-creation">
                   <Button>Create First Post</Button>
                 </Link>
               </CardContent>

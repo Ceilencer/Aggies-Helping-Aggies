@@ -332,12 +332,12 @@ CREATE TRIGGER check_mfa_before_post
 -- =============================================
 
 INSERT INTO channels (name, slug, description, type, requires_mfa, is_read_only, icon) VALUES
-    ('General Discussion', 'general', 'General community discussions and questions', 'general', FALSE, FALSE, '💬'),
-    ('Job Opportunities', 'jobs', 'Post and find job opportunities for Aggies', 'jobs', FALSE, FALSE, '💼'),
-    ('Football Tickets', 'tickets', 'Buy, sell, or trade game tickets (MFA Required)', 'tickets', TRUE, FALSE, '🎟️'),
-    ('Promotions & Events', 'promotions', 'Business promotions and community events', 'promotions', FALSE, FALSE, '📢'),
-    ('Announcements', 'announcements', 'Official platform announcements (Read-only)', 'announcements', FALSE, TRUE, '📌'),
-    ('Aggie Ring Fundraising', 'aggie-ring', 'Support Aggies in achieving their Ring', 'aggie_ring', FALSE, FALSE, '💍');
+    ('General', 'general', 'General community discussions and questions', 'general', FALSE, FALSE, '💬'),
+    ('Promotions', 'promotions', 'Business promotions and community events', 'promotions', FALSE, FALSE, '📢'),
+    ('Job/Internship/Networking', 'jobs-networking', 'Job opportunities, internships, and networking', 'jobs', FALSE, FALSE, '💼'),
+    ('Fundraising', 'fundraising', 'Support Aggie causes and fundraising efforts', 'aggie_ring', FALSE, FALSE, '💍'),
+    ('Football Tickets', 'football-tickets', 'Buy, sell, or trade football game tickets (MFA Required)', 'tickets', TRUE, FALSE, '🎟️'),
+    ('Announcements', 'announcements', 'Official platform announcements (Admin Only)', 'announcements', FALSE, TRUE, '📌');
 
 -- =============================================
 -- ROW LEVEL SECURITY (RLS)
