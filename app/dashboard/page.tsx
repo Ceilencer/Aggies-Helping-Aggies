@@ -1,37 +1,73 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  
+  const cookieStore = await cookies()
+
+  // Check for temporary admin session (for local testing)
+  const hasAdminSession = cookieStore.get('admin_session')?.value === 'true'
+
   const { data: { user } } = await supabase.auth.getUser()
-  
-  // Get user profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user!.id)
-    .single()
 
-  // Get all channels
-  const { data: channels } = await supabase
-    .from('channels')
-    .select('*')
-    .order('name')
+  // Redirect to login if not authenticated (either via Supabase or temp session)
+  if (!user && !hasAdminSession) {
+    redirect('/login')
+  }
 
-  // Get recent posts with author info
-  const { data: posts } = await supabase
-    .from('posts')
-    .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels(*)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(20)
+  // Use mock data for local testing when using admin session
+  let profile = null
+  let channels = null
+  let posts = null
+
+  if (user) {
+    // Real Supabase authentication - fetch from database
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    profile = profileData
+
+    const { data: channelsData } = await supabase
+      .from('channels')
+      .select('*')
+      .order('name')
+    channels = channelsData
+
+    const { data: postsData } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        author:profiles!posts_author_id_fkey(*),
+        channel:channels(*)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    posts = postsData
+  } else {
+    // Mock data for local testing with admin session
+    profile = {
+      full_name: 'Admin User',
+      role: 'Admin',
+      mfa_enabled: false,
+      graduation_year: 2024
+    }
+
+    channels = [
+      { id: 1, name: 'Job Opportunities', slug: 'jobs', icon: '💼', requires_mfa: false },
+      { id: 2, name: 'Aggie Ring Fund', slug: 'aggie-ring', icon: '💍', requires_mfa: false },
+      { id: 3, name: 'Networking', slug: 'networking', icon: '🤝', requires_mfa: false },
+      { id: 4, name: 'Mentorship', slug: 'mentorship', icon: '🎓', requires_mfa: false }
+    ]
+
+    posts = []
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-4">

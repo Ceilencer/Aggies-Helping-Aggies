@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export default function LoginPage() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   })
   const [error, setError] = useState('')
@@ -24,28 +23,19 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // Check if email/username is "admin" - bypass authentication
-      if (formData.email.toLowerCase() === 'admin') {
-        // Redirect directly to dashboard for admin
+      // Simple admin check - if username is "admin", grant access
+      if (formData.username.toLowerCase() === 'admin') {
+        // Set a simple cookie to track admin session
+        document.cookie = 'admin_session=true; path=/; max-age=86400'
         router.push('/dashboard')
         router.refresh()
         return
       }
 
-      const supabase = createClient()
-
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      })
-
-      if (signInError) throw signInError
-
-      router.push('/dashboard')
-      router.refresh()
+      setError('Invalid username')
     } catch (err: any) {
       console.error('Login error:', err)
-      setError(err.message || 'Invalid email or password')
+      setError('Invalid username')
     } finally {
       setLoading(false)
     }
@@ -74,13 +64,13 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
+                id="username"
                 type="text"
-                placeholder="yourname@tamu.edu"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Enter 'admin' to access dashboard"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 required
               />
             </div>
@@ -93,7 +83,6 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required={formData.email.toLowerCase() !== 'admin'}
               />
             </div>
 

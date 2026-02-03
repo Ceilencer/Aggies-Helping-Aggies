@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -8,24 +8,17 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
-  
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
+  const cookieStore = await cookies()
+  const hasAdminSession = cookieStore.get('admin_session')?.value === 'true'
+
+  if (!hasAdminSession) {
     redirect('/login')
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
   const handleSignOut = async () => {
     'use server'
-    const supabase = await createClient()
-    await supabase.auth.signOut()
+    const cookieStore = await cookies()
+    cookieStore.delete('admin_session')
     redirect('/login')
   }
 
@@ -43,23 +36,21 @@ export default async function DashboardLayout({
           
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-600 hidden md:inline">
-              Welcome, {profile?.full_name}
+              Welcome, Admin
             </span>
-            
+
             <Link href="/dashboard/profile">
               <Button variant="ghost" size="sm">
                 Profile
               </Button>
             </Link>
-            
-            {profile?.role === 'Admin' && (
-              <Link href="/dashboard/admin">
-                <Button variant="ghost" size="sm" className="text-maroon">
-                  Admin
-                </Button>
-              </Link>
-            )}
-            
+
+            <Link href="/dashboard/admin">
+              <Button variant="ghost" size="sm" className="text-maroon">
+                Admin
+              </Button>
+            </Link>
+
             <form action={handleSignOut}>
               <Button variant="outline" size="sm" type="submit">
                 Sign Out
