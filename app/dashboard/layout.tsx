@@ -22,10 +22,6 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  if (!profile?.is_verified) {
-    redirect('/verification-pending')
-  }
-
   const handleSignOut = async () => {
     'use server'
     const supabase = await createClient()

@@ -24,6 +24,14 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      // Check if email/username is "admin" - bypass authentication
+      if (formData.email.toLowerCase() === 'admin') {
+        // Redirect directly to dashboard for admin
+        router.push('/dashboard')
+        router.refresh()
+        return
+      }
+
       const supabase = createClient()
 
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -69,7 +77,7 @@ export default function LoginPage() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                type="email"
+                type="text"
                 placeholder="yourname@tamu.edu"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -85,7 +93,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
+                required={formData.email.toLowerCase() !== 'admin'}
               />
             </div>
 

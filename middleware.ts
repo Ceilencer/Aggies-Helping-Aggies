@@ -71,20 +71,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Check if user is verified for protected routes
-  if (user && !isPublicRoute && request.nextUrl.pathname !== '/') {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_verified')
-      .eq('id', user.id)
-      .single()
-
-    // Redirect to verification pending page if not verified
-    if (profile && !profile.is_verified && request.nextUrl.pathname !== '/verification-pending') {
-      return NextResponse.redirect(new URL('/verification-pending', request.url))
-    }
-  }
-
   return response
 }
 
