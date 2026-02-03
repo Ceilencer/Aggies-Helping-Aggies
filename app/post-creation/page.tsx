@@ -156,8 +156,30 @@ export default function CreatePostPage() {
           })
 
         if (insertError) throw insertError
+      } else {
+        // Mock mode: save to localStorage
+        const selectedChannel = channels.find(c => c.id === formData.channel_id)
+        const newPost = {
+          id: Date.now(), // Simple ID generation
+          channel_id: formData.channel_id,
+          title: formData.title,
+          content: formData.content,
+          created_at: new Date().toISOString(),
+          author: { full_name: 'Admin User', role: 'Admin' },
+          channel: selectedChannel ? { name: selectedChannel.name, icon: selectedChannel.icon } : { name: 'Unknown', icon: '❓' },
+          is_pinned: false
+        }
+
+        // Get existing posts from localStorage
+        const existingPosts = localStorage.getItem('mockPosts')
+        const posts = existingPosts ? JSON.parse(existingPosts) : []
+
+        // Add new post
+        posts.unshift(newPost)
+
+        // Save back to localStorage
+        localStorage.setItem('mockPosts', JSON.stringify(posts))
       }
-      // In mock mode, skip database insert
 
       router.push('/dashboard')
     } catch (err: any) {

@@ -80,35 +80,48 @@ export default async function DashboardPage() {
       { id: 5, name: 'Football Tickets', slug: 'football-tickets', icon: '🎟️', requires_mfa: true }
     ]
 
-    posts = [
-      {
-        id: 1,
-        title: 'Welcome to the Aggie Community!',
-        content: 'Excited to be part of this platform connecting current and former students. Looking forward to networking and helping fellow Aggies succeed!',
-        created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        author: { full_name: 'John Smith', role: 'Personal' },
-        channel: { name: 'General', icon: '💬' },
-        is_pinned: false
-      },
-      {
-        id: 2,
-        title: 'Job Opportunity: Software Engineer at Tech Company',
-        content: 'We\'re hiring! Looking for talented software engineers with experience in React and Node.js. Competitive salary and benefits. Remote work available.',
-        created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-        author: { full_name: 'Jane Doe', role: 'Business' },
-        channel: { name: 'Job/Internship/Networking', icon: '💼' },
-        is_pinned: false
-      },
-      {
-        id: 3,
-        title: 'Aggie Ring Fundraiser',
-        content: 'Help a fellow Aggie achieve their ring! We\'re raising funds for graduation rings. Every contribution makes a difference. #AggiePride',
-        created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-        author: { full_name: 'Bob Johnson', role: 'Charity' },
-        channel: { name: 'Fundraising', icon: '💍' },
-        is_pinned: false
+    // Load posts from localStorage or use defaults
+    const storedPosts = typeof window !== 'undefined' ? localStorage.getItem('mockPosts') : null
+    if (storedPosts) {
+      posts = JSON.parse(storedPosts)
+    } else {
+      posts = [
+        {
+          id: 1,
+          channel_id: '1',
+          title: 'Welcome to the Aggie Community!',
+          content: 'Excited to be part of this platform connecting current and former students. Looking forward to networking and helping fellow Aggies succeed!',
+          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          author: { full_name: 'John Smith', role: 'Personal' },
+          channel: { name: 'General', icon: '💬' },
+          is_pinned: false
+        },
+        {
+          id: 2,
+          channel_id: '3',
+          title: 'Job Opportunity: Software Engineer at Tech Company',
+          content: 'We\'re hiring! Looking for talented software engineers with experience in React and Node.js. Competitive salary and benefits. Remote work available.',
+          created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          author: { full_name: 'Jane Doe', role: 'Business' },
+          channel: { name: 'Job/Internship/Networking', icon: '💼' },
+          is_pinned: false
+        },
+        {
+          id: 3,
+          channel_id: '4',
+          title: 'Aggie Ring Fundraiser',
+          content: 'Help a fellow Aggie achieve their ring! We\'re raising funds for graduation rings. Every contribution makes a difference. #AggiePride',
+          created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+          author: { full_name: 'Bob Johnson', role: 'Charity' },
+          channel: { name: 'Fundraising', icon: '💍' },
+          is_pinned: false
+        }
+      ]
+      // Save default posts to localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mockPosts', JSON.stringify(posts))
       }
-    ]
+    }
 
     announcements = [
       {
