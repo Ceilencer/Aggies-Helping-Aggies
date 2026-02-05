@@ -114,36 +114,50 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 📁 Project Structure
 
 ```
-aggies-helping-aggies/
+howdy-helps-capstone/
 ├── app/
-│   ├── dashboard/          # Protected dashboard routes
-│   │   ├── page.tsx        # Main community feed
-│   │   ├── create-post/    # Post creation
-│   │   ├── layout.tsx      # Dashboard layout with nav
-│   │   └── ...
-│   ├── login/              # Login page
-│   ├── signup/             # Signup with TAMU email
-│   ├── alumni-verification/ # Former student verification
-│   ├── globals.css         # Global styles with TAMU branding
-│   ├── layout.tsx          # Root layout
-│   └── page.tsx            # Landing page
+│   ├── globals.css                 # Global styles with TAMU branding
+│   ├── layout.tsx                  # Root layout
+│   ├── page.tsx                    # Landing page
+│   ├── alumni-verification/        # Former student verification
+│   │   └── page.tsx
+│   ├── auth/                       # OAuth callback routes
+│   │   └── callback/
+│   │       └── route.ts
+│   ├── dashboard/                  # Protected dashboard routes
+│   │   ├── layout.tsx              # Dashboard layout with nav
+│   │   ├── page.tsx                # Main community feed
+│   │   └── channels/               # Channel-specific pages
+│   │       └── [slug]/
+│   │           └── page.tsx
+│   ├── login/                      # Login page
+│   ├── post-creation/              # Post creation page
+│   └── signup/                     # Signup with TAMU email
 ├── components/
-│   └── ui/                 # Shadcn UI components
+│   └── ui/                         # Shadcn UI components
 │       ├── button.tsx
 │       ├── card.tsx
 │       ├── input.tsx
-│       └── ...
+│       ├── label.tsx
+│       └── textarea.tsx
 ├── lib/
-│   ├── supabase/          # Supabase client utilities
-│   │   ├── client.ts      # Client-side Supabase
-│   │   └── server.ts      # Server-side Supabase
-│   ├── profanity-filter.ts # Content moderation
-│   ├── types.ts           # TypeScript types
-│   ├── utils.ts           # Utility functions
-│   └── validations.ts     # Zod schemas
-├── middleware.ts          # Auth middleware
-├── supabase-schema.sql    # Database schema
-└── ...
+│   ├── profanity-filter.ts         # Content moderation
+│   ├── types.ts                    # TypeScript types
+│   ├── utils.ts                    # Utility functions
+│   ├── validations.ts              # Zod schemas
+│   └── supabase/                   # Supabase client utilities
+│       ├── client.ts               # Client-side Supabase
+│       ├── middleware.ts           # Auth middleware
+│       └── server.ts               # Server-side Supabase
+├── supabase-schema.sql             # Database schema
+├── next.config.js                  # Next.js config
+├── tailwind.config.js              # Tailwind CSS config
+├── tsconfig.json                   # TypeScript config
+├── postcss.config.js               # PostCSS config
+├── package.json                    # Dependencies and scripts
+├── DEPLOYMENT.md                   # Deployment guide
+├── GOOGLE_OAUTH_SETUP.md           # OAuth setup instructions
+└── README.md                       # This file
 ```
 
 ## 🔐 Authentication Flow
