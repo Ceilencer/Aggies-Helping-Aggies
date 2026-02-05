@@ -55,5 +55,14 @@ export async function GET(request: Request) {
     }
   }
 
+  const { error: lastLoginError } = await supabase
+    .from('profiles')
+    .update({ last_login: new Date().toISOString() })
+    .eq('id', data.user.id)
+
+  if (lastLoginError) {
+    console.warn('Failed to update last login:', lastLoginError.message)
+  }
+
   return NextResponse.redirect(`${origin}${next}`)
 }

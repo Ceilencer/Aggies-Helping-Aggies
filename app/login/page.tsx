@@ -52,6 +52,15 @@ export default function LoginPage() {
       if (signInError) throw signInError
 
       if (data.user) {
+        const { error: lastLoginError } = await supabase
+          .from('profiles')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', data.user.id)
+
+        if (lastLoginError) {
+          console.warn('Failed to update last login:', lastLoginError.message)
+        }
+
         router.push('/dashboard')
         router.refresh()
       }
