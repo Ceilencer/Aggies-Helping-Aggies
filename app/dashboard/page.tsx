@@ -41,18 +41,29 @@ export default async function DashboardPage() {
       .order('name')
     channels = channelsData
 
-    const { data: postsData } = await supabase
+    const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select(`
         *,
         author:profiles!posts_author_id_fkey(*),
         channel:channels(*)
       `)
+      .neq('channel.slug', 'announcements')
       .order('created_at', { ascending: false })
       .limit(20)
+
+    if (postsError) {
+      console.error('Error loading posts:', postsError)
+    } else {
+      console.log('Loaded posts (non-announcements):', postsData?.map(p => ({
+        title: p.title,
+        channel: p.channel?.name,
+        channel_slug: p.channel?.slug
+      })))
+    }
     posts = postsData
 
-    const { data: announcementsData } = await supabase
+    const { data: announcementsData, error: announcementsError } = await supabase
       .from('posts')
       .select(`
         *,
@@ -62,6 +73,16 @@ export default async function DashboardPage() {
       .eq('channel.slug', 'announcements')
       .order('created_at', { ascending: false })
       .limit(5)
+
+    if (announcementsError) {
+      console.error('Error loading announcements:', announcementsError)
+    } else {
+      console.log('Loaded announcements:', announcementsData?.map(p => ({
+        title: p.title,
+        channel: p.channel?.name,
+        channel_slug: p.channel?.slug
+      })))
+    }
     announcements = announcementsData
   } else {
     // Mock data for local testing with admin session
@@ -82,10 +103,11 @@ export default async function DashboardPage() {
 
     // Load posts from localStorage or use defaults
     const storedPosts = typeof window !== 'undefined' ? localStorage.getItem('mockPosts') : null
+    let allPosts = []
     if (storedPosts) {
-      posts = JSON.parse(storedPosts)
+      allPosts = JSON.parse(storedPosts)
     } else {
-      posts = [
+      allPosts = [
         {
           id: 1,
           channel_id: '1',
@@ -119,13 +141,20 @@ export default async function DashboardPage() {
       ]
       // Save default posts to localStorage
       if (typeof window !== 'undefined') {
-        localStorage.setItem('mockPosts', JSON.stringify(posts))
+        localStorage.setItem('mockPosts', JSON.stringify(allPosts))
       }
     }
+    // Filter out announcements from community feed
+    posts = allPosts.filter((post: any) => post.channel_id !== '6')
 
-    announcements = [
-      {
-        id: 1,
+    // Filter announcements from all posts
+    announcements = allPosts.filter((post: any) => post.channel_id === '6')
+
+    // If no announcements exist, add a default one
+    if (announcements.length === 0) {
+      const defaultAnnouncement = {
+        id: 'announcement-1',
+        channel_id: '6',
         title: 'Welcome to Aggies Helping Aggies!',
         content: 'We\'re excited to launch this platform connecting current and former Aggies. Remember to follow our community guidelines and help fellow Aggies succeed.',
         created_at: new Date().toISOString(),
@@ -133,7 +162,8 @@ export default async function DashboardPage() {
         channel: { name: 'Announcements', icon: '📌' },
         is_pinned: true
       }
-    ]
+      announcements = [defaultAnnouncement]
+    }
   }
 
   return (

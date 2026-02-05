@@ -7,26 +7,89 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import { ArrowLeft } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 export default function ChannelPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
+  const supabase = createClient()
 
   const [channel, setChannel] = useState<any>(null)
   const [posts, setPosts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [userAuthenticated, setUserAuthenticated] = useState(false)
 
   useEffect(() => {
-    const loadChannelData = () => {
-      // Check for admin session
+    const loadChannelData = async () => {
+      // Check for admin session (mock mode)
       const hasAdminSession = document.cookie.includes('admin_session=true')
 
-      if (!hasAdminSession) {
-        // Redirect to login if not in admin session
+      // Check for real Supabase authentication
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!hasAdminSession && !user) {
+        // Redirect to login if not authenticated
         router.push('/login')
         return
       }
+
+      setUserAuthenticated(true)
+
+      // Use real Supabase data if authenticated
+      if (user) {
+        await loadSupabaseData()
+      } else {
+        // Use mock data for admin session
+        loadMockData()
+      }
+    }
+
+    const loadSupabaseData = async () => {
+      try {
+        // Fetch channel from database
+        const { data: channelData, error: channelError } = await supabase
+          .from('channels')
+          .select('*')
+          .eq('slug', slug)
+          .single()
+
+        if (channelError) {
+          console.error('Error loading channel:', channelError)
+          setChannel(null)
+          setLoading(false)
+          return
+        }
+
+        setChannel(channelData)
+
+        // Fetch posts for this channel
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            author:profiles!posts_author_id_fkey(*),
+            channel:channels(*)
+          `)
+          .eq('channel_id', channelData.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
+
+        if (postsError) {
+          console.error('Error loading posts:', postsError)
+          setPosts([])
+        } else {
+          setPosts(postsData || [])
+        }
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Error in loadSupabaseData:', error)
+        setLoading(false)
+      }
+    }
+
+    const loadMockData = () => {
 
       // Mock channels
       const mockChannels = [
@@ -94,7 +157,7 @@ export default function ChannelPage() {
     }
 
     loadChannelData()
-  }, [slug, router])
+  }, [slug, router, supabase])
 
   if (loading) {
     return (

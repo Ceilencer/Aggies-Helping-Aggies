@@ -28,18 +28,18 @@ export default function CreatePostPage() {
 
   useEffect(() => {
     const initialize = async () => {
-      await loadUserRole()
-      await loadChannels()
+      const role = await loadUserRole()
+      await loadChannels(role)
     }
     initialize()
   }, [])
 
-  const loadChannels = async () => {
+  const loadChannels = async (role: string) => {
     // Check for temporary admin session (for local testing)
     const hasAdminSession = document.cookie.includes('admin_session=true')
-    
+
     let loadedChannels: Channel[] = []
-    
+
     if (hasAdminSession) {
       // Mock data for local testing - include announcements for admin
       const mockChannels: Channel[] = [
@@ -51,54 +51,58 @@ export default function CreatePostPage() {
         { id: '6', name: 'Announcements', slug: 'announcements', description: 'Official platform announcements', type: 'announcements', requires_mfa: false, is_read_only: true, icon: '📌', color: '#500000', created_at: '', updated_at: '' }
       ]
       // Show announcements only for admins
-      loadedChannels = userRole === 'Admin' ? mockChannels : mockChannels.filter(c => !c.is_read_only)
+      loadedChannels = role === 'Admin' ? mockChannels : mockChannels.filter(c => !c.is_read_only)
     } else {
       // Real Supabase data
       let query = supabase
         .from('channels')
         .select('*')
         .order('name')
-      
+
       // For non-admins, only show non-read-only channels
-      if (userRole !== 'Admin') {
+      if (role !== 'Admin') {
         query = query.eq('is_read_only', false)
       }
-      
+
       const { data, error } = await query
-      
+
       if (error) {
         console.error('Error loading channels:', error)
         setError('Failed to load channels. Please refresh the page.')
         return
       }
-      
+
       loadedChannels = data || []
-      
+
       // Check if channels are empty
       if (loadedChannels.length === 0) {
         setError('No channels available. Please contact an administrator to set up channels.')
         return
       }
+
+      console.log('Loaded channels from database:', loadedChannels)
     }
-    
+
     setChannels(loadedChannels)
-    
+
     // Pre-select channel from URL params
     const channelParam = searchParams.get('channel')
     if (channelParam) {
       const channel = loadedChannels.find(c => c.slug === channelParam)
       if (channel) {
+        console.log('Pre-selecting channel from URL:', channel)
         setFormData(prev => ({ ...prev, channel_id: channel.id }))
       }
     }
   }
 
-  const loadUserRole = async () => {
+  const loadUserRole = async (): Promise<string> => {
     const hasAdminSession = document.cookie.includes('admin_session=true')
-    
+
     if (hasAdminSession) {
       // Mock admin user
       setUserRole('Admin')
+      return 'Admin'
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -107,12 +111,16 @@ export default function CreatePostPage() {
           .select('role, mfa_enabled')
           .eq('id', user.id)
           .single()
-        
+
         if (profile) {
           setUserRole(profile.role)
+          return profile.role
         }
       }
     }
+
+    setUserRole('Personal')
+    return 'Personal'
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -228,6 +236,10 @@ export default function CreatePostPage() {
         return
       }
 
+      // Get selected channel info for debugging
+      console.log('Selected channel:', selectedChannel)
+      console.log('Selected channel ID:', formData.channel_id)
+
       // Prepare post data
       const postData = {
         channel_id: formData.channel_id,
@@ -237,6 +249,7 @@ export default function CreatePostPage() {
       }
 
       console.log('Inserting post with data:', postData)
+      console.log('Available channels:', channels.map(c => ({ id: c.id, name: c.name, slug: c.slug })))
 
       // Create post in database
       const { data: newPost, error: insertError } = await supabase
