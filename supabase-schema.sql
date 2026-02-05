@@ -358,6 +358,11 @@ CREATE POLICY "Public profiles are viewable by verified users"
     TO authenticated
     USING (is_verified = TRUE);
 
+CREATE POLICY "Users can insert own profile"
+    ON profiles FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = id);
+
 CREATE POLICY "Users can update own profile"
     ON profiles FOR UPDATE
     TO authenticated

@@ -2,23 +2,48 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const supabase = await createClient()
   const cookieStore = await cookies()
   const hasAdminSession = cookieStore.get('admin_session')?.value === 'true'
 
-  if (!hasAdminSession) {
+  // Check for either Supabase auth or admin session
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user && !hasAdminSession) {
     redirect('/login')
   }
 
+  // Fetch profile if user is authenticated via Supabase
+  let profile = null
+  if (user) {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+    profile = profileData
+  }
+
+  const displayName = profile?.full_name || 'Admin'
+
   const handleSignOut = async () => {
     'use server'
+    const supabase = await createClient()
     const cookieStore = await cookies()
+    
+    // Sign out from Supabase if authenticated
+    await supabase.auth.signOut()
+    
+    // Clear admin session cookie
     cookieStore.delete('admin_session')
+    
     redirect('/login')
   }
 
@@ -36,7 +61,7 @@ export default async function DashboardLayout({
           
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-600 hidden md:inline">
-              Welcome, Admin
+              Welcome, {displayName}
             </span>
 
             <Link href="/dashboard/profile">
