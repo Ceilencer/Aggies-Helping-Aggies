@@ -496,6 +496,17 @@ CREATE POLICY "Users can view own post tracking"
     TO authenticated
     USING (user_id = auth.uid());
 
+CREATE POLICY "Users can insert own post tracking"
+    ON post_tracking FOR INSERT
+    TO authenticated
+    WITH CHECK (user_id = auth.uid());
+
+CREATE POLICY "Users can update own post tracking"
+    ON post_tracking FOR UPDATE
+    TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+
 -- =============================================
 -- CRON JOBS (requires pg_cron extension)
 -- =============================================

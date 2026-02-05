@@ -64,8 +64,21 @@ export default function CreatePostPage() {
         query = query.eq('is_read_only', false)
       }
       
-      const { data } = await query
+      const { data, error } = await query
+      
+      if (error) {
+        console.error('Error loading channels:', error)
+        setError('Failed to load channels. Please refresh the page.')
+        return
+      }
+      
       loadedChannels = data || []
+      
+      // Check if channels are empty
+      if (loadedChannels.length === 0) {
+        setError('No channels available. Please contact an administrator to set up channels.')
+        return
+      }
     }
     
     setChannels(loadedChannels)
@@ -108,6 +121,25 @@ export default function CreatePostPage() {
     setLoading(true)
 
     try {
+      // Validate required fields
+      if (!formData.channel_id) {
+        setError('Please select a channel')
+        setLoading(false)
+        return
+      }
+
+      if (!formData.title.trim()) {
+        setError('Please enter a title')
+        setLoading(false)
+        return
+      }
+
+      if (!formData.content.trim()) {
+        setError('Please enter content')
+        setLoading(false)
+        return
+      }
+
       // Validate content for profanity
       const validation = validatePost(formData.title, formData.content)
       if (!validation.valid) {
@@ -116,51 +148,14 @@ export default function CreatePostPage() {
         return
       }
 
-      // Check if channel requires MFA
-      const selectedChannel = channels.find(c => c.id === formData.channel_id)
-      if (selectedChannel?.requires_mfa) {
-        const hasAdminSession = document.cookie.includes('admin_session=true')
-        if (hasAdminSession) {
-          // Mock admin has MFA enabled
-        } else {
-          const { data: { user } } = await supabase.auth.getUser()
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('mfa_enabled')
-            .eq('id', user!.id)
-            .single()
-          
-          if (!profile?.mfa_enabled) {
-            setError('This channel requires Two-Factor Authentication to be enabled. Please enable MFA in your security settings.')
-            setLoading(false)
-            return
-          }
-        }
-      }
-
-      // Create post
+      // Check if using mock admin session
       const hasAdminSession = document.cookie.includes('admin_session=true')
       
-      if (!hasAdminSession) {
-        // Real database insert
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error('User not authenticated')
-        
-        const { error: insertError } = await supabase
-          .from('posts')
-          .insert({
-            channel_id: formData.channel_id,
-            author_id: user.id,
-            title: formData.title,
-            content: formData.content,
-          })
-
-        if (insertError) throw insertError
-      } else {
+      if (hasAdminSession) {
         // Mock mode: save to localStorage
         const selectedChannel = channels.find(c => c.id === formData.channel_id)
         const newPost = {
-          id: Date.now(), // Simple ID generation
+          id: Date.now(),
           channel_id: formData.channel_id,
           title: formData.title,
           content: formData.content,
@@ -170,29 +165,130 @@ export default function CreatePostPage() {
           is_pinned: false
         }
 
-        // Get existing posts from localStorage
         const existingPosts = localStorage.getItem('mockPosts')
         const posts = existingPosts ? JSON.parse(existingPosts) : []
-
-        // Add new post
         posts.unshift(newPost)
-
-        // Save back to localStorage
         localStorage.setItem('mockPosts', JSON.stringify(posts))
+        
+        router.push('/dashboard')
+        return
       }
 
+      // Real Supabase mode - verify authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      
+      if (authError) {
+        console.error('Auth error:', authError)
+        setError('Authentication error. Please log in again.')
+        setLoading(false)
+        return
+      }
+
+      if (!user) {
+        setError('You must be logged in to create a post.')
+        setLoading(false)
+        return
+      }
+
+      // Check if user profile exists and is verified
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role, is_verified, mfa_enabled')
+        .eq('id', user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Profile error:', profileError)
+        setError(`Profile error: ${profileError.message}`)
+        setLoading(false)
+        return
+      }
+
+      if (!profile) {
+        setError('User profile not found. Please complete your profile setup.')
+        setLoading(false)
+        return
+      }
+
+      if (!profile.is_verified) {
+        setError('Your account must be verified before you can create posts. Please contact an administrator or complete the alumni verification process.')
+        setLoading(false)
+        return
+      }
+
+      console.log('User verified, proceeding with post creation...')
+      console.log('User ID:', user.id)
+      console.log('Profile:', { role: profile.role, is_verified: profile.is_verified, mfa_enabled: profile.mfa_enabled })
+
+      // Check if channel requires MFA
+      const selectedChannel = channels.find(c => c.id === formData.channel_id)
+      if (selectedChannel?.requires_mfa && !profile.mfa_enabled) {
+        setError('This channel requires Two-Factor Authentication to be enabled. Please enable MFA in your security settings.')
+        setLoading(false)
+        return
+      }
+
+      // Prepare post data
+      const postData = {
+        channel_id: formData.channel_id,
+        author_id: user.id,
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+      }
+
+      console.log('Inserting post with data:', postData)
+
+      // Create post in database
+      const { data: newPost, error: insertError } = await supabase
+        .from('posts')
+        .insert(postData)
+        .select()
+        .single()
+
+      console.log('Insert result:', { data: newPost, error: insertError })
+
+      if (insertError) {
+        console.error('Insert error:', insertError)
+        console.error('Insert error code:', insertError.code)
+        console.error('Insert error message:', insertError.message)
+        console.error('Insert error details:', insertError.details)
+        console.error('Insert error hint:', insertError.hint)
+        console.error('Full error object:', JSON.stringify(insertError, null, 2))
+        
+        // Handle specific database errors
+        if (insertError.message?.includes('post limit')) {
+          setError(insertError.message)
+        } else if (insertError.message?.includes('MFA')) {
+          setError(insertError.message)
+        } else if (insertError.message?.includes('post_tracking')) {
+          setError('Database configuration issue with post tracking. Please contact an administrator to fix RLS policies on the post_tracking table.')
+        } else if (insertError.code === 'PGRST116' || insertError.message?.includes('JWT')) {
+          setError('Permission denied. Your account may not have the required permissions to create posts.')
+        } else if (insertError.code === '23505') {
+          setError('A post with this title already exists.')
+        } else if (insertError.code === '42501') {
+          setError(`Permission denied by database policy: ${insertError.message}. Please ensure all database policies are properly configured.`)
+        } else if (!insertError.message && !insertError.code) {
+          // Empty error object - likely RLS policy blocking
+          setError('Failed to create post. This is likely due to a database security policy. Please ensure your account is verified and you have the necessary permissions.')
+        } else {
+          setError(`Failed to create post: ${insertError.message || insertError.code || 'Unknown error'}`)
+        }
+        setLoading(false)
+        return
+      }
+
+      console.log('Post created successfully:', newPost)
+
+      // Success - redirect to dashboard
       router.push('/dashboard')
     } catch (err: any) {
       console.error('Post creation error:', err)
+      console.error('Error details:', JSON.stringify(err, null, 2))
       
-      // Check for specific error messages from database triggers
-      if (err.message?.includes('post limit')) {
-        setError(err.message)
-      } else if (err.message?.includes('MFA')) {
-        setError(err.message)
-      } else {
-        setError('Failed to create post. Please try again.')
-      }
+      // Enhanced error logging
+      const errorMessage = err?.message || err?.error_description || err?.error || 'Unknown error'
+      setError(`Failed to create post: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
