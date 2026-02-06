@@ -1,177 +1,87 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const cookieStore = await cookies()
-
-  // Check for temporary admin session (for local testing)
-  const hasAdminSession = cookieStore.get('admin_session')?.value === 'true'
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Redirect to login if not authenticated (either via Supabase or temp session)
-  if (!user && !hasAdminSession) {
+  // Redirect to login if not authenticated
+  if (!user) {
     redirect('/login')
   }
 
-  // Use mock data for local testing when using admin session
-  let profile = null
-  let channels = null
-  let posts = null
-  let announcements = null
+  // Fetch user profile
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+  const profile = profileData
 
-  if (user) {
-    // Real Supabase authentication - fetch from database
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
-    profile = profileData
+  // Fetch channels
+  const { data: channelsData } = await supabase
+    .from('channels')
+    .select('*')
+    .order('name')
+  const channels = channelsData
 
-    const { data: channelsData } = await supabase
-      .from('channels')
-      .select('*')
-      .order('name')
-    channels = channelsData
+  // Get the announcements channel ID first
+  const { data: announcementChannel } = await supabase
+    .from('channels')
+    .select('id')
+    .eq('slug', 'announcements')
+    .single()
 
-    // Get the announcements channel ID first
-    const { data: announcementChannel } = await supabase
-      .from('channels')
-      .select('id')
-      .eq('slug', 'announcements')
-      .single()
+  // Fetch posts (excluding announcements)
+  const { data: postsData, error: postsError } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      author:profiles!posts_author_id_fkey(*),
+      channel:channels!inner(*)
+    `)
+    .neq('channel_id', announcementChannel?.id)
+    .order('created_at', { ascending: false })
+    .limit(20)
 
-    const { data: postsData, error: postsError } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        author:profiles!posts_author_id_fkey(*),
-        channel:channels!inner(*)
-      `)
-      .neq('channel_id', announcementChannel?.id)
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (postsError) {
-      console.error('Error loading posts:', postsError)
-    } else {
-      console.log('Loaded posts (non-announcements):', postsData?.map(p => ({
-        title: p.title,
-        channel: p.channel?.name,
-        channel_slug: p.channel?.slug
-      })))
-    }
-    posts = postsData
-
-    const { data: announcementsData, error: announcementsError } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        author:profiles!posts_author_id_fkey(*),
-        channel:channels!inner(*)
-      `)
-      .eq('channel_id', announcementChannel?.id)
-      .order('created_at', { ascending: false })
-      .limit(5)
-
-    if (announcementsError) {
-      console.error('Error loading announcements:', announcementsError)
-    } else {
-      console.log('Loaded announcements:', announcementsData?.map(p => ({
-        title: p.title,
-        channel: p.channel?.name,
-        channel_slug: p.channel?.slug
-      })))
-    }
-    announcements = announcementsData
+  if (postsError) {
+    console.error('Error loading posts:', postsError)
   } else {
-    // Mock data for local testing with admin session
-    profile = {
-      full_name: 'Admin User',
-      role: 'Admin',
-      mfa_enabled: false,
-      graduation_year: 2024
-    }
-
-    channels = [
-      { id: 1, name: 'General', slug: 'general', icon: '💬', requires_mfa: false },
-      { id: 2, name: 'Promotions', slug: 'promotions', icon: '📢', requires_mfa: false },
-      { id: 3, name: 'Job/Internship/Networking', slug: 'jobs-networking', icon: '💼', requires_mfa: false },
-      { id: 4, name: 'Fundraising', slug: 'fundraising', icon: '💍', requires_mfa: false },
-      { id: 5, name: 'Football Tickets', slug: 'football-tickets', icon: '🎟️', requires_mfa: true }
-    ]
-
-    // Load posts from localStorage or use defaults
-    const storedPosts = typeof window !== 'undefined' ? localStorage.getItem('mockPosts') : null
-    let allPosts = []
-    if (storedPosts) {
-      allPosts = JSON.parse(storedPosts)
-    } else {
-      allPosts = [
-        {
-          id: 1,
-          channel_id: '1',
-          title: 'Welcome to the Aggie Community!',
-          content: 'Excited to be part of this platform connecting current and former students. Looking forward to networking and helping fellow Aggies succeed!',
-          created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          author: { full_name: 'John Smith', role: 'Personal' },
-          channel: { name: 'General', icon: '💬' },
-          is_pinned: false
-        },
-        {
-          id: 2,
-          channel_id: '3',
-          title: 'Job Opportunity: Software Engineer at Tech Company',
-          content: 'We\'re hiring! Looking for talented software engineers with experience in React and Node.js. Competitive salary and benefits. Remote work available.',
-          created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          author: { full_name: 'Jane Doe', role: 'Business' },
-          channel: { name: 'Job/Internship/Networking', icon: '💼' },
-          is_pinned: false
-        },
-        {
-          id: 3,
-          channel_id: '4',
-          title: 'Aggie Ring Fundraiser',
-          content: 'Help a fellow Aggie achieve their ring! We\'re raising funds for graduation rings. Every contribution makes a difference. #AggiePride',
-          created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-          author: { full_name: 'Bob Johnson', role: 'Charity' },
-          channel: { name: 'Fundraising', icon: '💍' },
-          is_pinned: false
-        }
-      ]
-      // Save default posts to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mockPosts', JSON.stringify(allPosts))
-      }
-    }
-    // Filter out announcements from community feed
-    posts = allPosts.filter((post: any) => post.channel_id !== '6')
-
-    // Filter announcements from all posts
-    announcements = allPosts.filter((post: any) => post.channel_id === '6')
-
-    // If no announcements exist, add a default one
-    if (announcements.length === 0) {
-      const defaultAnnouncement = {
-        id: 'announcement-1',
-        channel_id: '6',
-        title: 'Welcome to Aggies Helping Aggies!',
-        content: 'We\'re excited to launch this platform connecting current and former Aggies. Remember to follow our community guidelines and help fellow Aggies succeed.',
-        created_at: new Date().toISOString(),
-        author: { full_name: 'Admin', role: 'Admin' },
-        channel: { name: 'Announcements', icon: '📌' },
-        is_pinned: true
-      }
-      announcements = [defaultAnnouncement]
-    }
+    console.log('Loaded posts (non-announcements):', postsData?.map(p => ({
+      title: p.title,
+      channel: p.channel?.name,
+      channel_slug: p.channel?.slug
+    })))
   }
+  const posts = postsData
+
+  // Fetch announcements
+  const { data: announcementsData, error: announcementsError } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      author:profiles!posts_author_id_fkey(*),
+      channel:channels!inner(*)
+    `)
+    .eq('channel_id', announcementChannel?.id)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  if (announcementsError) {
+    console.error('Error loading announcements:', announcementsError)
+  } else {
+    console.log('Loaded announcements:', announcementsData?.map(p => ({
+      title: p.title,
+      channel: p.channel?.name,
+      channel_slug: p.channel?.slug
+    })))
+  }
+  const announcements = announcementsData
 
   return (
     <div className="grid gap-8 lg:grid-cols-4">

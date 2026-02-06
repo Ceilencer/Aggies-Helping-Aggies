@@ -9,7 +9,7 @@ export default function Home() {
       <header className="border-b bg-card">
         <nav className="container mx-auto flex items-center justify-between px-4 py-6">
           <div className="flex items-center space-x-2">
-            <div className="text-2xl font-bold text-primary">🎓</div>
+            {/* <div className="text-2xl font-bold text-primary">🎓</div> */}
             <span className="text-xl font-bold text-primary">Aggies Helping Aggies</span>
           </div>
           <div className="flex items-center space-x-4">

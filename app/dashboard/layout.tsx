@@ -53,7 +53,7 @@ export default async function DashboardLayout({
       <header className="sticky top-0 z-50 border-b bg-card shadow-sm">
         <nav className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link href="/dashboard" className="flex items-center space-x-2">
-            <div className="text-2xl">🎓</div>
+            {/* <div className="text-2xl">🎓</div> */}
             <span className="text-xl font-bold text-primary hidden sm:inline">
               Aggies Helping Aggies
             </span>
@@ -93,9 +93,14 @@ export default async function DashboardLayout({
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-card py-6 mt-12">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>Built with Gig 'em Spirit 🎓</p>
+      <footer className="border-t bg-card py-8">
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
+          <p className="mb-2">
+            &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built with Gig 'em Spirit.
+          </p>
+          <p className="text-sm">
+            This is an independent platform and is not officially affiliated with Texas A&M University.
+          </p>
         </div>
       </footer>
     </div>
