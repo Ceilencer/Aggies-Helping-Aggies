@@ -37,7 +37,11 @@ async function checkRLS() {
   console.log('🔍 Checking RLS Policies for post_tracking table...\n')
 
   // Try to query the policies through a SQL function
-  const { data, error } = await supabase.rpc('check_policies', {}).catch(() => ({ data: null, error: null }))
+  try {
+    const { data, error } = await supabase.rpc('check_policies', {})
+  } catch (err) {
+    // RPC call failed, continue with tests
+  }
 
   // Alternative: Try to see what we can do
   console.log('Testing post_tracking table access:\n')
