@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   if (user) {
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, role')
       .eq('id', user.id)
       .single()
     profile = profileData
@@ -70,11 +70,13 @@ export default async function DashboardLayout({
               </Button>
             </Link>
 
-            <Link href="/dashboard/admin">
-              <Button variant="ghost" size="sm">
-                Admin
-              </Button>
-            </Link>
+            {profile?.role === 'Admin' && (
+              <Link href="/dashboard/admin">
+                <Button variant="ghost" size="sm">
+                  Admin
+                </Button>
+              </Link>
+            )}
 
             <form action={handleSignOut}>
               <Button variant="outline" size="sm" type="submit">

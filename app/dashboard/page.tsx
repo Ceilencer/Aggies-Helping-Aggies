@@ -41,14 +41,21 @@ export default async function DashboardPage() {
       .order('name')
     channels = channelsData
 
+    // Get the announcements channel ID first
+    const { data: announcementChannel } = await supabase
+      .from('channels')
+      .select('id')
+      .eq('slug', 'announcements')
+      .single()
+
     const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select(`
         *,
         author:profiles!posts_author_id_fkey(*),
-        channel:channels(*)
+        channel:channels!inner(*)
       `)
-      .neq('channel.slug', 'announcements')
+      .neq('channel_id', announcementChannel?.id)
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -68,9 +75,9 @@ export default async function DashboardPage() {
       .select(`
         *,
         author:profiles!posts_author_id_fkey(*),
-        channel:channels(*)
+        channel:channels!inner(*)
       `)
-      .eq('channel.slug', 'announcements')
+      .eq('channel_id', announcementChannel?.id)
       .order('created_at', { ascending: false })
       .limit(5)
 
