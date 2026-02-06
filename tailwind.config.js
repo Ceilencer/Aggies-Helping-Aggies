@@ -19,7 +19,7 @@ module.exports = {
       colors: {
         // TAMU Brand Colors
         maroon: {
-          DEFAULT: '#500000',
+          DEFAULT: '#732424',
           50: '#fdf2f2',
           100: '#fce4e4',
           200: '#f9c9c9',
@@ -29,10 +29,10 @@ module.exports = {
           600: '#c93030',
           700: '#a82424',
           800: '#8b2222',
-          900: '#500000',
+          900: '#732424',
         },
         aggie: {
-          maroon: '#500000',
+          maroon: '#732424',
           gray: '#3C3C3C',
         },
         border: "hsl(var(--border))",

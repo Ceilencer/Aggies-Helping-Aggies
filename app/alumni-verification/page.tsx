@@ -90,13 +90,13 @@ export default function AlumniVerificationPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30 text-3xl">
               ✅
             </div>
-            <CardTitle className="text-2xl font-bold text-maroon">
+            <CardTitle className="text-2xl font-bold text-primary">
               Verification Request Submitted
             </CardTitle>
             <CardDescription>
@@ -104,11 +104,11 @@ export default function AlumniVerificationPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-center text-gray-600">
+            <p className="text-center text-muted-foreground">
               Your alumni verification request has been submitted and is pending review by our administrators. 
               You'll receive an email once your account has been approved.
             </p>
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-muted-foreground">
               This typically takes 1-3 business days.
             </p>
             <Link href="/">
@@ -121,12 +121,12 @@ export default function AlumniVerificationPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl font-bold text-maroon">
+              <CardTitle className="text-2xl font-bold text-primary">
                 Former Student Verification
               </CardTitle>
               <CardDescription>
@@ -139,7 +139,7 @@ export default function AlumniVerificationPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+              <div className="rounded-md bg-red-500/10 border border-red-500/30 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
                 {error}
               </div>
             )}
@@ -232,9 +232,9 @@ export default function AlumniVerificationPage() {
               </p>
             </div>
 
-            <div className="rounded-lg bg-maroon-50 border border-maroon-200 p-4">
-              <h4 className="font-semibold text-maroon mb-2">What happens next?</h4>
-              <ul className="text-sm text-gray-700 space-y-1">
+            <div className="rounded-lg bg-muted/50 border border-border p-4">
+              <h4 className="font-semibold text-primary mb-2">What happens next?</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
                 <li>• Your responses will be reviewed by our administrators</li>
                 <li>• You'll receive an email notification once approved (typically 1-3 business days)</li>
                 <li>• After approval, you'll be able to reset your password and access the platform</li>
@@ -246,7 +246,7 @@ export default function AlumniVerificationPage() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             Have a TAMU email?{' '}
             <Link href="/signup" className="font-medium text-maroon hover:underline">
               Sign up directly

@@ -179,8 +179,8 @@ export default function ChannelPage() {
       <div className="max-w-4xl mx-auto p-6">
         <Card>
           <CardContent className="py-12 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Channel Not Found</h1>
-            <p className="text-gray-600 mb-6">The channel you're looking for doesn't exist.</p>
+            <h1 className="text-2xl font-bold text-foreground mb-4">Channel Not Found</h1>
+            <p className="text-muted-foreground mb-6">The channel you're looking for doesn't exist.</p>
             <Link href="/dashboard">
               <Button>
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -197,7 +197,7 @@ export default function ChannelPage() {
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <Link href="/dashboard" className="inline-flex items-center text-maroon hover:text-maroon-700 mb-4">
+        <Link href="/dashboard" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Dashboard
         </Link>
@@ -205,8 +205,8 @@ export default function ChannelPage() {
         <div className="flex items-center space-x-3 mb-2">
           <span className="text-3xl">{channel.icon}</span>
           <div>
-            <h1 className="text-3xl font-bold text-maroon">{channel.name}</h1>
-            <p className="text-gray-600">{channel.description}</p>
+            <h1 className="text-3xl font-bold text-primary">{channel.name}</h1>
+            <p className="text-muted-foreground">{channel.description}</p>
           </div>
         </div>
 
@@ -230,7 +230,7 @@ export default function ChannelPage() {
 
       {/* Posts */}
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-maroon">Posts</h2>
+        <h2 className="text-2xl font-bold text-primary">Posts</h2>
 
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
@@ -239,20 +239,20 @@ export default function ChannelPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
                     {/* Author Avatar */}
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-maroon text-white font-semibold">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
                       {getInitials(post.author?.full_name || 'Unknown')}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-gray-900">
+                        <p className="font-semibold text-foreground">
                           {post.author?.full_name}
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
                           {post.author?.role}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                         <span>{post.channel?.icon} {post.channel?.name}</span>
                         <span>•</span>
                         <span>{formatRelativeTime(post.created_at)}</span>
@@ -261,16 +261,16 @@ export default function ChannelPage() {
                   </div>
 
                   {post.is_pinned && (
-                    <span className="text-maroon text-sm font-medium">📌 Pinned</span>
+                    <span className="text-primary text-sm font-medium">📌 Pinned</span>
                   )}
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-3">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-foreground">
                   {post.title}
                 </h3>
-                <p className="text-gray-700 whitespace-pre-wrap">
+                <p className="text-foreground/80 whitespace-pre-wrap">
                   {post.content.length > 300
                     ? `${post.content.substring(0, 300)}...`
                     : post.content
@@ -282,7 +282,7 @@ export default function ChannelPage() {
         ) : (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-gray-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 No posts in this channel yet. Be the first to share something!
               </p>
               {!channel.is_read_only && (

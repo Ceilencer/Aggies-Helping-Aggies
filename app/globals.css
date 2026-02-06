@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Light Mode - TAMU Branding */
     --background: 0 0% 96.5%; /* Gray 100: #f6f6f6 */
     --foreground: 0 0% 23.5%; /* TAMU Gray: #3C3C3C */
 
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 23.5%;
 
-    --primary: 0 100% 15.7%; /* Aggie Maroon: #500000 */
+    --primary: 0 69% 30%; /* TAMU Maroon: #732424 */
     --primary-foreground: 0 0% 98%;
 
     --secondary: 0 0% 96.1%;
@@ -30,39 +31,40 @@
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 100% 15.7%;
+    --ring: 0 69% 30%;
 
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Dark Mode - Google-style with proper contrast */
+    --background: 0 0% 12%; /* Google-style dark: #1f1f1f */
+    --foreground: 0 0% 97.3%; /* Off-white: #f8f9fa */
 
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 17%; /* Slightly lighter for contrast: #2b2b2b */
+    --card-foreground: 0 0% 97.3%;
 
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 20%; /* #333333 */
+    --popover-foreground: 0 0% 97.3%;
 
-    --primary: 0 100% 15.7%;
-    --primary-foreground: 0 0% 98%;
+    --primary: 0 69% 40%; /* Lighter TAMU Maroon for dark mode - more visible against dark backgrounds */
+    --primary-foreground: 0 0% 97.3%;
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 22%; /* #383838 */
+    --secondary-foreground: 0 0% 97.3%;
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 0 0% 22%; /* #383838 - for disabled inputs */
+    --muted-foreground: 0 0% 65%; /* Light gray: #a6a6a6 */
 
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 0 0% 22%;
+    --accent-foreground: 0 0% 97.3%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 97.3%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 100% 15.7%;
+    --border: 0 0% 25%; /* #404040 */
+    --input: 0 0% 22%; /* #383838 */
+    --ring: 0 69% 30%; /* TAMU Maroon #732424 */
   }
 }
 
@@ -83,14 +85,14 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-gray-100;
+    @apply bg-muted;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply bg-maroon-300 rounded-full;
+    @apply bg-primary/50 rounded-full;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    @apply bg-maroon-500;
+    @apply bg-primary;
   }
 }

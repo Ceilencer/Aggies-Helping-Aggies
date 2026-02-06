@@ -171,12 +171,12 @@ export default async function DashboardPage() {
       {/* Main Feed */}
       <div className="lg:col-span-3 space-y-6">
         {/* Welcome Card */}
-        <Card className="border-maroon">
-          <CardHeader className="bg-maroon text-white">
+        <Card className="border-primary/30">
+          <CardHeader className="bg-primary text-primary-foreground">
             <CardTitle className="text-2xl">
               Howdy, {profile?.full_name}! 👋
             </CardTitle>
-            <CardDescription className="text-gray-100">
+            <CardDescription className="text-primary-foreground/80">
               Welcome to the Aggie community. Stay connected, share opportunities, and help fellow Aggies thrive.
             </CardDescription>
           </CardHeader>
@@ -189,7 +189,7 @@ export default async function DashboardPage() {
               </Link>
               {!profile?.mfa_enabled && (
                 <Link href="/dashboard/security">
-                  <Button size="lg" variant="outline" className="border-maroon text-maroon">
+                  <Button size="lg" variant="secondary">
                     🔒 Enable Two-Factor Auth
                   </Button>
                 </Link>
@@ -202,7 +202,7 @@ export default async function DashboardPage() {
         {announcements && announcements.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-maroon">📌 Announcements</h2>
+              <h2 className="text-2xl font-bold text-primary">📌 Announcements</h2>
               {profile?.role === 'Admin' && (
                 <Link href="/post-creation?channel=announcements">
                   <Button variant="outline" size="sm">
@@ -213,23 +213,23 @@ export default async function DashboardPage() {
             </div>
             
             {announcements.map((announcement: any) => (
-              <Card key={announcement.id} className="border-amber-200 bg-amber-50">
+              <Card key={announcement.id} className="border-amber-500/30 bg-amber-500/10 dark:bg-amber-900/20">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-800 font-semibold">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 font-semibold">
                         📌
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-foreground">
                             {announcement.author?.full_name}
                           </p>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400">
                             {announcement.author?.role}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                           <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
                           <span>•</span>
                           <span>{formatRelativeTime(announcement.created_at)}</span>
@@ -237,15 +237,15 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     {announcement.is_pinned && (
-                      <span className="text-amber-600 text-sm font-medium">📌 Pinned</span>
+                      <span className="text-amber-700 dark:text-amber-400 text-sm font-medium">📌 Pinned</span>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     {announcement.title}
                   </h3>
-                  <p className="text-gray-700 whitespace-pre-wrap">
+                  <p className="text-foreground/90 whitespace-pre-wrap">
                     {announcement.content}
                   </p>
                 </CardContent>
@@ -256,7 +256,7 @@ export default async function DashboardPage() {
 
         {/* Posts Feed */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-maroon">Community Feed</h2>
+          <h2 className="text-2xl font-bold text-primary">Community Feed</h2>
           
           {posts && posts.length > 0 ? (
             posts.map((post: any) => (
@@ -265,20 +265,20 @@ export default async function DashboardPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
                       {/* Author Avatar */}
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-maroon text-white font-semibold">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
                         {getInitials(post.author?.full_name || 'Unknown')}
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-foreground">
                             {post.author?.full_name}
                           </p>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
                             {post.author?.role}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-gray-500">
+                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                           <span>{post.channel?.icon} {post.channel?.name}</span>
                           <span>•</span>
                           <span>{formatRelativeTime(post.created_at)}</span>
@@ -287,16 +287,16 @@ export default async function DashboardPage() {
                     </div>
                     
                     {post.is_pinned && (
-                      <span className="text-maroon text-sm font-medium">📌 Pinned</span>
+                      <span className="text-primary text-sm font-medium">📌 Pinned</span>
                     )}
                   </div>
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-xl font-bold text-foreground">
                     {post.title}
                   </h3>
-                  <p className="text-gray-700 whitespace-pre-wrap">
+                  <p className="text-foreground/90 whitespace-pre-wrap">
                     {post.content.length > 300 
                       ? `${post.content.substring(0, 300)}...` 
                       : post.content
@@ -309,7 +309,7 @@ export default async function DashboardPage() {
                         View Full Post
                       </Button>
                     </Link>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       👁️ {post.view_count} views
                     </span>
                   </div>
@@ -319,7 +319,7 @@ export default async function DashboardPage() {
           ) : (
             <Card>
               <CardContent className="py-12 text-center">
-                <p className="text-gray-500 mb-4">
+                <p className="text-muted-foreground mb-4">
                   No posts yet. Be the first to share something with the community!
                 </p>
                 <Link href="/post-creation">
@@ -342,13 +342,13 @@ export default async function DashboardPage() {
           <CardContent className="space-y-2">
             {channels?.map((channel: any) => (
               <Link key={channel.id} href={`/dashboard/channels/${channel.slug}`}>
-                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
                   <div className="flex items-center space-x-2">
                     <span className="text-xl">{channel.icon}</span>
                     <span className="font-medium text-sm">{channel.name}</span>
                   </div>
                   {channel.requires_mfa && (
-                    <span className="text-xs text-maroon">🔒</span>
+                    <span className="text-xs text-primary">🔒</span>
                   )}
                 </div>
               </Link>
@@ -363,20 +363,20 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">Account Type</span>
+              <span className="text-sm text-muted-foreground">Account Type</span>
               <span className={`text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(profile?.role || 'Personal')}`}>
                 {profile?.role}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">MFA Status</span>
+              <span className="text-sm text-muted-foreground">MFA Status</span>
               <span className="text-sm font-medium">
                 {profile?.mfa_enabled ? '✅ Enabled' : '❌ Disabled'}
               </span>
             </div>
             {profile?.graduation_year && (
               <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Class of</span>
+                <span className="text-sm text-muted-foreground">Class of</span>
                 <span className="text-sm font-medium">{profile.graduation_year}</span>
               </div>
             )}
@@ -384,7 +384,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Aggie Ring Fundraising */}
-        <Card className="border-yellow-300 bg-yellow-50">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center">
               💍 Aggie Ring Fund

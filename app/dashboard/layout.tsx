@@ -48,19 +48,19 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-50 border-b bg-white shadow-sm">
+      <header className="sticky top-0 z-50 border-b bg-card shadow-sm">
         <nav className="container mx-auto flex items-center justify-between px-4 py-4">
           <Link href="/dashboard" className="flex items-center space-x-2">
             <div className="text-2xl">🎓</div>
-            <span className="text-xl font-bold text-maroon hidden sm:inline">
+            <span className="text-xl font-bold text-primary hidden sm:inline">
               Aggies Helping Aggies
             </span>
           </Link>
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600 hidden md:inline">
+            <span className="text-sm text-muted-foreground hidden md:inline">
               Welcome, {displayName}
             </span>
 
@@ -71,7 +71,7 @@ export default async function DashboardLayout({
             </Link>
 
             <Link href="/dashboard/admin">
-              <Button variant="ghost" size="sm" className="text-maroon">
+              <Button variant="ghost" size="sm">
                 Admin
               </Button>
             </Link>
@@ -91,8 +91,8 @@ export default async function DashboardLayout({
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-white py-6 mt-12">
-        <div className="container mx-auto px-4 text-center text-sm text-gray-600">
+      <footer className="border-t bg-card py-6 mt-12">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <p>Built with Gig 'em Spirit 🎓</p>
         </div>
       </footer>

@@ -103,13 +103,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-maroon text-3xl text-white">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground">
             🎓
           </div>
-          <CardTitle className="text-2xl font-bold text-maroon">
+          <CardTitle className="text-2xl font-bold text-primary">
             Welcome Back, Aggie!
           </CardTitle>
           <CardDescription>
@@ -119,7 +119,7 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             {error && (
-              <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+              <div className="rounded-md bg-red-500/10 border border-red-500/30 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-400">
                 {error}
               </div>
             )}
@@ -163,7 +163,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">
+                <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
@@ -181,11 +181,11 @@ export default function LoginPage() {
             </Button>
           </div>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
             <Link
               href="/signup"
-              className="font-medium text-maroon hover:underline"
+              className="font-medium text-primary hover:underline"
             >
               Sign up
             </Link>

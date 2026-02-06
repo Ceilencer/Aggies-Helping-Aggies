@@ -4,13 +4,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Hero Section */}
-      <header className="border-b bg-white">
+      <header className="border-b bg-card">
         <nav className="container mx-auto flex items-center justify-between px-4 py-6">
           <div className="flex items-center space-x-2">
-            <div className="text-2xl font-bold text-maroon">🎓</div>
-            <span className="text-xl font-bold text-maroon">Aggies Helping Aggies</span>
+            <div className="text-2xl font-bold text-primary">🎓</div>
+            <span className="text-xl font-bold text-primary">Aggies Helping Aggies</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/login">
@@ -25,10 +25,10 @@ export default function Home() {
 
       {/* Hero Content */}
       <section className="container mx-auto px-4 py-20 text-center">
-        <h1 className="mb-6 text-5xl font-bold text-maroon">
+        <h1 className="mb-6 text-5xl font-bold text-primary">
           Connect. Share. Support.
         </h1>
-        <p className="mx-auto mb-8 max-w-2xl text-xl text-gray-600">
+        <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
           A verified community platform exclusively for Texas A&M University students, 
           alumni, and affiliates. Find opportunities, share resources, and strengthen 
           the Aggie Network.
@@ -47,8 +47,8 @@ export default function Home() {
         </div>
         
         {/* Trust Badge */}
-        <div className="mt-12 flex items-center justify-center space-x-2 text-sm text-gray-500">
-          <svg className="h-5 w-5 text-maroon" fill="currentColor" viewBox="0 0 20 20">
+        <div className="mt-12 flex items-center justify-center space-x-2 text-sm text-muted-foreground">
+          <svg className="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
           <span>Verified TAMU-only community with multi-factor authentication</span>
@@ -57,7 +57,7 @@ export default function Home() {
 
       {/* Features Section */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="mb-12 text-center text-3xl font-bold text-maroon">
+        <h2 className="mb-12 text-center text-3xl font-bold text-primary">
           Built for Aggies, by Aggies
         </h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -124,36 +124,36 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="bg-maroon-50 py-16">
+      <section className="bg-muted/50 py-16">
         <div className="container mx-auto px-4">
-          <h2 className="mb-12 text-center text-3xl font-bold text-maroon">
+          <h2 className="mb-12 text-center text-3xl font-bold text-primary">
             Getting Started is Easy
           </h2>
           <div className="grid gap-8 md:grid-cols-3">
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-maroon text-2xl text-white">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground">
                 1
               </div>
               <h3 className="mb-2 text-xl font-semibold">Sign Up</h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Register with your @tamu.edu email or submit alumni verification
               </p>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-maroon text-2xl text-white">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground">
                 2
               </div>
               <h3 className="mb-2 text-xl font-semibold">Get Verified</h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Complete verification and optionally enable two-factor authentication
               </p>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-maroon text-2xl text-white">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground">
                 3
               </div>
               <h3 className="mb-2 text-xl font-semibold">Start Connecting</h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Join channels, share posts, and engage with the Aggie community
               </p>
             </div>
@@ -163,10 +163,10 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="container mx-auto px-4 py-20 text-center">
-        <h2 className="mb-6 text-4xl font-bold text-maroon">
+        <h2 className="mb-6 text-4xl font-bold text-primary">
           Ready to Join the Network?
         </h2>
-        <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-600">
+        <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
           Be part of a trusted community where Aggies help Aggies thrive. 
           Whether you're looking for opportunities, offering support, or just 
           staying connected – this is your platform.
@@ -179,8 +179,8 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-white py-8">
-        <div className="container mx-auto px-4 text-center text-gray-600">
+      <footer className="border-t bg-card py-8">
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p className="mb-2">
             &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built with Gig 'em Spirit.
           </p>

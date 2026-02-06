@@ -131,12 +131,12 @@ export function UserProfile() {
 
   const getRoleBadgeColor = (role: UserRole) => {
     const colors = {
-      Personal: "bg-blue-100 text-blue-800",
-      Business: "bg-purple-100 text-purple-800",
-      Charity: "bg-green-100 text-green-800",
-      Admin: "bg-red-100 text-red-800",
+      Personal: "bg-blue-500/20 text-blue-700 dark:text-blue-400 dark:bg-blue-900/30",
+      Business: "bg-purple-500/20 text-purple-700 dark:text-purple-400 dark:bg-purple-900/30",
+      Charity: "bg-green-500/20 text-green-700 dark:text-green-400 dark:bg-green-900/30",
+      Admin: "bg-red-500/20 text-red-700 dark:text-red-400 dark:bg-red-900/30",
     }
-    return colors[role] || "bg-gray-100 text-gray-800"
+    return colors[role] || "bg-gray-500/20 text-gray-700 dark:text-gray-400 dark:bg-gray-800/30"
   }
 
   // Loading state
@@ -144,7 +144,7 @@ export function UserProfile() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-maroon border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-muted-foreground">Loading profile...</p>
         </div>
       </div>
@@ -186,7 +186,7 @@ export function UserProfile() {
                 {profile.role}
               </span>
               {profile.is_verified && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 flex items-center gap-1">
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-700 dark:text-green-400 dark:bg-green-900/30 flex items-center gap-1">
                   ✓ Verified
                 </span>
               )}
@@ -197,13 +197,13 @@ export function UserProfile() {
         <CardContent className="space-y-6">
           {/* Verification warning banner */}
           {!profile.is_verified && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-              <span className="text-yellow-600 text-xl">⚠️</span>
+            <div className="bg-yellow-500/10 border border-yellow-500/30 dark:bg-yellow-900/20 rounded-lg p-4 flex items-start gap-3">
+              <span className="text-yellow-700 dark:text-yellow-400 text-xl">⚠️</span>
               <div>
-                <p className="text-sm font-medium text-yellow-800">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-400">
                   Your account is pending verification.
                 </p>
-                <p className="text-xs text-yellow-700 mt-1">
+                <p className="text-xs text-yellow-700 dark:text-yellow-500 mt-1">
                   Some features may be limited until your account is verified.
                 </p>
               </div>
@@ -218,7 +218,7 @@ export function UserProfile() {
               type="email"
               value={profile.email}
               disabled
-              className="bg-gray-50"
+              className="bg-muted"
             />
             <p className="text-xs text-muted-foreground">
               Email cannot be changed here for security reasons.
@@ -242,7 +242,7 @@ export function UserProfile() {
                 type="text"
                 value={profile.full_name}
                 disabled
-                className="bg-gray-50"
+                className="bg-muted"
               />
             )}
           </div>
@@ -264,7 +264,7 @@ export function UserProfile() {
                 type="text"
                 value={profile.major || "Not specified"}
                 disabled
-                className="bg-gray-50"
+                className="bg-muted"
               />
             )}
           </div>
@@ -291,7 +291,7 @@ export function UserProfile() {
                 type="text"
                 value={profile.graduation_year?.toString() || "Not specified"}
                 disabled
-                className="bg-gray-50"
+                className="bg-muted"
               />
             )}
           </div>
@@ -313,7 +313,7 @@ export function UserProfile() {
                 onClick={() => setFormData({ ...formData, is_alumni: !formData.is_alumni })}
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                  formData.is_alumni ? "bg-maroon" : "bg-gray-200"
+                  formData.is_alumni ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
                 )}
               >
                 <span
@@ -327,8 +327,8 @@ export function UserProfile() {
               <span className={cn(
                 "px-3 py-1 rounded-full text-xs font-semibold",
                 profile.is_alumni 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-gray-100 text-gray-800"
+                  ? "bg-green-500/20 text-green-700 dark:text-green-400 dark:bg-green-900/30" 
+                  : "bg-gray-500/20 text-gray-700 dark:text-gray-400 dark:bg-gray-800/30"
               )}>
                 {profile.is_alumni ? "Yes" : "No"}
               </span>
@@ -354,7 +354,7 @@ export function UserProfile() {
                 onClick={() => setFormData({ ...formData, mfa_enabled: !formData.mfa_enabled })}
                 className={cn(
                   "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                  formData.mfa_enabled ? "bg-maroon" : "bg-gray-200"
+                  formData.mfa_enabled ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
                 )}
               >
                 <span
@@ -368,8 +368,8 @@ export function UserProfile() {
               <span className={cn(
                 "px-3 py-1 rounded-full text-xs font-semibold",
                 profile.mfa_enabled 
-                  ? "bg-green-100 text-green-800" 
-                  : "bg-gray-100 text-gray-800"
+                  ? "bg-green-500/20 text-green-700 dark:text-green-400 dark:bg-green-900/30" 
+                  : "bg-gray-500/20 text-gray-700 dark:text-gray-400 dark:bg-gray-800/30"
               )}>
                 {profile.mfa_enabled ? "Enabled" : "Disabled"}
               </span>

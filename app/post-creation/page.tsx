@@ -311,7 +311,7 @@ export default function CreatePostPage() {
     <div className="max-w-3xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-maroon">
+          <CardTitle className="text-2xl font-bold text-primary">
             Create New Post
           </CardTitle>
           <CardDescription>
@@ -321,15 +321,15 @@ export default function CreatePostPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-600">
+              <div className="rounded-md bg-red-500/10 border border-red-500/30 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-400">
                 {error}
               </div>
             )}
 
             {/* Post Limits Info */}
-            <div className="rounded-lg bg-maroon-50 border border-maroon-200 p-4">
-              <h4 className="font-semibold text-maroon mb-2">Posting Limits for {userRole} Accounts</h4>
-              <ul className="text-sm text-gray-700 space-y-1">
+            <div className="rounded-lg bg-muted/50 border border-border p-4">
+              <h4 className="font-semibold text-primary mb-2">Posting Limits for {userRole} Accounts</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
                 {userRole === 'Personal' && (
                   <>
                     <li>• Up to 2 posts per day</li>
@@ -365,7 +365,7 @@ export default function CreatePostPage() {
                 ))}
               </select>
               {channels.find(c => c.id === formData.channel_id)?.requires_mfa && (
-                <p className="text-xs text-maroon">
+                <p className="text-xs text-primary">
                   🔒 This channel requires Two-Factor Authentication
                 </p>
               )}
@@ -382,7 +382,7 @@ export default function CreatePostPage() {
                 maxLength={200}
                 required
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {formData.title.length}/200 characters
               </p>
             </div>
@@ -398,14 +398,14 @@ export default function CreatePostPage() {
                 maxLength={5000}
                 required
               />
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {formData.content.length}/5000 characters
               </p>
             </div>
 
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-              <h4 className="font-semibold text-blue-900 mb-2">Community Guidelines</h4>
-              <ul className="text-sm text-blue-800 space-y-1">
+            <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-4">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">Community Guidelines</h4>
+              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
                 <li>• Be respectful and constructive</li>
                 <li>• No profanity or inappropriate language</li>
                 <li>• Stay on topic for the selected channel</li>
