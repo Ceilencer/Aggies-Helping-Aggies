@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { validatePost } from '@/lib/profanity-filter'
 import type { Channel, POST_LIMITS } from '@/lib/types'
 
-export default function CreatePostPage() {
+function CreatePostForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -430,5 +430,23 @@ export default function CreatePostPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function CreatePostPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold text-primary">
+              Loading...
+            </CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <CreatePostForm />
+    </Suspense>
   )
 }
