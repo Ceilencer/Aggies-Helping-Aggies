@@ -30,7 +30,7 @@ function LoginForm() {
     try {
       const redirectTo =
         typeof window !== 'undefined'
-          ? `${window.location.origin}/auth/callback`
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
           : undefined
 
       const { error: signInError } = await supabase.auth.signInWithOAuth({
