@@ -104,13 +104,6 @@ export default async function DashboardPage() {
                   Create New Post
                 </Button>
               </Link>
-              {!profile?.mfa_enabled && (
-                <Link href="/dashboard/security">
-                  <Button size="lg" variant="secondary">
-                    🔒 Enable Two-Factor Auth
-                  </Button>
-                </Link>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -264,9 +257,6 @@ export default async function DashboardPage() {
                     <span className="text-xl">{channel.icon}</span>
                     <span className="font-medium text-sm">{channel.name}</span>
                   </div>
-                  {channel.requires_mfa && (
-                    <span className="text-xs text-primary">🔒</span>
-                  )}
                 </div>
               </Link>
             ))}
@@ -283,12 +273,6 @@ export default async function DashboardPage() {
               <span className="text-sm text-muted-foreground">Account Type</span>
               <span className={`text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(profile?.role || 'Personal')}`}>
                 {profile?.role}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">MFA Status</span>
-              <span className="text-sm font-medium">
-                {profile?.mfa_enabled ? '✅ Enabled' : '❌ Disabled'}
               </span>
             </div>
             {profile?.graduation_year && (

@@ -96,7 +96,7 @@ export default async function DashboardLayout({
       <footer className="border-t bg-card py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p className="mb-2">
-            &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built with Gig 'em Spirit.
+            &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built for Aggies by Aggies.
           </p>
           <p className="text-sm">
             This is an independent platform and is not officially affiliated with Texas A&M University.

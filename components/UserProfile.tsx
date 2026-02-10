@@ -24,7 +24,6 @@ export function UserProfile() {
     is_alumni: false,
     graduation_year: undefined as number | undefined,
     major: "",
-    mfa_enabled: false,
   })
 
   const supabase = createClient()
@@ -60,7 +59,6 @@ export function UserProfile() {
         is_alumni: data.is_alumni || false,
         graduation_year: data.graduation_year,
         major: data.major || "",
-        mfa_enabled: data.mfa_enabled || false,
       })
     } catch (err) {
       console.error("Error fetching profile:", err)
@@ -81,7 +79,6 @@ export function UserProfile() {
         is_alumni: profile.is_alumni || false,
         graduation_year: profile.graduation_year,
         major: profile.major || "",
-        mfa_enabled: profile.mfa_enabled || false,
       })
     }
     setIsEditing(false)
@@ -100,7 +97,6 @@ export function UserProfile() {
           is_alumni: formData.is_alumni,
           graduation_year: formData.graduation_year || null,
           major: formData.major,
-          mfa_enabled: formData.mfa_enabled,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id)
@@ -299,9 +295,9 @@ export function UserProfile() {
           {/* Alumni Status (toggle) */}
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-1">
-              <Label htmlFor="is_alumni" className="text-base">Alumni Status</Label>
+              <Label htmlFor="is_alumni" className="text-base">Former Student Status</Label>
               <p className="text-xs text-muted-foreground">
-                Are you a Texas A&M alumnus?
+                Are you a Texas A&M former student?
               </p>
             </div>
             {isEditing ? (
@@ -331,47 +327,6 @@ export function UserProfile() {
                   : "bg-gray-500/20 text-gray-700 dark:text-gray-400 dark:bg-gray-800/30"
               )}>
                 {profile.is_alumni ? "Yes" : "No"}
-              </span>
-            )}
-          </div>
-
-          {/* MFA Enabled (toggle) */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="space-y-1">
-              <Label htmlFor="mfa_enabled" className="text-base">
-                Multi-Factor Authentication
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Enable MFA for enhanced security (UI only for now)
-              </p>
-            </div>
-            {isEditing ? (
-              <button
-                id="mfa_enabled"
-                type="button"
-                role="switch"
-                aria-checked={formData.mfa_enabled}
-                onClick={() => setFormData({ ...formData, mfa_enabled: !formData.mfa_enabled })}
-                className={cn(
-                  "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
-                  formData.mfa_enabled ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"
-                )}
-              >
-                <span
-                  className={cn(
-                    "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
-                    formData.mfa_enabled ? "translate-x-6" : "translate-x-1"
-                  )}
-                />
-              </button>
-            ) : (
-              <span className={cn(
-                "px-3 py-1 rounded-full text-xs font-semibold",
-                profile.mfa_enabled 
-                  ? "bg-green-500/20 text-green-700 dark:text-green-400 dark:bg-green-900/30" 
-                  : "bg-gray-500/20 text-gray-700 dark:text-gray-400 dark:bg-gray-800/30"
-              )}>
-                {profile.mfa_enabled ? "Enabled" : "Disabled"}
               </span>
             )}
           </div>

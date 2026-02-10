@@ -22,27 +22,17 @@ export default function ChannelPage() {
 
   useEffect(() => {
     const loadChannelData = async () => {
-      // Check for admin session (mock mode)
-      const hasAdminSession = document.cookie.includes('admin_session=true')
-
       // Check for real Supabase authentication
       const { data: { user } } = await supabase.auth.getUser()
 
-      if (!hasAdminSession && !user) {
+      if (!user) {
         // Redirect to login if not authenticated
         router.push('/login')
         return
       }
 
       setUserAuthenticated(true)
-
-      // Use real Supabase data if authenticated
-      if (user) {
-        await loadSupabaseData()
-      } else {
-        // Use mock data for admin session
-        loadMockData()
-      }
+      await loadSupabaseData()
     }
 
     const loadSupabaseData = async () => {
@@ -87,73 +77,6 @@ export default function ChannelPage() {
         console.error('Error in loadSupabaseData:', error)
         setLoading(false)
       }
-    }
-
-    const loadMockData = () => {
-
-      // Mock channels
-      const mockChannels = [
-        { id: '1', name: 'General', slug: 'general', description: 'General community discussions', type: 'general', requires_mfa: false, is_read_only: false, icon: '💬', color: '#500000' },
-        { id: '2', name: 'Promotions', slug: 'promotions', description: 'Business promotions and events', type: 'promotions', requires_mfa: false, is_read_only: false, icon: '📢', color: '#500000' },
-        { id: '3', name: 'Job/Internship/Networking', slug: 'jobs-networking', description: 'Job opportunities, internships, and networking', type: 'jobs', requires_mfa: false, is_read_only: false, icon: '💼', color: '#500000' },
-        { id: '4', name: 'Fundraising', slug: 'fundraising', description: 'Support Aggie causes and fundraising efforts', type: 'aggie_ring', requires_mfa: false, is_read_only: false, icon: '💍', color: '#500000' },
-        { id: '5', name: 'Football Tickets', slug: 'football-tickets', description: 'Buy, sell, or trade football game tickets', type: 'tickets', requires_mfa: true, is_read_only: false, icon: '🎟️', color: '#500000' },
-        { id: '6', name: 'Announcements', slug: 'announcements', description: 'Official platform announcements', type: 'announcements', requires_mfa: false, is_read_only: true, icon: '📌', color: '#500000' }
-      ]
-
-      const foundChannel = mockChannels.find(c => c.slug === slug)
-      setChannel(foundChannel)
-
-      if (foundChannel) {
-        // Get posts from localStorage
-        const storedPosts = localStorage.getItem('mockPosts')
-        let allPosts = []
-
-        if (storedPosts) {
-          allPosts = JSON.parse(storedPosts)
-        } else {
-          // Default mock posts
-          allPosts = [
-            {
-              id: 1,
-              channel_id: '1',
-              title: 'Welcome to the Aggie Community!',
-              content: 'Excited to be part of this platform connecting current and former students. Looking forward to networking and helping fellow Aggies succeed!',
-              created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              author: { full_name: 'John Smith', role: 'Personal' },
-              channel: { name: 'General', icon: '💬' },
-              is_pinned: false
-            },
-            {
-              id: 2,
-              channel_id: '3',
-              title: 'Job Opportunity: Software Engineer at Tech Company',
-              content: 'We\'re hiring! Looking for talented software engineers with experience in React and Node.js. Competitive salary and benefits. Remote work available.',
-              created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-              author: { full_name: 'Jane Doe', role: 'Business' },
-              channel: { name: 'Job/Internship/Networking', icon: '💼' },
-              is_pinned: false
-            },
-            {
-              id: 3,
-              channel_id: '4',
-              title: 'Aggie Ring Fundraiser',
-              content: 'Help a fellow Aggie achieve their ring! We\'re raising funds for graduation rings. Every contribution makes a difference. #AggiePride',
-              created_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-              author: { full_name: 'Bob Johnson', role: 'Charity' },
-              channel: { name: 'Fundraising', icon: '💍' },
-              is_pinned: false
-            }
-          ]
-          // Save defaults to localStorage
-          localStorage.setItem('mockPosts', JSON.stringify(allPosts))
-        }
-
-        const channelPosts = allPosts.filter((post: any) => post.channel_id === foundChannel.id)
-        setPosts(channelPosts)
-      }
-
-      setLoading(false)
     }
 
     loadChannelData()
@@ -209,12 +132,6 @@ export default function ChannelPage() {
             <p className="text-muted-foreground">{channel.description}</p>
           </div>
         </div>
-
-        {channel.requires_mfa && (
-          <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-amber-100 text-amber-800">
-            🔒 Requires Two-Factor Authentication
-          </div>
-        )}
       </div>
 
       {/* Create Post Button */}
