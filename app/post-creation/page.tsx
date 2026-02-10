@@ -35,53 +35,33 @@ function CreatePostForm() {
   }, [])
 
   const loadChannels = async (role: string) => {
-    // Check for temporary admin session (for local testing)
-    const hasAdminSession = document.cookie.includes('admin_session=true')
+    let query = supabase
+      .from('channels')
+      .select('*')
+      .order('name')
 
-    let loadedChannels: Channel[] = []
-
-    if (hasAdminSession) {
-      // Mock data for local testing - include announcements for admin
-      const mockChannels: Channel[] = [
-        { id: '1', name: 'General', slug: 'general', description: 'General community discussions', type: 'general', requires_mfa: false, is_read_only: false, icon: '💬', color: '#500000', created_at: '', updated_at: '' },
-        { id: '2', name: 'Promotions', slug: 'promotions', description: 'Business promotions and events', type: 'promotions', requires_mfa: false, is_read_only: false, icon: '📢', color: '#500000', created_at: '', updated_at: '' },
-        { id: '3', name: 'Job/Internship/Networking', slug: 'jobs-networking', description: 'Job opportunities, internships, and networking', type: 'jobs', requires_mfa: false, is_read_only: false, icon: '💼', color: '#500000', created_at: '', updated_at: '' },
-        { id: '4', name: 'Fundraising', slug: 'fundraising', description: 'Support Aggie causes and fundraising efforts', type: 'aggie_ring', requires_mfa: false, is_read_only: false, icon: '💍', color: '#500000', created_at: '', updated_at: '' },
-        { id: '5', name: 'Football Tickets', slug: 'football-tickets', description: 'Buy, sell, or trade football game tickets', type: 'tickets', requires_mfa: true, is_read_only: false, icon: '🎟️', color: '#500000', created_at: '', updated_at: '' },
-        { id: '6', name: 'Announcements', slug: 'announcements', description: 'Official platform announcements', type: 'announcements', requires_mfa: false, is_read_only: true, icon: '📌', color: '#500000', created_at: '', updated_at: '' }
-      ]
-      // Show announcements only for admins
-      loadedChannels = role === 'Admin' ? mockChannels : mockChannels.filter(c => !c.is_read_only)
-    } else {
-      // Real Supabase data
-      let query = supabase
-        .from('channels')
-        .select('*')
-        .order('name')
-
-      // For non-admins, only show non-read-only channels
-      if (role !== 'Admin') {
-        query = query.eq('is_read_only', false)
-      }
-
-      const { data, error } = await query
-
-      if (error) {
-        console.error('Error loading channels:', error)
-        setError('Failed to load channels. Please refresh the page.')
-        return
-      }
-
-      loadedChannels = data || []
-
-      // Check if channels are empty
-      if (loadedChannels.length === 0) {
-        setError('No channels available. Please contact an administrator to set up channels.')
-        return
-      }
-
-      console.log('Loaded channels from database:', loadedChannels)
+    // For non-admins, only show non-read-only channels
+    if (role !== 'Admin') {
+      query = query.eq('is_read_only', false)
     }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error loading channels:', error)
+      setError('Failed to load channels. Please refresh the page.')
+      return
+    }
+
+    const loadedChannels = data || []
+
+    // Check if channels are empty
+    if (loadedChannels.length === 0) {
+      setError('No channels available. Please contact an administrator to set up channels.')
+      return
+    }
+
+    console.log('Loaded channels from database:', loadedChannels)
 
     setChannels(loadedChannels)
 
@@ -97,25 +77,17 @@ function CreatePostForm() {
   }
 
   const loadUserRole = async (): Promise<string> => {
-    const hasAdminSession = document.cookie.includes('admin_session=true')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
 
-    if (hasAdminSession) {
-      // Mock admin user
-      setUserRole('Admin')
-      return 'Admin'
-    } else {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role, mfa_enabled')
-          .eq('id', user.id)
-          .single()
-
-        if (profile) {
-          setUserRole(profile.role)
-          return profile.role
-        }
+      if (profile) {
+        setUserRole(profile.role)
+        return profile.role
       }
     }
 
@@ -156,33 +128,7 @@ function CreatePostForm() {
         return
       }
 
-      // Check if using mock admin session
-      const hasAdminSession = document.cookie.includes('admin_session=true')
-      
-      if (hasAdminSession) {
-        // Mock mode: save to localStorage
-        const selectedChannel = channels.find(c => c.id === formData.channel_id)
-        const newPost = {
-          id: Date.now(),
-          channel_id: formData.channel_id,
-          title: formData.title,
-          content: formData.content,
-          created_at: new Date().toISOString(),
-          author: { full_name: 'Admin User', role: 'Admin' },
-          channel: selectedChannel ? { name: selectedChannel.name, icon: selectedChannel.icon } : { name: 'Unknown', icon: '❓' },
-          is_pinned: false
-        }
-
-        const existingPosts = localStorage.getItem('mockPosts')
-        const posts = existingPosts ? JSON.parse(existingPosts) : []
-        posts.unshift(newPost)
-        localStorage.setItem('mockPosts', JSON.stringify(posts))
-        
-        router.push('/dashboard')
-        return
-      }
-
-      // Real Supabase mode - verify authentication
+      // Verify authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError) {
@@ -201,7 +147,7 @@ function CreatePostForm() {
       // Check if user profile exists and is verified
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('role, is_verified, mfa_enabled')
+        .select('role, is_verified')
         .eq('id', user.id)
         .single()
 
@@ -226,15 +172,10 @@ function CreatePostForm() {
 
       console.log('User verified, proceeding with post creation...')
       console.log('User ID:', user.id)
-      console.log('Profile:', { role: profile.role, is_verified: profile.is_verified, mfa_enabled: profile.mfa_enabled })
+      console.log('Profile:', { role: profile.role, is_verified: profile.is_verified })
 
-      // Check if channel requires MFA
+      // Get selected channel info for debugging
       const selectedChannel = channels.find(c => c.id === formData.channel_id)
-      if (selectedChannel?.requires_mfa && !profile.mfa_enabled) {
-        setError('This channel requires Two-Factor Authentication to be enabled. Please enable MFA in your security settings.')
-        setLoading(false)
-        return
-      }
 
       // Get selected channel info for debugging
       console.log('Selected channel:', selectedChannel)
@@ -270,8 +211,6 @@ function CreatePostForm() {
         
         // Handle specific database errors
         if (insertError.message?.includes('post limit')) {
-          setError(insertError.message)
-        } else if (insertError.message?.includes('MFA')) {
           setError(insertError.message)
         } else if (insertError.message?.includes('post_tracking')) {
           setError('Database configuration issue with post tracking. Please contact an administrator to fix RLS policies on the post_tracking table.')
@@ -360,15 +299,10 @@ function CreatePostForm() {
                 <option value="">Select a channel...</option>
                 {channels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
-                    {channel.icon} {channel.name} {channel.requires_mfa ? '🔒' : ''}
+                    {channel.icon} {channel.name}
                   </option>
                 ))}
               </select>
-              {channels.find(c => c.id === formData.channel_id)?.requires_mfa && (
-                <p className="text-xs text-primary">
-                  🔒 This channel requires Two-Factor Authentication
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
