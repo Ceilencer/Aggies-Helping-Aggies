@@ -26,12 +26,11 @@ export default function Home() {
       {/* Hero Content */}
       <section className="container mx-auto px-4 py-20 text-center">
         <h1 className="mb-6 text-5xl font-bold text-primary">
-          Connect. Share. Support.
+          Support. Connect. Share.
         </h1>
         <p className="mx-auto mb-8 max-w-2xl text-xl text-muted-foreground">
           A verified community platform exclusively for Texas A&M University students, 
-          alumni, and affiliates. Find opportunities, share resources, and strengthen 
-          the Aggie Network.
+          former students, and affiliates. Help fund aggie rings, graduation regalia and support the aggie network!
         </p>
         <div className="flex items-center justify-center space-x-4">
           <Link href="/signup">
@@ -41,7 +40,7 @@ export default function Home() {
           </Link>
           <Link href="/alumni-verification">
             <Button size="lg" variant="outline" className="text-lg">
-              Alumni Verification
+              Former Student Verification
             </Button>
           </Link>
         </div>
@@ -51,7 +50,7 @@ export default function Home() {
           <svg className="h-5 w-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
           </svg>
-          <span>Verified TAMU-only community with multi-factor authentication</span>
+          <span>Verified TAMU-only community</span>
         </div>
       </section>
 
@@ -84,7 +83,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">🎟️</div>
-              <CardTitle>Football Tickets</CardTitle>
+              <CardTitle>Tickets</CardTitle>
               <CardDescription>
                 Buy, sell, or trade game tickets safely within the verified Aggie community
               </CardDescription>
@@ -106,7 +105,7 @@ export default function Home() {
               <div className="mb-4 text-4xl">💍</div>
               <CardTitle>Aggie Ring Fund</CardTitle>
               <CardDescription>
-                Support fellow Aggies in achieving their dream of earning the iconic Aggie Ring
+                Support fellow Aggies in achieving their dream of earning their Aggie Ring
               </CardDescription>
             </CardHeader>
           </Card>
@@ -145,7 +144,7 @@ export default function Home() {
               </div>
               <h3 className="mb-2 text-xl font-semibold">Get Verified</h3>
               <p className="text-muted-foreground">
-                Complete verification and optionally enable two-factor authentication
+                Complete verification and fill out your profile
               </p>
             </div>
             <div className="text-center">
@@ -169,7 +168,7 @@ export default function Home() {
         <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
           Be part of a trusted community where Aggies help Aggies thrive. 
           Whether you're looking for opportunities, offering support, or just 
-          staying connected – this is your platform.
+          staying connected, this is your platform.
         </p>
         <Link href="/signup">
           <Button size="lg" className="text-lg">
@@ -182,7 +181,7 @@ export default function Home() {
       <footer className="border-t bg-card py-8">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p className="mb-2">
-            &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built with Gig 'em Spirit.
+            &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built for Aggies by Aggies.
           </p>
           <p className="text-sm">
             This is an independent platform and is not officially affiliated with Texas A&M University.
