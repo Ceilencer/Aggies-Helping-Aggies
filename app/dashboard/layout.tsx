@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/Logo'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function DashboardLayout({
@@ -52,12 +53,7 @@ export default async function DashboardLayout({
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 border-b bg-card shadow-sm">
         <nav className="container mx-auto flex items-center justify-between px-4 py-4">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            {/* <div className="text-2xl">🎓</div> */}
-            <span className="text-xl font-bold text-primary hidden sm:inline">
-              Aggies Helping Aggies
-            </span>
-          </Link>
+          <Logo href="/dashboard" />
           
           <div className="flex items-center space-x-4">
             <span className="text-sm text-muted-foreground hidden md:inline">
