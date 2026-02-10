@@ -104,6 +104,11 @@ export default async function DashboardPage() {
                   Create New Post
                 </Button>
               </Link>
+              <Link href="/dashboard/my-posts">
+                <Button size="lg" variant="outline">
+                  View My Posts
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
