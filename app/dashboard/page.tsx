@@ -88,18 +88,18 @@ export default async function DashboardPage() {
       {/* Main Feed */}
       <div className="lg:col-span-3 space-y-6">
         {/* Welcome Card */}
-        <Card className="border-primary/30">
-          <CardHeader className="bg-primary text-primary-foreground">
+        <Card>
+          <CardHeader className="bg-dash-header-bg text-dash-header-text">
             <CardTitle className="text-2xl">
               Howdy, {profile?.full_name}! 👋
             </CardTitle>
-            <CardDescription className="text-primary-foreground/80">
+            <CardDescription className="text-dash-header-text/80">
               Welcome to the Aggie community. Stay connected, share opportunities, and help fellow Aggies thrive.
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="flex flex-wrap gap-4">
-              <Link href="/post-creation">
+              <Link href="/dashboard/post-creation">
                 <Button size="lg">
                   Create New Post
                 </Button>
@@ -119,7 +119,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-primary">📌 Announcements</h2>
               {profile?.role === 'Admin' && (
-                <Link href="/post-creation?channel=announcements">
+                <Link href="/dashboard/post-creation?channel=announcements">
                   <Button variant="outline" size="sm">
                     Post Announcement
                   </Button>
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
                 <p className="text-muted-foreground mb-4">
                   No posts yet. Be the first to share something with the community!
                 </p>
-                <Link href="/post-creation">
+                <Link href="/dashboard/post-creation">
                   <Button>Create First Post</Button>
                 </Link>
               </CardContent>

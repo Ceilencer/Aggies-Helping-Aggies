@@ -137,7 +137,7 @@ export default function ChannelPage() {
       {/* Create Post Button */}
       {!channel.is_read_only && (
         <div className="mb-6">
-          <Link href={`/post-creation?channel=${channel.slug}`}>
+          <Link href={`/dashboard/post-creation?channel=${channel.slug}`}>
             <Button size="lg">
               Create Post in {channel.name}
             </Button>
@@ -203,7 +203,7 @@ export default function ChannelPage() {
                 No posts in this channel yet. Be the first to share something!
               </p>
               {!channel.is_read_only && (
-                <Link href={`/post-creation?channel=${channel.slug}`}>
+                <Link href={`/dashboard/post-creation?channel=${channel.slug}`}>
                   <Button>Create First Post</Button>
                 </Link>
               )}

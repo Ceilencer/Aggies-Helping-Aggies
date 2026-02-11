@@ -4,67 +4,117 @@
 
 @layer base {
   :root {
+    /* Default Light Mode Colors */
+    --background: 0 0% 96.5%; /* Default background color for light mode */
+    
+    --header-bg: 0 0% 100%;
+    --header-text: 0 0% 45.1%;
+    
+    --footer-bg: 0 0% 100%;
+    --footer-text: 0 0% 45.1%;
+    
+    --button-bg: 0 100% 15.69%;
+    --button-text: 0 0% 97.3%;
+    
+    --page-heading-text: 0 100% 15.69%;
+    --page-subtext: 0 0% 45.1%;
+
+    --card: 0 0% 100%; /* Used by bg-card (Card component, headers/footers) */
+    --card-foreground: 0 0% 23.5%; /* Used by text-card-foreground (Card component) */
+    
+
+
+    /*********** SPECIFICS ***********/
+    /* Landing Page Light Mode */
+    --steps-text: 0 0% 97.3%; /* Used by text-steps-text (landing page steps) */
+    
+    /* Login Page Light Mode */
+    --background-login: 4, 23.08%, 25.49%; /* Specific background for login page in light mode */
+
+    /* Dashboard Light Mode */
+    --dash-header-bg: 0 100% 15.69%;
+    --dash-header-text: 0 0% 97.3%;
+
+    /* User Profile Light Mode */
+
+    /* Admin Light Mode */
+
+
     /* Light Mode - TAMU Branding */
-    --background: 0 0% 96.5%; /* Gray 100: #f6f6f6 */
-    --foreground: 0 0% 23.5%; /* TAMU Gray: #3C3C3C */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 23.5%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 23.5%;
 
-    --primary: 0 69% 30%; /* TAMU Maroon: #732424 */
-    --primary-foreground: 0 0% 98%;
+    /* Recategorized theme tokens (defaults match current colors) */
 
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --icon: 0 100% 15.69%;
+    
 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 0 0% 96.1%; /* Used by bg-muted (profile blocks, sections) */
+    --muted-foreground: 0 0% 45.1%; /* Used by text-muted-foreground (helper/secondary text) */
 
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 0 0% 96.1%; /* Used by bg-accent (button hover for ghost/outline) */
+    --accent-foreground: 0 0% 9%; /* Used by text-accent-foreground (button hover text) */
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 69% 30%;
+    --border: 0 0% 89.8%; /* Used by border-border (base borders, info panels) */
+    --input: 0 0% 89.8%; /* Used by border-input (input/textarea, outline button) */
+    --ring: 0 69% 30%; /* Used by ring-ring (button focus ring) */
 
     --radius: 0.5rem;
   }
 
   .dark {
+    /* Default Dark Mode Colors */
+    --background: 0 0% 12%; /* Default background color for dark mode */
+
+    --header-bg: 0 0% 17%;
+    --header-text: 0 0% 97.3%;
+
+    --footer-bg: 0 0% 17%;
+    --footer-text: 0 0% 65%;
+    
+    --button-bg: 0 100% 15.69%;
+    --button-text: 0 0% 97.3%;
+
+    --page-heading-text: 0 0% 97.3%;
+    --page-subtext: 0 0% 65%;
+
+    
+    --card: 0 0% 17%; /* Slightly lighter for contrast: #2b2b2b; used by bg-card (Card component, headers/footers) */
+    --card-foreground: 0 0% 97.3%; /* Used by text-card-foreground (Card component) */
+
+
+
+
+    /*********** SPECIFICS ***********/
+    /* Landing Page Dark Mode */
+    --steps-text: 0 0% 97.3%; /* Used by text-steps-text (landing page steps) */
+
+    /* Login Page Dark Mode */
+    --background-login: 0 0% 12%; /*CURRENTLY SAME AS BACKGROUND*/
+
+    /* Dashboard Dark Mode */
+    --dash-header-bg: 0 100% 15.69%;
+    --dash-header-text: 0 0% 97.3%;
+
+    /* User Profile Page Dark Mode */
+
+    /* Admin Page Dark Mode */
+
+
+
     /* Dark Mode - Google-style with proper contrast */
-    --background: 0 0% 12%; /* Google-style dark: #1f1f1f */
-    --foreground: 0 0% 97.3%; /* Off-white: #f8f9fa */
+    --icon: 0 100% 15.69%;
+    
 
-    --card: 0 0% 17%; /* Slightly lighter for contrast: #2b2b2b */
-    --card-foreground: 0 0% 97.3%;
+    --muted: 0 0% 22%; /* #383838 - for disabled inputs; used by bg-muted (profile blocks, sections) */
+    --muted-foreground: 0 0% 65%; /* Light gray: #a6a6a6; used by text-muted-foreground (helper/secondary text) */
 
-    --popover: 0 0% 20%; /* #333333 */
-    --popover-foreground: 0 0% 97.3%;
+    --accent: 0 0% 22%; /* Used by bg-accent (button hover for ghost/outline) */
+    --accent-foreground: 0 0% 97.3%; /* Used by text-accent-foreground (button hover text) */
 
-    --primary: 0 69% 40%; /* Lighter TAMU Maroon for dark mode - more visible against dark backgrounds */
-    --primary-foreground: 0 0% 97.3%;
-
-    --secondary: 0 0% 22%; /* #383838 */
-    --secondary-foreground: 0 0% 97.3%;
-
-    --muted: 0 0% 22%; /* #383838 - for disabled inputs */
-    --muted-foreground: 0 0% 65%; /* Light gray: #a6a6a6 */
-
-    --accent: 0 0% 22%;
-    --accent-foreground: 0 0% 97.3%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 97.3%;
-
-    --border: 0 0% 25%; /* #404040 */
-    --input: 0 0% 22%; /* #383838 */
-    --ring: 0 69% 30%; /* TAMU Maroon #732424 */
+    --border: 0 0% 25%; /* #404040; used by border-border (base borders, info panels) */
+    --input: 0 0% 22%; /* #383838; used by border-input (input/textarea, outline button) */
+    --ring: 0 69% 30%; /* TAMU Maroon #732424; used by ring-ring (button focus ring) */
   }
 }
 

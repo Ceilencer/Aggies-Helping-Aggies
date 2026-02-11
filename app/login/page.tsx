@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -54,14 +55,20 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background-login))] p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground">
-            🎓
+          <div className="mx-auto mb-4 w-16">
+            <Image
+              src="/images/logos/logo-no-text.svg"
+              alt="Howdy Helps logo"
+              width={693}
+              height={500}
+              className="w-full h-auto"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold text-primary">
-            Welcome Back, Aggie!
+          <CardTitle className="text-2xl font-bold text-page-heading">
+            Howdy Ags!
           </CardTitle>
           <CardDescription>
             Sign in with your TAMU Google account to continue
@@ -121,11 +128,17 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background-login))] p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground">
-              🎓
+            <div className="mx-auto mb-4 w-16">
+              <Image
+                src="/images/logos/logo-no-text.svg"
+                alt="Howdy Helps logo"
+                width={693}
+                height={500}
+                className="w-full h-auto"
+              />
             </div>
             <CardTitle className="text-2xl font-bold text-primary">
               Loading...

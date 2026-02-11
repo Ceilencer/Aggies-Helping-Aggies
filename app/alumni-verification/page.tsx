@@ -248,7 +248,7 @@ export default function AlumniVerificationPage() {
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Have a TAMU email?{' '}
-            <Link href="/signup" className="font-medium text-maroon hover:underline">
+            <Link href="/signup" className="font-medium text-primary hover:underline">
               Sign up directly
             </Link>
           </p>

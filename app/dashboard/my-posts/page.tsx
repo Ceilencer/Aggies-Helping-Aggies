@@ -42,16 +42,16 @@ export default async function MyPostsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header Card */}
-      <Card className="border-primary/30">
-        <CardHeader className="bg-primary text-primary-foreground">
+      <Card>
+        <CardHeader className="bg-dash-header-bg text-dash-header-text">
           <CardTitle className="text-2xl">My Posts</CardTitle>
-          <CardDescription className="text-primary-foreground/80">
+          <CardDescription className="text-dash-header-text/80">
             View all posts you've created
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="flex flex-wrap gap-4">
-            <Link href="/post-creation">
+            <Link href="/dashboard/post-creation">
               <Button size="lg">
                 Create New Post
               </Button>
@@ -131,7 +131,7 @@ export default async function MyPostsPage() {
               <p className="text-muted-foreground mb-4">
                 You haven't created any posts yet. Share something with the community!
               </p>
-              <Link href="/post-creation">
+              <Link href="/dashboard/post-creation">
                 <Button>Create Your First Post</Button>
               </Link>
             </CardContent>

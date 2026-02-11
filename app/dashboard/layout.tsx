@@ -51,12 +51,12 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-50 border-b bg-card shadow-sm">
+      <header className="sticky top-0 z-50 border-b bg-header-bg shadow-sm">
         <nav className="container mx-auto flex items-center justify-between px-4 py-4">
           <Logo href="/dashboard" />
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-muted-foreground hidden md:inline">
+            <span className="text-sm text-header-text hidden md:inline">
               Welcome, {displayName}
             </span>
 
@@ -89,8 +89,8 @@ export default async function DashboardLayout({
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-card py-8">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
+      <footer className="border-t bg-footer-bg py-8">
+        <div className="container mx-auto px-4 text-center text-footer-text">
           <p className="mb-2">
             &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built for Aggies by Aggies.
           </p>

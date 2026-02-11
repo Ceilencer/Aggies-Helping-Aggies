@@ -17,40 +17,44 @@ module.exports = {
     },
     extend: {
       colors: {
-        // TAMU Brand Colors
-        maroon: {
-          DEFAULT: '#732424',
-          50: '#fdf2f2',
-          100: '#fce4e4',
-          200: '#f9c9c9',
-          300: '#f4a3a3',
-          400: '#ec7373',
-          500: '#df4747',
-          600: '#c93030',
-          700: '#a82424',
-          800: '#8b2222',
-          900: '#732424',
-        },
-        aggie: {
-          maroon: '#732424',
-          gray: '#3C3C3C',
-        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        "background-login": "hsl(var(--background-login))",
         foreground: "hsl(var(--foreground))",
+        "button-bg": {
+          DEFAULT: "hsl(var(--button-bg))",
+        },
+        "button-text": "hsl(var(--button-text))",
+        "header-bg": {
+          DEFAULT: "hsl(var(--header-bg))",
+        },
+        "dash-header-bg": "hsl(var(--dash-header-bg))",
+        "dash-header-text": "hsl(var(--dash-header-text))",
+        "footer-bg": {
+          DEFAULT: "hsl(var(--footer-bg))",
+        },
+        "header-text": {
+          DEFAULT: "hsl(var(--header-text))",
+        },
+        "footer-text": {
+          DEFAULT: "hsl(var(--footer-text))",
+        },
+        "page-heading": {
+          DEFAULT: "hsl(var(--page-heading-text))",
+        },
+        "page-heading-text": "hsl(var(--page-heading-text))",
+        "page-subtext": {
+          DEFAULT: "hsl(var(--page-subtext))",
+        },
+        "steps-text": "hsl(var(--steps-text))",
+        icon: {
+          DEFAULT: "hsl(var(--icon))",
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -59,10 +63,6 @@ module.exports = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
         },
         card: {
           DEFAULT: "hsl(var(--card))",
