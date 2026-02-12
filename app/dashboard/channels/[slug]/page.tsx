@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import PostLikeButton from '@/components/PostLikeButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import { createClient } from '@/lib/supabase/client'
@@ -41,10 +42,10 @@ export default function ChannelPage() {
       }
 
       setUserAuthenticated(true)
-      await loadSupabaseData()
+      await loadSupabaseData(user.id)
     }
 
-    const loadSupabaseData = async () => {
+    const loadSupabaseData = async (userId: string) => {
       try {
         // Fetch channel from database
         const { data: channelData, error: channelError } = await supabase
@@ -84,7 +85,30 @@ export default function ChannelPage() {
           console.error('Error loading posts:', postsError)
           setPosts([])
         } else {
-          setPosts(postsData || [])
+          // Fetch like counts for each post
+          const postsWithLikes = await Promise.all(
+            (postsData || []).map(async (post) => {
+              const { count: like_count } = await supabase
+                .from('post_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('post_id', post.id)
+
+              const { data: userLike } = await supabase
+                .from('post_likes')
+                .select('id')
+                .eq('post_id', post.id)
+                .eq('user_id', userId)
+                .maybeSingle()
+
+              return {
+                ...post,
+                like_count: like_count || 0,
+                user_has_liked: !!userLike,
+              }
+            })
+          )
+          setPosts(postsWithLikes)
+        }
         }
 
         setLoading(false)
@@ -198,6 +222,22 @@ export default function ChannelPage() {
                     : post.content
                   }
                 </p>
+
+                <div className="flex items-center space-x-4 pt-2 border-t">
+                  <PostLikeButton
+                    postId={post.id}
+                    likeCount={post.like_count || 0}
+                    userHasLiked={post.user_has_liked || false}
+                  />
+                  <Link href={`/dashboard/posts/${post.id}`}>
+                    <Button variant="outline" size="sm">
+                      View Full Post
+                    </Button>
+                  </Link>
+                  <span className="text-sm text-card-subtext ml-auto">
+                    👁️ {post.view_count} views
+                  </span>
+                </div>
               </CardContent>
             </Card>
           ))

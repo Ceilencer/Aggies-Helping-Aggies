@@ -66,12 +66,15 @@ export interface Post {
   author?: Profile
   channel?: Channel
   comment_count?: number
+  like_count?: number
+  user_has_liked?: boolean
 }
 
 export interface Comment {
   id: string
   post_id: string
   author_id: string
+  parent_comment_id?: string
   content: string
   is_moderated: boolean
   moderation_reason?: string
@@ -79,6 +82,9 @@ export interface Comment {
   updated_at: string
   // Relations
   author?: Profile
+  replies?: Comment[]
+  like_count?: number
+  user_has_liked?: boolean
 }
 
 export interface PostTracking {
