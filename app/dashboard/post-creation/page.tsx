@@ -250,10 +250,10 @@ function CreatePostForm() {
     <div className="max-w-3xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-primary">
+          <CardTitle className="text-2xl font-bold text-primary dark:text-white">
             Create New Post
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-white">
             Share opportunities, resources, or start a discussion with the Aggie community
           </CardDescription>
         </CardHeader>
@@ -267,8 +267,8 @@ function CreatePostForm() {
 
             {/* Post Limits Info */}
             <div className="rounded-lg bg-muted/50 border border-border p-4">
-              <h4 className="font-semibold text-primary mb-2">Posting Limits for {userRole} Accounts</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <h4 className="font-semibold text-primary dark:text-white mb-2">Posting Limits for {userRole} Accounts</h4>
+              <ul className="text-sm text-muted-foreground dark:text-white/80 space-y-1">
                 {userRole === 'Personal' && (
                   <>
                     <li>• Up to 2 posts per day</li>
@@ -288,7 +288,7 @@ function CreatePostForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="channel_id">Channel *</Label>
+              <Label htmlFor="channel_id" className="dark:text-white">Channel *</Label>
               <select
                 id="channel_id"
                 value={formData.channel_id}
@@ -306,7 +306,7 @@ function CreatePostForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+              <Label htmlFor="title" className="dark:text-white">Title *</Label>
               <Input
                 id="title"
                 type="text"
@@ -316,13 +316,13 @@ function CreatePostForm() {
                 maxLength={200}
                 required
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground dark:text-white/80">
                 {formData.title.length}/200 characters
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="content">Content *</Label>
+              <Label htmlFor="content" className="dark:text-white">Content *</Label>
               <Textarea
                 id="content"
                 placeholder="Share your message with the community (10-5000 characters)"
@@ -332,14 +332,14 @@ function CreatePostForm() {
                 maxLength={5000}
                 required
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground dark:text-white/80">
                 {formData.content.length}/5000 characters
               </p>
             </div>
 
             <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-4">
-              <h4 className="font-semibold text-blue-800 dark:text-blue-400 mb-2">Community Guidelines</h4>
-              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+              <h4 className="font-semibold text-blue-800 dark:text-white mb-2">Community Guidelines</h4>
+              <ul className="text-sm text-blue-700 dark:text-white/80 space-y-1">
                 <li>• Be respectful and constructive</li>
                 <li>• No profanity or inappropriate language</li>
                 <li>• Stay on topic for the selected channel</li>

@@ -62,6 +62,13 @@ module.exports = {
         icon: {
           DEFAULT: "hsl(var(--icon))",
         },
+        "brand-maroon": {
+          DEFAULT: "hsl(var(--brand-maroon))",
+          hover: "hsl(var(--brand-maroon-hover))",
+        },
+        "pinned-announcement-bg": "hsl(var(--pinned-announcement-bg))",
+        "pinned-announcement-border": "hsl(var(--pinned-announcement-border))",
+        "pinned-announcement-border-dark": "hsl(var(--pinned-announcement-border-dark))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

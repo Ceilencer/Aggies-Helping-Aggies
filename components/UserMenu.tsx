@@ -55,10 +55,10 @@ export function UserMenu({
     "block w-full rounded-md px-3 py-2 text-left text-sm text-foreground hover:bg-accent"
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div className="relative flex items-center" ref={menuRef}>
       <button
         type="button"
-        className="relative inline-flex h-10 w-10 sm:h-11 sm:w-11 md:h-12 md:w-12 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary text-primary-foreground leading-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         onClick={() => setOpen((prev) => !prev)}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -77,7 +77,7 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-48 rounded-md border bg-card p-2 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-md border bg-card p-2 shadow-lg">
           <Link
             href="/dashboard/profile"
             className={menuItemClassName}

@@ -1,19 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
-import { ArrowLeft } from 'lucide-react'
+import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ChannelPage() {
   const params = useParams()
   const router = useRouter()
-  const slug = params.slug as string
+  const rawSlug = params.slug as string
+  const canonicalSlug = useMemo(() => {
+    const slugAliases: Record<string, string> = {
+      'aggie-ring': 'fundraising',
+      'tickets': 'football-tickets',
+      'jobs': 'jobs-networking',
+    }
+    return slugAliases[rawSlug] ?? rawSlug
+  }, [rawSlug])
   const supabase = createClient()
 
   const [channel, setChannel] = useState<any>(null)
@@ -42,7 +50,7 @@ export default function ChannelPage() {
         const { data: channelData, error: channelError } = await supabase
           .from('channels')
           .select('*')
-          .eq('slug', slug)
+          .in('slug', [canonicalSlug, rawSlug])
           .maybeSingle()
 
         if (channelError) {
@@ -87,7 +95,7 @@ export default function ChannelPage() {
     }
 
     loadChannelData()
-  }, [slug, router, supabase])
+  }, [canonicalSlug, rawSlug, router, supabase])
 
   if (loading) {
     return (
@@ -111,12 +119,6 @@ export default function ChannelPage() {
           <CardContent className="py-12 text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">Channel Not Found</h1>
             <p className="text-muted-foreground mb-6">The channel you're looking for doesn't exist.</p>
-            <Link href="/dashboard">
-              <Button>
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Dashboard
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       </div>
@@ -127,11 +129,6 @@ export default function ChannelPage() {
     <div className="max-w-4xl mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
-        <Link href="/dashboard" className="inline-flex items-center text-primary hover:text-primary/80 mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </Link>
-
         <div className="flex items-center space-x-3 mb-2">
           <span className="text-3xl">{channel.icon}</span>
           <div>
@@ -140,17 +137,6 @@ export default function ChannelPage() {
           </div>
         </div>
       </div>
-
-      {/* Create Post Button */}
-      {!channel.is_read_only && (
-        <div className="mb-6">
-          <Link href={`/dashboard/post-creation?channel=${channel.slug}`}>
-            <Button size="lg">
-              Create Post in {channel.name}
-            </Button>
-          </Link>
-        </div>
-      )}
 
       {/* Posts */}
       <div className="space-y-4">
@@ -230,6 +216,10 @@ export default function ChannelPage() {
           </Card>
         )}
       </div>
+
+      {!channel.is_read_only && (
+        <FloatingCreatePostButton />
+      )}
     </div>
   )
 }

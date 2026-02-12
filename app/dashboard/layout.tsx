@@ -49,7 +49,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
       <Header
         displayName={displayName}
@@ -59,7 +59,7 @@ export default async function DashboardLayout({
       />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto flex-1 px-4 py-8">
         {children}
       </main>
 

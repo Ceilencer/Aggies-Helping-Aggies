@@ -57,11 +57,6 @@ export default async function MyPostsPage() {
                 Create New Post
               </Button>
             </Link>
-            <Link href="/dashboard">
-              <Button size="lg" variant="outline">
-                Back to Dashboard
-              </Button>
-            </Link>
           </div>
         </CardContent>
       </Card>

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
+import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -31,22 +32,40 @@ export default async function DashboardPage() {
     .eq('slug', 'announcements')
     .single()
 
-  // Fetch posts (excluding announcements)
-  const { data: postsData, error: postsError } = await supabase
-    .from('posts')
-    .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
-    `)
-    .neq('channel_id', announcementChannel?.id)
-    .order('created_at', { ascending: false })
-    .limit(20)
+  const homeChannelSlugs = ['general', 'promotions']
+  const { data: homeChannels, error: homeChannelsError } = await supabase
+    .from('channels')
+    .select('id, slug')
+    .in('slug', homeChannelSlugs)
+
+  if (homeChannelsError) {
+    console.error('Error loading home channels:', homeChannelsError)
+  }
+
+  const homeChannelIds = homeChannels?.map(channel => channel.id) ?? []
+  let postsData: any[] | null = []
+  let postsError: any = null
+
+  if (homeChannelIds.length > 0) {
+    const response = await supabase
+      .from('posts')
+      .select(`
+        *,
+        author:profiles!posts_author_id_fkey(*),
+        channel:channels!inner(*)
+      `)
+      .in('channel_id', homeChannelIds)
+      .order('created_at', { ascending: false })
+      .limit(20)
+
+    postsData = response.data
+    postsError = response.error
+  }
 
   if (postsError) {
-    console.error('Error loading posts:', postsError)
+    console.error('Error loading home feed posts:', postsError)
   } else {
-    console.log('Loaded posts (non-announcements):', postsData?.map(p => ({
+    console.log('Loaded home feed posts:', postsData?.map(p => ({
       title: p.title,
       channel: p.channel?.name,
       channel_slug: p.channel?.slug
@@ -63,13 +82,14 @@ export default async function DashboardPage() {
       channel:channels!inner(*)
     `)
     .eq('channel_id', announcementChannel?.id)
+    .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(5)
 
   if (announcementsError) {
     console.error('Error loading announcements:', announcementsError)
   } else {
-    console.log('Loaded announcements:', announcementsData?.map(p => ({
+    console.log('Loaded announcement feed items:', announcementsData?.map(p => ({
       title: p.title,
       channel: p.channel?.name,
       channel_slug: p.channel?.slug
@@ -122,22 +142,25 @@ export default async function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Announcements Section */}
-      {announcements && announcements.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-page-heading-text">📌 Announcements</h2>
-            {profile?.role === 'Admin' && (
-              <Link href="/dashboard/post-creation?channel=announcements">
-                <Button variant="outline" size="sm">
-                  Post Announcement
-                </Button>
-              </Link>
-            )}
-          </div>
-          
-          {announcements.map((announcement: any) => (
-            <Card key={announcement.id} className="border-announcement-border bg-announcement-bg dark:bg-announcement-bg dark:border-announcement-border">
+      {/* Posts Feed */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-page-heading-text">Home Feed</h2>
+          {profile?.role === 'Admin' && (
+            <Link href="/dashboard/post-creation?channel=announcements">
+              <Button variant="outline" size="sm">
+                Post Announcement
+              </Button>
+            </Link>
+          )}
+        </div>
+
+        {announcements && announcements.length > 0 && (
+          announcements.map((announcement: any) => (
+            <Card
+              key={announcement.id}
+              className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3">
@@ -152,47 +175,39 @@ export default async function DashboardPage() {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-announcement-accent/30 text-announcement-header-text font-semibold">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
                         {getInitials(announcement.author?.full_name || 'Unknown')}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-announcement-header-text">
+                        <p className="font-semibold text-card-header-text">
                           {announcement.author?.full_name}
                         </p>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-announcement-accent/20 text-announcement-header-text">
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(announcement.author?.role)}`}>
                           {announcement.author?.role}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-sm text-announcement-header-text/70">
+                      <div className="flex items-center space-x-2 text-sm text-card-subtext">
                         <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
                         <span>•</span>
-                        <span>{formatRelativeTime(announcement.created_at)}</span>
+                        <span>📌 {formatRelativeTime(announcement.created_at)}</span>
                       </div>
                     </div>
                   </div>
-                  {announcement.is_pinned && (
-                    <span className="text-announcement-header-text text-sm font-medium">📌 Pinned</span>
-                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <h3 className="text-xl font-bold text-announcement-header-text">
+                <h3 className="text-xl font-bold text-card-header-text">
                   {announcement.title}
                 </h3>
-                <p className="text-announcement-header-text/80 whitespace-pre-wrap">
+                <p className="text-card-subtext whitespace-pre-wrap">
                   {announcement.content}
                 </p>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Posts Feed */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-page-heading-text">Community Feed</h2>
+          ))
+        )}
         
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
@@ -277,6 +292,8 @@ export default async function DashboardPage() {
           </Card>
         )}
       </div>
+
+      <FloatingCreatePostButton />
     </div>
   )
 }

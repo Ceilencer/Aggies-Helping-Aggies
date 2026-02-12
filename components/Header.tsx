@@ -7,8 +7,8 @@ import { useMemo } from "react";
 import {
   Bell,
   Briefcase,
-  Calendar,
   Gem,
+  Home,
   Megaphone,
   MessageCircle,
   Shield,
@@ -19,14 +19,20 @@ import { UserMenu } from "@/components/UserMenu";
 
 const CHANNELS = [
   {
-    id: "announcements",
-    label: "Announcements",
-    href: "/dashboard/channels/announcements",
-    icon: Megaphone,
+    id: "home",
+    label: "Home",
+    href: "/dashboard",
+    icon: Home,
   },
   {
-    id: "fundraising",
-    label: "Aggie Ring Fund",
+    id: "general",
+    label: "General Discussion",
+    href: "/dashboard/channels/general",
+    icon: MessageCircle,
+  },
+  {
+    id: "aggie-ring",
+    label: "Ring Fundraising",
     href: "/dashboard/channels/aggie-ring",
     icon: Gem,
   },
@@ -37,12 +43,6 @@ const CHANNELS = [
     icon: Ticket,
   },
   {
-    id: "general",
-    label: "General Discussion",
-    href: "/dashboard/channels/general",
-    icon: MessageCircle,
-  },
-  {
     id: "jobs",
     label: "Job Opportunities",
     href: "/dashboard/channels/jobs",
@@ -50,9 +50,9 @@ const CHANNELS = [
   },
   {
     id: "promotions",
-    label: "Promotions",
+    label: "Promotions & Events",
     href: "/dashboard/channels/promotions",
-    icon: Calendar,
+    icon: Megaphone,
   },
 ];
 
@@ -78,6 +78,9 @@ export default function Header({
     }
     if (!pathname) {
       return undefined;
+    }
+    if (pathname === "/dashboard") {
+      return "home";
     }
     const match = pathname.match(/\/dashboard\/channels\/([^/]+)/);
     return match?.[1];
