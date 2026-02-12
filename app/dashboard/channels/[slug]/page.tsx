@@ -43,10 +43,16 @@ export default function ChannelPage() {
           .from('channels')
           .select('*')
           .eq('slug', slug)
-          .single()
+          .maybeSingle()
 
         if (channelError) {
           console.error('Error loading channel:', channelError)
+          setChannel(null)
+          setLoading(false)
+          return
+        }
+
+        if (!channelData) {
           setChannel(null)
           setLoading(false)
           return

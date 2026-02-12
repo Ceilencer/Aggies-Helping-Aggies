@@ -24,13 +24,6 @@ export default async function DashboardPage() {
     .single()
   const profile = profileData
 
-  // Fetch channels
-  const { data: channelsData } = await supabase
-    .from('channels')
-    .select('*')
-    .order('name')
-  const channels = channelsData
-
   // Get the announcements channel ID first
   const { data: announcementChannel } = await supabase
     .from('channels')
@@ -85,270 +78,204 @@ export default async function DashboardPage() {
   const announcements = announcementsData
 
   return (
-    <div className="grid gap-8 lg:grid-cols-4">
-      {/* Main Feed */}
-      <div className="lg:col-span-3 space-y-6">
-        {/* Welcome Card */}
-        <Card>
-          <CardHeader className="bg-dash-header-bg text-dash-header-text">
-            <CardTitle className="text-2xl text-dash-header-text">
-              <span className="inline-flex items-center gap-3">
-                {profile?.avatar_url ? (
-                  <span className="relative h-10 w-10 overflow-hidden rounded-full">
-                    <Image
-                      src={profile.avatar_url}
-                      alt={`${profile?.full_name || 'User'} avatar`}
-                      fill
-                      sizes="40px"
-                      className="object-cover"
-                    />
-                  </span>
-                ) : (
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                    {getInitials(profile?.full_name || 'Unknown')}
-                  </span>
-                )}
-                <span>Howdy, {profile?.full_name}! 👋</span>
-              </span>
-            </CardTitle>
-            <CardDescription className="text-dash-header-text/80">
-              Welcome to the Aggie community. Stay connected, share opportunities, and help fellow Aggies thrive.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="flex flex-wrap gap-4">
-              <Link href="/dashboard/post-creation">
-                <Button size="lg">
-                  Create New Post
-                </Button>
-              </Link>
-              <Link href="/dashboard/my-posts">
-                <Button size="lg" variant="outline">
-                  View My Posts
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Announcements Section */}
-        {announcements && announcements.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-page-heading-text">📌 Announcements</h2>
-              {profile?.role === 'Admin' && (
-                <Link href="/dashboard/post-creation?channel=announcements">
-                  <Button variant="outline" size="sm">
-                    Post Announcement
-                  </Button>
-                </Link>
+    <div className="space-y-6">
+      {/* Welcome Card */}
+      <Card>
+        <CardHeader className="bg-dash-header-bg text-dash-header-text">
+          <CardTitle className="text-2xl text-dash-header-text">
+            <span className="inline-flex items-center gap-3">
+              {profile?.avatar_url ? (
+                <span className="relative h-10 w-10 overflow-hidden rounded-full">
+                  <Image
+                    src={profile.avatar_url}
+                    alt={`${profile?.full_name || 'User'} avatar`}
+                    fill
+                    sizes="40px"
+                    className="object-cover"
+                  />
+                </span>
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
+                  {getInitials(profile?.full_name || 'Unknown')}
+                </span>
               )}
-            </div>
-            
-            {announcements.map((announcement: any) => (
-              <Card key={announcement.id} className="border-announcement-border bg-announcement-bg dark:bg-announcement-bg dark:border-announcement-border">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      {announcement.author?.avatar_url ? (
-                        <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                          <Image
-                            src={announcement.author.avatar_url}
-                            alt={`${announcement.author?.full_name || 'User'} avatar`}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-announcement-accent/30 text-announcement-header-text font-semibold">
-                          {getInitials(announcement.author?.full_name || 'Unknown')}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-announcement-header-text">
-                            {announcement.author?.full_name}
-                          </p>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-announcement-accent/20 text-announcement-header-text">
-                            {announcement.author?.role}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm text-announcement-header-text/70">
-                          <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
-                          <span>•</span>
-                          <span>{formatRelativeTime(announcement.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    {announcement.is_pinned && (
-                      <span className="text-announcement-header-text text-sm font-medium">📌 Pinned</span>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-announcement-header-text">
-                    {announcement.title}
-                  </h3>
-                  <p className="text-announcement-header-text/80 whitespace-pre-wrap">
-                    {announcement.content}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Posts Feed */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-page-heading-text">Community Feed</h2>
-          
-          {posts && posts.length > 0 ? (
-            posts.map((post: any) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      {/* Author Avatar */}
-                      {post.author?.avatar_url ? (
-                        <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                          <Image
-                            src={post.author.avatar_url}
-                            alt={`${post.author?.full_name || 'User'} avatar`}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                          {getInitials(post.author?.full_name || 'Unknown')}
-                        </div>
-                      )}
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-card-header-text">
-                            {post.author?.full_name}
-                          </p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
-                            {post.author?.role}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm text-card-subtext">
-                          <span>{post.channel?.icon} {post.channel?.name}</span>
-                          <span>•</span>
-                          <span>{formatRelativeTime(post.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {post.is_pinned && (
-                      <span className="text-primary text-sm font-medium">📌 Pinned</span>
-                    )}
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-card-header-text">
-                    {post.title}
-                  </h3>
-                  <p className="text-card-subtext whitespace-pre-wrap">
-                    {post.content.length > 300 
-                      ? `${post.content.substring(0, 300)}...` 
-                      : post.content
-                    }
-                  </p>
-                  
-                  <div className="flex items-center space-x-4 pt-2">
-                    <Link href={`/dashboard/posts/${post.id}`}>
-                      <Button variant="outline" size="sm">
-                        View Full Post
-                      </Button>
-                    </Link>
-                    <span className="text-sm text-card-subtext">
-                      👁️ {post.view_count} views
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-muted-foreground mb-4">
-                  No posts yet. Be the first to share something with the community!
-                </p>
-                <Link href="/dashboard/post-creation">
-                  <Button>Create First Post</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      {/* Sidebar */}
-      <div className="space-y-6">
-        {/* Channels Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Channels</CardTitle>
-            <CardDescription>Browse by category</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {channels?.map((channel: any) => (
-              <Link key={channel.id} href={`/dashboard/channels/${channel.slug}`}>
-                <div className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xl">{channel.icon}</span>
-                    <span className="font-medium text-sm">{channel.name}</span>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Stats Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Your Stats</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Account Type</span>
-              <span className={`text-xs px-2 py-1 rounded-full ${getRoleBadgeColor(profile?.role || 'Personal')}`}>
-                {profile?.role}
-              </span>
-            </div>
-            {profile?.graduation_year && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Class of</span>
-                <span className="text-sm font-medium">{profile.graduation_year}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Aggie Ring Fundraising */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center">
-              💍 Aggie Ring Fund
-            </CardTitle>
-            <CardDescription>
-              Help fellow Aggies achieve their Ring
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/dashboard/channels/aggie-ring">
-              <Button className="w-full" variant="outline">
-                View Fundraisers
+              <span>Howdy, {profile?.full_name}! 👋</span>
+            </span>
+          </CardTitle>
+          <CardDescription className="text-dash-header-text/80">
+            Welcome to the Aggie community. Stay connected, share opportunities, and help fellow Aggies thrive.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-4">
+            <Link href="/dashboard/post-creation">
+              <Button size="lg">
+                Create New Post
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+            <Link href="/dashboard/my-posts">
+              <Button size="lg" variant="outline">
+                View My Posts
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Announcements Section */}
+      {announcements && announcements.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-page-heading-text">📌 Announcements</h2>
+            {profile?.role === 'Admin' && (
+              <Link href="/dashboard/post-creation?channel=announcements">
+                <Button variant="outline" size="sm">
+                  Post Announcement
+                </Button>
+              </Link>
+            )}
+          </div>
+          
+          {announcements.map((announcement: any) => (
+            <Card key={announcement.id} className="border-announcement-border bg-announcement-bg dark:bg-announcement-bg dark:border-announcement-border">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    {announcement.author?.avatar_url ? (
+                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                        <Image
+                          src={announcement.author.avatar_url}
+                          alt={`${announcement.author?.full_name || 'User'} avatar`}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-announcement-accent/30 text-announcement-header-text font-semibold">
+                        {getInitials(announcement.author?.full_name || 'Unknown')}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className="font-semibold text-announcement-header-text">
+                          {announcement.author?.full_name}
+                        </p>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-announcement-accent/20 text-announcement-header-text">
+                          {announcement.author?.role}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-announcement-header-text/70">
+                        <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
+                        <span>•</span>
+                        <span>{formatRelativeTime(announcement.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {announcement.is_pinned && (
+                    <span className="text-announcement-header-text text-sm font-medium">📌 Pinned</span>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <h3 className="text-xl font-bold text-announcement-header-text">
+                  {announcement.title}
+                </h3>
+                <p className="text-announcement-header-text/80 whitespace-pre-wrap">
+                  {announcement.content}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Posts Feed */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-page-heading-text">Community Feed</h2>
+        
+        {posts && posts.length > 0 ? (
+          posts.map((post: any) => (
+            <Card key={post.id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-3">
+                    {/* Author Avatar */}
+                    {post.author?.avatar_url ? (
+                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                        <Image
+                          src={post.author.avatar_url}
+                          alt={`${post.author?.full_name || 'User'} avatar`}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
+                        {getInitials(post.author?.full_name || 'Unknown')}
+                      </div>
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <p className="font-semibold text-card-header-text">
+                          {post.author?.full_name}
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
+                          {post.author?.role}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-sm text-card-subtext">
+                        <span>{post.channel?.icon} {post.channel?.name}</span>
+                        <span>•</span>
+                        <span>{formatRelativeTime(post.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {post.is_pinned && (
+                    <span className="text-primary text-sm font-medium">📌 Pinned</span>
+                  )}
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-3">
+                <h3 className="text-xl font-bold text-card-header-text">
+                  {post.title}
+                </h3>
+                <p className="text-card-subtext whitespace-pre-wrap">
+                  {post.content.length > 300 
+                    ? `${post.content.substring(0, 300)}...` 
+                    : post.content
+                  }
+                </p>
+                
+                <div className="flex items-center space-x-4 pt-2">
+                  <Link href={`/dashboard/posts/${post.id}`}>
+                    <Button variant="outline" size="sm">
+                      View Full Post
+                    </Button>
+                  </Link>
+                  <span className="text-sm text-card-subtext">
+                    👁️ {post.view_count} views
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground mb-4">
+                No posts yet. Be the first to share something with the community!
+              </p>
+              <Link href="/dashboard/post-creation">
+                <Button>Create First Post</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )

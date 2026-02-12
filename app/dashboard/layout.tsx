@@ -1,10 +1,7 @@
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Logo } from '@/components/Logo'
 import { createClient } from '@/lib/supabase/server'
-import { UserMenu } from '@/components/UserMenu'
+import Header from '@/components/Header'
 
 export default async function DashboardLayout({
   children,
@@ -54,20 +51,12 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
-      <header className="sticky top-0 z-50 border-b bg-header-bg shadow-sm">
-        <nav className="container mx-auto flex items-center justify-between px-4 py-4">
-          <Logo href="/dashboard" />
-          
-          <div className="flex items-center space-x-4">
-            <UserMenu
-              displayName={displayName}
-              avatarUrl={profile?.avatar_url}
-              isAdmin={profile?.role === 'Admin'}
-              signOutAction={handleSignOut}
-            />
-          </div>
-        </nav>
-      </header>
+      <Header
+        displayName={displayName}
+        avatarUrl={profile?.avatar_url ?? null}
+        isAdmin={profile?.role === 'Admin'}
+        signOutAction={handleSignOut}
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
