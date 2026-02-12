@@ -20,6 +20,10 @@ export async function GET(request: Request) {
   }
 
   const email = data.user.email || ''
+  const avatarUrl =
+    data.user.user_metadata?.avatar_url ||
+    data.user.user_metadata?.picture ||
+    null
 
   if (!email.endsWith('@tamu.edu') && !email.endsWith('@aggienetwork.com')) {
     // Redirect first, sign out AFTER redirect completes
@@ -45,6 +49,7 @@ export async function GET(request: Request) {
         data.user.user_metadata?.full_name ||
         data.user.user_metadata?.name ||
         '',
+      avatar_url: avatarUrl,
       role: 'Personal',
       is_verified: true,
       is_alumni: email.endsWith('@aggienetwork.com'),
@@ -55,9 +60,17 @@ export async function GET(request: Request) {
     }
   }
 
+  const profileUpdates: Record<string, string> = {
+    last_login: new Date().toISOString(),
+  }
+
+  if (avatarUrl) {
+    profileUpdates.avatar_url = avatarUrl
+  }
+
   const { error: lastLoginError } = await supabase
     .from('profiles')
-    .update({ last_login: new Date().toISOString() })
+    .update(profileUpdates)
     .eq('id', data.user.id)
 
   if (lastLoginError) {

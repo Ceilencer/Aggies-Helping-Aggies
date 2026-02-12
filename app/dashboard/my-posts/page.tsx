@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -74,9 +75,21 @@ export default async function MyPostsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1">
                     {/* Author Avatar */}
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                      {getInitials(post.author?.full_name || 'Unknown')}
-                    </div>
+                    {post.author?.avatar_url ? (
+                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
+                        <Image
+                          src={post.author.avatar_url}
+                          alt={`${post.author?.full_name || 'User'} avatar`}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
+                        {getInitials(post.author?.full_name || 'Unknown')}
+                      </div>
+                    )}
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">

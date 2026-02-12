@@ -22,6 +22,7 @@ CREATE TABLE profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL,
+    avatar_url TEXT,
     role user_role DEFAULT 'Personal' NOT NULL,
     is_verified BOOLEAN DEFAULT FALSE,
     is_alumni BOOLEAN DEFAULT FALSE,

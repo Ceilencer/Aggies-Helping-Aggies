@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/Logo'
 import { createClient } from '@/lib/supabase/server'
+import { UserMenu } from '@/components/UserMenu'
 
 export default async function DashboardLayout({
   children,
@@ -28,7 +29,7 @@ export default async function DashboardLayout({
   if (user) {
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('full_name, role')
+      .select('full_name, role, avatar_url')
       .eq('id', user.id)
       .single()
     profile = profileData
@@ -58,29 +59,12 @@ export default async function DashboardLayout({
           <Logo href="/dashboard" />
           
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-header-text hidden md:inline">
-              Welcome, {displayName}
-            </span>
-
-            <Link href="/dashboard/profile">
-              <Button variant="header" size="sm">
-                Profile
-              </Button>
-            </Link>
-
-            {profile?.role === 'Admin' && (
-              <Link href="/dashboard/admin">
-                <Button variant="header" size="sm">
-                  Admin
-                </Button>
-              </Link>
-            )}
-
-            <form action={handleSignOut}>
-              <Button variant="header" size="sm" type="submit">
-                Sign Out
-              </Button>
-            </form>
+            <UserMenu
+              displayName={displayName}
+              avatarUrl={profile?.avatar_url}
+              isAdmin={profile?.role === 'Admin'}
+              signOutAction={handleSignOut}
+            />
           </div>
         </nav>
       </header>

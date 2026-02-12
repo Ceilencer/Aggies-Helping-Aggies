@@ -6,6 +6,7 @@ export interface Profile {
   id: string
   email: string
   full_name: string
+  avatar_url?: string
   role: UserRole
   is_verified: boolean
   is_alumni: boolean
