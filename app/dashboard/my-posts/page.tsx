@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CommentCountButton from '@/components/CommentCountButton'
+import PostLikeButton from '@/components/PostLikeButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 
 export default async function MyPostsPage() {
@@ -40,11 +41,23 @@ export default async function MyPostsPage() {
     console.error('Error loading posts:', postsError)
   }
 
-  // Fetch comment counts for each post
+  // Fetch like counts, comment counts, and user like status for each post
   let postsWithCounts = postsData || []
   if (postsData && postsData.length > 0) {
     postsWithCounts = await Promise.all(
       postsData.map(async (post: any) => {
+        const { count: like_count } = await supabase
+          .from('post_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id)
+
+        const { data: userLike } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
         const { count: comment_count } = await supabase
           .from('comments')
           .select('*', { count: 'exact', head: true })
@@ -52,6 +65,8 @@ export default async function MyPostsPage() {
 
         return {
           ...post,
+          like_count: like_count || 0,
+          user_has_liked: !!userLike,
           comment_count: comment_count || 0,
         }
       })
@@ -142,6 +157,11 @@ export default async function MyPostsPage() {
                 
                 <div className="flex items-center justify-between space-x-4 py-4 border-t">
                   <div className="flex items-center space-x-4">
+                    <PostLikeButton
+                      postId={post.id}
+                      likeCount={post.like_count || 0}
+                      userHasLiked={post.user_has_liked || false}
+                    />
                     <CommentCountButton
                       postId={post.id}
                       commentCount={post.comment_count || 0}
