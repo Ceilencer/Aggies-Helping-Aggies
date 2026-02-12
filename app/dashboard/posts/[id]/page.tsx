@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentsSection from '@/components/CommentsSection'
+import { PostImageDisplay } from '@/components/PostImageDisplay'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trash2 } from 'lucide-react'
@@ -202,6 +203,11 @@ export default function PostDetailPage() {
               {post.content}
             </p>
           </div>
+
+          {/* Images */}
+          {post.images && post.images.length > 0 && (
+            <PostImageDisplay images={post.images} postTitle={post.title} />
+          )}
 
           {/* Actions */}
           <div className="flex items-center space-x-4 pt-4 border-t">

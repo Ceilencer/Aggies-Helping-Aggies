@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
+import { PostImageGrid } from '@/components/PostImageGrid'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 
@@ -239,6 +240,11 @@ export default async function DashboardPage() {
                 <p className="text-card-subtext whitespace-pre-wrap">
                   {announcement.content}
                 </p>
+                
+                {/* Display images in grid */}
+                {announcement.images && announcement.images.length > 0 && (
+                  <PostImageGrid images={announcement.images} postTitle={announcement.title} maxImages={3} />
+                )}
               </CardContent>
             </Card>
           ))
@@ -300,6 +306,11 @@ export default async function DashboardPage() {
                     : post.content
                   }
                 </p>
+                
+                {/* Display images in grid */}
+                {post.images && post.images.length > 0 && (
+                  <PostImageGrid images={post.images} postTitle={post.title} maxImages={3} />
+                )}
                 
                 <div className="flex items-center justify-between space-x-4 py-4 border-t">
                   <div className="flex items-center space-x-4">

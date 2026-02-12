@@ -3,11 +3,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ImageUploadInput } from '@/components/ImageUploadInput'
+import { ImagePreview } from '@/components/ImagePreview'
 import { validatePost } from '@/lib/profanity-filter'
 import type { Channel, POST_LIMITS } from '@/lib/types'
 
@@ -15,6 +18,7 @@ function CreatePostForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const imageUpload = useImageUpload()
 
   const [channels, setChannels] = useState<Channel[]>([])
   const [formData, setFormData] = useState({
@@ -24,6 +28,7 @@ function CreatePostForm() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [userRole, setUserRole] = useState<string>('Personal')
 
   useEffect(() => {
@@ -232,6 +237,46 @@ function CreatePostForm() {
 
       console.log('Post created successfully:', newPost)
 
+      // Upload images if any
+      if (imageUpload.uploadedImages.length > 0) {
+        setUploading(true)
+        const uploadResult = await imageUpload.uploadImages(newPost.id)
+        setUploading(false)
+
+        if (!uploadResult.success) {
+          // Image upload failed - delete the post
+          await supabase
+            .from('posts')
+            .delete()
+            .eq('id', newPost.id)
+
+          setError(uploadResult.error || 'Failed to upload images. Post was not created.')
+          setLoading(false)
+          return
+        }
+
+        // Update post with image URLs
+        if (uploadResult.urls.length > 0) {
+          console.log('Updating post with image URLs:', uploadResult.urls)
+          const { data: updateData, error: updateError } = await supabase
+            .from('posts')
+            .update({ images: uploadResult.urls })
+            .eq('id', newPost.id)
+            .select()
+
+          console.log('Update result:', { data: updateData, error: updateError })
+
+          if (updateError) {
+            console.error('Error updating post with images:', updateError)
+            console.error('Error code:', updateError.code)
+            console.error('Error message:', updateError.message)
+            // Don't fail completely - the post exists, just without images
+            // User can still see the post, just without images
+            console.warn('Warning: Post created but image URLs were not saved. Images are in storage but not linked.')
+          }
+        }
+      }
+
       // Success - redirect to dashboard
       router.push('/dashboard')
     } catch (err: any) {
@@ -243,6 +288,7 @@ function CreatePostForm() {
       setError(`Failed to create post: ${errorMessage}`)
     } finally {
       setLoading(false)
+      setUploading(false)
     }
   }
 
@@ -337,6 +383,22 @@ function CreatePostForm() {
               </p>
             </div>
 
+            {/* Image Upload Section */}
+            <div className="space-y-4 border-t pt-6">
+              <ImageUploadInput
+                onImagesSelected={imageUpload.addImages}
+                canAddMore={imageUpload.canAddMore}
+                remainingSlots={imageUpload.remainingSlots}
+                error={imageUpload.error}
+              />
+              {imageUpload.uploadedImages.length > 0 && (
+                <ImagePreview
+                  images={imageUpload.uploadedImages}
+                  onRemove={imageUpload.removeImage}
+                />
+              )}
+            </div>
+
             <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-4">
               <h4 className="font-semibold text-blue-800 dark:text-white mb-2">Community Guidelines</h4>
               <ul className="text-sm text-blue-700 dark:text-white/80 space-y-1">
@@ -348,14 +410,18 @@ function CreatePostForm() {
             </div>
 
             <div className="flex space-x-4">
-              <Button type="submit" disabled={loading} className="flex-1">
-                {loading ? 'Creating Post...' : 'Create Post'}
+              <Button 
+                type="submit" 
+                disabled={loading || uploading} 
+                className="flex-1"
+              >
+                {uploading ? 'Uploading Images...' : loading ? 'Creating Post...' : 'Create Post'}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                disabled={loading}
+                disabled={loading || uploading}
               >
                 Cancel
               </Button>
