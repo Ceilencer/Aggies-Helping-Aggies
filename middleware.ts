@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   // 3. PROTECTED ROUTES LOGIC
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      return NextResponse.redirect(new URL('/', request.url))
     }
   }
 

@@ -94,9 +94,6 @@
     --steps-text: 0 0% 97.3%;         /* Specific to the "Steps" section */
 
     /* Login Page */
-    /* Note: This is very dark for a Light Mode login. Intentional? */
-    --background-login: 4 23.08% 25.49%; 
-
     /* Dashboard */
     --dash-header-bg: 0 100% 15.69%;
     --dash-header-text: 0 0% 97.3%;

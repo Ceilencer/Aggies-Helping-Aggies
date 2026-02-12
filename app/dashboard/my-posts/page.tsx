@@ -10,9 +10,9 @@ export default async function MyPostsPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Redirect to login if not authenticated
+  // Redirect to landing if not authenticated
   if (!user) {
-    redirect('/login')
+    redirect('/')
   }
 
   // Fetch user profile

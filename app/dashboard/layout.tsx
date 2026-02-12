@@ -15,10 +15,12 @@ export default async function DashboardLayout({
   const hasAdminSession = cookieStore.get('admin_session')?.value === 'true'
 
   // Check for either Supabase auth or admin session
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user && !hasAdminSession) {
-    redirect('/login')
+    redirect('/')
   }
 
   // Fetch profile if user is authenticated via Supabase
@@ -38,14 +40,14 @@ export default async function DashboardLayout({
     'use server'
     const supabase = await createClient()
     const cookieStore = await cookies()
-    
+
     // Sign out from Supabase if authenticated
     await supabase.auth.signOut()
-    
+
     // Clear admin session cookie
     cookieStore.delete('admin_session')
-    
-    redirect('/login')
+
+    redirect('/')
   }
 
   return (
