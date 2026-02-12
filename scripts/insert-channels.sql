@@ -7,6 +7,6 @@ VALUES
     ('Promotions', 'promotions', 'Business promotions and community events', 'promotions', FALSE, FALSE, '📢'),
     ('Job/Internship/Networking', 'jobs-networking', 'Job opportunities, internships, and networking', 'jobs', FALSE, FALSE, '💼'),
     ('Fundraising', 'fundraising', 'Support Aggie causes and fundraising efforts', 'aggie_ring', FALSE, FALSE, '💍'),
-    ('Football Tickets', 'football-tickets', 'Buy, sell, or trade football game tickets (MFA Required)', 'tickets', TRUE, FALSE, '🎟️'),
+    ('Football Tickets', 'football-tickets', 'Buy, sell, or trade football game tickets', 'tickets', FALSE, FALSE, '🎟️'),
     ('Announcements', 'announcements', 'Official platform announcements (Admin Only)', 'announcements', FALSE, TRUE, '📌')
 ON CONFLICT (name) DO NOTHING;
