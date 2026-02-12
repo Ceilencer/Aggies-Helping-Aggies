@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
+import CommentCountButton from '@/components/CommentCountButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 
@@ -73,7 +74,7 @@ export default async function DashboardPage() {
     })))
   }
 
-  // Fetch like counts and user like status for posts
+  // Fetch like counts, comment counts, and user like status for posts
   let postsWithLikes = postsData || []
   if (postsData && postsData.length > 0 && user) {
     postsWithLikes = await Promise.all(
@@ -90,10 +91,16 @@ export default async function DashboardPage() {
           .eq('user_id', user.id)
           .maybeSingle()
 
+        const { count: comment_count } = await supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id)
+
         return {
           ...post,
           like_count: like_count || 0,
           user_has_liked: !!userLike,
+          comment_count: comment_count || 0,
         }
       })
     )
@@ -283,7 +290,7 @@ export default async function DashboardPage() {
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pb-0">
                 <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
@@ -294,20 +301,26 @@ export default async function DashboardPage() {
                   }
                 </p>
                 
-                <div className="flex items-center space-x-4 pt-2 border-t">
-                  <PostLikeButton
-                    postId={post.id}
-                    likeCount={post.like_count || 0}
-                    userHasLiked={post.user_has_liked || false}
-                  />
+                <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                  <div className="flex items-center space-x-4">
+                    <PostLikeButton
+                      postId={post.id}
+                      likeCount={post.like_count || 0}
+                      userHasLiked={post.user_has_liked || false}
+                    />
+                    <CommentCountButton
+                      postId={post.id}
+                      commentCount={post.comment_count || 0}
+                    />
+                    <span className="text-sm text-card-subtext">
+                      👁️ {post.view_count} views
+                    </span>
+                  </div>
                   <Link href={`/dashboard/posts/${post.id}`}>
                     <Button variant="outline" size="sm">
                       View Full Post
                     </Button>
                   </Link>
-                  <span className="text-sm text-card-subtext ml-auto">
-                    👁️ {post.view_count} views
-                  </span>
                 </div>
               </CardContent>
             </Card>

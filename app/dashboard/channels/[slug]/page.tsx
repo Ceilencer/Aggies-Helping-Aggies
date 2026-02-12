@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
+import CommentCountButton from '@/components/CommentCountButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import { createClient } from '@/lib/supabase/client'
@@ -85,7 +86,7 @@ export default function ChannelPage() {
           console.error('Error loading posts:', postsError)
           setPosts([])
         } else {
-          // Fetch like counts for each post
+          // Fetch like counts and comment counts for each post
           const postsWithLikes = await Promise.all(
             (postsData || []).map(async (post) => {
               const { count: like_count } = await supabase
@@ -100,15 +101,20 @@ export default function ChannelPage() {
                 .eq('user_id', userId)
                 .maybeSingle()
 
+              const { count: comment_count } = await supabase
+                .from('comments')
+                .select('*', { count: 'exact', head: true })
+                .eq('post_id', post.id)
+
               return {
                 ...post,
                 like_count: like_count || 0,
                 user_has_liked: !!userLike,
+                comment_count: comment_count || 0,
               }
             })
           )
           setPosts(postsWithLikes)
-        }
         }
 
         setLoading(false)
@@ -212,7 +218,7 @@ export default function ChannelPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pb-0">
                 <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
@@ -223,20 +229,26 @@ export default function ChannelPage() {
                   }
                 </p>
 
-                <div className="flex items-center space-x-4 pt-2 border-t">
-                  <PostLikeButton
-                    postId={post.id}
-                    likeCount={post.like_count || 0}
-                    userHasLiked={post.user_has_liked || false}
-                  />
+                <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                  <div className="flex items-center space-x-4">
+                    <PostLikeButton
+                      postId={post.id}
+                      likeCount={post.like_count || 0}
+                      userHasLiked={post.user_has_liked || false}
+                    />
+                    <CommentCountButton
+                      postId={post.id}
+                      commentCount={post.comment_count || 0}
+                    />
+                    <span className="text-sm text-card-subtext">
+                      👁️ {post.view_count} views
+                    </span>
+                  </div>
                   <Link href={`/dashboard/posts/${post.id}`}>
                     <Button variant="outline" size="sm">
                       View Full Post
                     </Button>
                   </Link>
-                  <span className="text-sm text-card-subtext ml-auto">
-                    👁️ {post.view_count} views
-                  </span>
                 </div>
               </CardContent>
             </Card>

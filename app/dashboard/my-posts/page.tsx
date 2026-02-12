@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import CommentCountButton from '@/components/CommentCountButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 
 export default async function MyPostsPage() {
@@ -38,7 +39,26 @@ export default async function MyPostsPage() {
   if (postsError) {
     console.error('Error loading posts:', postsError)
   }
-  const posts = postsData
+
+  // Fetch comment counts for each post
+  let postsWithCounts = postsData || []
+  if (postsData && postsData.length > 0) {
+    postsWithCounts = await Promise.all(
+      postsData.map(async (post: any) => {
+        const { count: comment_count } = await supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id)
+
+        return {
+          ...post,
+          comment_count: comment_count || 0,
+        }
+      })
+    )
+  }
+
+  const posts = postsWithCounts
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -109,7 +129,7 @@ export default async function MyPostsPage() {
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pb-0">
                 <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
@@ -120,15 +140,21 @@ export default async function MyPostsPage() {
                   }
                 </p>
                 
-                <div className="flex items-center space-x-4 pt-2">
+                <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                  <div className="flex items-center space-x-4">
+                    <CommentCountButton
+                      postId={post.id}
+                      commentCount={post.comment_count || 0}
+                    />
+                    <span className="text-sm text-card-subtext">
+                      👁️ {post.view_count} views
+                    </span>
+                  </div>
                   <Link href={`/dashboard/posts/${post.id}`}>
                     <Button variant="outline" size="sm">
                       View Full Post
                     </Button>
                   </Link>
-                  <span className="text-sm text-card-subtext">
-                    👁️ {post.view_count} views
-                  </span>
                 </div>
               </CardContent>
             </Card>
