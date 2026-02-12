@@ -61,21 +61,21 @@ export default async function DashboardLayout({
             </span>
 
             <Link href="/dashboard/profile">
-              <Button variant="ghost" size="sm">
+              <Button variant="header" size="sm">
                 Profile
               </Button>
             </Link>
 
             {profile?.role === 'Admin' && (
               <Link href="/dashboard/admin">
-                <Button variant="ghost" size="sm">
+                <Button variant="header" size="sm">
                   Admin
                 </Button>
               </Link>
             )}
 
             <form action={handleSignOut}>
-              <Button variant="outline" size="sm" type="submit">
+              <Button variant="header" size="sm" type="submit">
                 Sign Out
               </Button>
             </form>

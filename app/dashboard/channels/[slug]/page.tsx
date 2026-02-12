@@ -162,14 +162,14 @@ export default function ChannelPage() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-foreground">
+                        <p className="font-semibold text-card-header-text">
                           {post.author?.full_name}
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
                           {post.author?.role}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-2 text-sm text-card-subtext">
                         <span>{post.channel?.icon} {post.channel?.name}</span>
                         <span>•</span>
                         <span>{formatRelativeTime(post.created_at)}</span>
@@ -184,10 +184,10 @@ export default function ChannelPage() {
               </CardHeader>
 
               <CardContent className="space-y-3">
-                <h3 className="text-xl font-bold text-foreground">
+                <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
-                <p className="text-foreground/80 whitespace-pre-wrap">
+                <p className="text-card-subtext whitespace-pre-wrap">
                   {post.content.length > 300
                     ? `${post.content.substring(0, 300)}...`
                     : post.content

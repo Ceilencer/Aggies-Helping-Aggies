@@ -40,7 +40,7 @@ function SignupForm() {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-            hd: 'tamu.edu', // Restrict to TAMU domain (optional)
+            hd: 'tamu.edu',
           },
         },
       })
@@ -64,7 +64,7 @@ function SignupForm() {
             Join Aggies Helping Aggies
           </CardTitle>
           <CardDescription>
-            Sign up with your TAMU Google account
+            Sign in with your TAMU Google account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -99,7 +99,7 @@ function SignupForm() {
                   fill="#EA4335"
                 />
               </svg>
-              {loading ? 'Signing up...' : 'Sign up with Google'}
+              {loading ? 'Signing in...' : 'Sign in with Google'}
             </Button>
           </div>
 
@@ -121,13 +121,6 @@ function SignupForm() {
               </Button>
             </Link>
           </div>
-
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-primary hover:underline">
-              Sign in
-            </Link>
-          </p>
         </CardContent>
       </Card>
     </div>

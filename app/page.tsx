@@ -10,14 +10,11 @@ export default function Home() {
       <header className="border-b bg-header-bg">
         <nav className="container mx-auto flex items-center justify-between px-4 py-6">
           <div className="flex items-center space-x-2">
-            <Logo href="/dashboard" />
+            <Logo href="/" />
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Get Started</Button>
+              <Button>Sign In</Button>
             </Link>
           </div>
         </nav>
@@ -33,7 +30,7 @@ export default function Home() {
           former students, and affiliates. Help fund aggie rings, graduation regalia and support the aggie network!
         </p>
         <div className="flex items-center justify-center space-x-4">
-          <Link href="/signup">
+          <Link href="/login">
             <Button size="lg" className="text-lg">
               Join the Community
             </Button>
@@ -63,7 +60,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">🔒</div>
-              <CardTitle className="text-page-heading-text">Verified Community</CardTitle>
+              <CardTitle className="text-card-header-text">Verified Community</CardTitle>
               <CardDescription className="text-page-subtext">
                 Multi-tier verification ensures only Texas A&M affiliates can access the platform
               </CardDescription>
@@ -73,7 +70,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">💼</div>
-              <CardTitle className="text-page-heading-text">Job Opportunities</CardTitle>
+              <CardTitle className="text-card-header-text">Job Opportunities</CardTitle>
               <CardDescription className="text-page-subtext">
                 Discover career opportunities shared by fellow Aggies and local businesses
               </CardDescription>
@@ -83,7 +80,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">🎟️</div>
-              <CardTitle className="text-page-heading-text">Tickets</CardTitle>
+              <CardTitle className="text-card-header-text">Tickets</CardTitle>
               <CardDescription className="text-page-subtext">
                 Buy, sell, or trade game tickets safely within the verified Aggie community
               </CardDescription>
@@ -93,7 +90,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">📢</div>
-              <CardTitle className="text-page-heading-text">Promotions & Events</CardTitle>
+              <CardTitle className="text-card-header-text">Promotions & Events</CardTitle>
               <CardDescription className="text-page-subtext">
                 Stay updated on local promotions and community events tailored for Aggies
               </CardDescription>
@@ -103,7 +100,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">💍</div>
-              <CardTitle className="text-page-heading-text">Aggie Ring Fund</CardTitle>
+              <CardTitle className="text-card-header-text">Aggie Ring Fund</CardTitle>
               <CardDescription className="text-page-subtext">
                 Support fellow Aggies in achieving their dream of earning their Aggie Ring
               </CardDescription>
@@ -113,7 +110,7 @@ export default function Home() {
           <Card>
             <CardHeader>
               <div className="mb-4 text-4xl">🛡️</div>
-              <CardTitle className="text-page-heading-text">Content Moderation</CardTitle>
+              <CardTitle className="text-card-header-text">Content Moderation</CardTitle>
               <CardDescription className="text-page-subtext">
                 Automated profanity filtering and admin oversight keep discussions respectful
               </CardDescription>
@@ -133,9 +130,9 @@ export default function Home() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-icon text-2xl text-steps-text">
                 1
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Sign Up</h3>
+              <h3 className="mb-2 text-xl font-semibold">Sign In</h3>
               <p className="text-page-subtext">
-                Register with your @tamu.edu email or submit alumni verification
+                Sign in with your TAMU Google account
               </p>
             </div>
             <div className="text-center">
@@ -170,9 +167,9 @@ export default function Home() {
           Whether you're looking for opportunities, offering support, or just 
           staying connected, this is your platform.
         </p>
-        <Link href="/signup">
+        <Link href="/login">
           <Button size="lg" className="text-lg">
-            Create Your Account
+            Get Started with Google
           </Button>
         </Link>
       </section>

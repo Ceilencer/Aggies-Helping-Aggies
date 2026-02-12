@@ -25,8 +25,18 @@ module.exports = {
         foreground: "hsl(var(--foreground))",
         "button-bg": {
           DEFAULT: "hsl(var(--button-bg))",
+          hover: "hsl(var(--button-bg-hover))",
         },
         "button-text": "hsl(var(--button-text))",
+        "secondary-button-bg": {
+          DEFAULT: "hsl(var(--secondary-button-bg))",
+          hover: "hsl(var(--secondary-button-hover))",
+        },
+        "secondary-button-text": "hsl(var(--secondary-button-text))",
+        "header-button-bg": "hsl(var(--header-button-bg))",
+        "header-button-text": "hsl(var(--header-button-text))",
+        "header-button-hover": "hsl(var(--header-button-hover))",
+        "header-button-hover-bg": "hsl(var(--header-button-hover-bg))",
         "header-bg": {
           DEFAULT: "hsl(var(--header-bg))",
         },
@@ -66,8 +76,18 @@ module.exports = {
         },
         card: {
           DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          "header-text": "hsl(var(--card-header-text))",
+          subtext: "hsl(var(--card-subtext))",
         },
+        announcement: {
+          bg: "hsl(var(--announcement-bg))",
+          border: "hsl(var(--announcement-border))",
+          accent: "hsl(var(--announcement-accent))",
+          "header-text": "hsl(var(--announcement-header-text))",
+        },
+      },
+      boxShadow: {
+        card: "var(--card-shadow)",
       },
       borderRadius: {
         lg: "var(--radius)",

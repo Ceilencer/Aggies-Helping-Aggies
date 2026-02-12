@@ -2,24 +2,13 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
 
 interface LogoProps {
   href?: string
 }
 
 export function Logo({ href }: LogoProps) {
-  const { theme, systemTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Default to light mode while mounting to prevent flash
-  const isDark = mounted ? (theme === "dark" || (theme === "system" && systemTheme === "dark")) : false
-  const logoSrc = isDark ? "/images/logos/logo-dark.svg" : "/images/logos/logo-light.svg"
+  const logoSrc = "/images/logos/logo-dark.svg"
 
   const image = (
     <Image

@@ -44,7 +44,7 @@ export default async function MyPostsPage() {
       {/* Header Card */}
       <Card>
         <CardHeader className="bg-dash-header-bg text-dash-header-text">
-          <CardTitle className="text-2xl">My Posts</CardTitle>
+          <CardTitle className="text-2xl text-dash-header-text">My Posts</CardTitle>
           <CardDescription className="text-dash-header-text/80">
             View all posts you've created
           </CardDescription>
@@ -80,14 +80,14 @@ export default async function MyPostsPage() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-foreground">
+                        <p className="font-semibold text-card-header-text">
                           {post.author?.full_name}
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
                           {post.author?.role}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <div className="flex items-center space-x-2 text-sm text-card-subtext">
                         <span>{post.channel?.icon} {post.channel?.name}</span>
                         <span>•</span>
                         <span>{formatRelativeTime(post.created_at)}</span>
@@ -102,10 +102,10 @@ export default async function MyPostsPage() {
               </CardHeader>
               
               <CardContent className="space-y-3">
-                <h3 className="text-xl font-bold text-foreground">
+                <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
-                <p className="text-foreground/90 whitespace-pre-wrap">
+                <p className="text-card-subtext whitespace-pre-wrap">
                   {post.content.length > 300 
                     ? `${post.content.substring(0, 300)}...` 
                     : post.content
@@ -118,7 +118,7 @@ export default async function MyPostsPage() {
                       View Full Post
                     </Button>
                   </Link>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-sm text-card-subtext">
                     👁️ {post.view_count} views
                   </span>
                 </div>

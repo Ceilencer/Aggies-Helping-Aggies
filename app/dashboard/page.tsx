@@ -90,7 +90,7 @@ export default async function DashboardPage() {
         {/* Welcome Card */}
         <Card>
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
-            <CardTitle className="text-2xl">
+            <CardTitle className="text-2xl text-dash-header-text">
               Howdy, {profile?.full_name}! 👋
             </CardTitle>
             <CardDescription className="text-dash-header-text/80">
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
         {announcements && announcements.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-primary">📌 Announcements</h2>
+              <h2 className="text-2xl font-bold text-page-heading-text">📌 Announcements</h2>
               {profile?.role === 'Admin' && (
                 <Link href="/dashboard/post-creation?channel=announcements">
                   <Button variant="outline" size="sm">
@@ -128,23 +128,23 @@ export default async function DashboardPage() {
             </div>
             
             {announcements.map((announcement: any) => (
-              <Card key={announcement.id} className="border-amber-500/30 bg-amber-500/10 dark:bg-amber-900/20">
+              <Card key={announcement.id} className="border-announcement-border bg-announcement-bg dark:bg-announcement-bg dark:border-announcement-border">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400 font-semibold">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-announcement-accent/30 text-announcement-header-text font-semibold">
                         📌
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-foreground">
+                          <p className="font-semibold text-announcement-header-text">
                             {announcement.author?.full_name}
                           </p>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-announcement-accent/20 text-announcement-header-text">
                             {announcement.author?.role}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <div className="flex items-center space-x-2 text-sm text-announcement-header-text/70">
                           <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
                           <span>•</span>
                           <span>{formatRelativeTime(announcement.created_at)}</span>
@@ -152,15 +152,15 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     {announcement.is_pinned && (
-                      <span className="text-amber-700 dark:text-amber-400 text-sm font-medium">📌 Pinned</span>
+                      <span className="text-announcement-header-text text-sm font-medium">📌 Pinned</span>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-xl font-bold text-announcement-header-text">
                     {announcement.title}
                   </h3>
-                  <p className="text-foreground/90 whitespace-pre-wrap">
+                  <p className="text-announcement-header-text/80 whitespace-pre-wrap">
                     {announcement.content}
                   </p>
                 </CardContent>
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
 
         {/* Posts Feed */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-primary">Community Feed</h2>
+          <h2 className="text-2xl font-bold text-page-heading-text">Community Feed</h2>
           
           {posts && posts.length > 0 ? (
             posts.map((post: any) => (
@@ -186,14 +186,14 @@ export default async function DashboardPage() {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-foreground">
+                          <p className="font-semibold text-card-header-text">
                             {post.author?.full_name}
                           </p>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
                             {post.author?.role}
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <div className="flex items-center space-x-2 text-sm text-card-subtext">
                           <span>{post.channel?.icon} {post.channel?.name}</span>
                           <span>•</span>
                           <span>{formatRelativeTime(post.created_at)}</span>
@@ -208,10 +208,10 @@ export default async function DashboardPage() {
                 </CardHeader>
                 
                 <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-foreground">
+                  <h3 className="text-xl font-bold text-card-header-text">
                     {post.title}
                   </h3>
-                  <p className="text-foreground/90 whitespace-pre-wrap">
+                  <p className="text-card-subtext whitespace-pre-wrap">
                     {post.content.length > 300 
                       ? `${post.content.substring(0, 300)}...` 
                       : post.content
@@ -224,7 +224,7 @@ export default async function DashboardPage() {
                         View Full Post
                       </Button>
                     </Link>
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-card-subtext">
                       👁️ {post.view_count} views
                     </span>
                   </div>

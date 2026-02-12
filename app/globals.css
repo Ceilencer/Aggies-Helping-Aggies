@@ -4,117 +4,207 @@
 
 @layer base {
   :root {
-    /* Default Light Mode Colors */
-    --background: 0 0% 96.5%; /* Default background color for light mode */
+    /* =========================================
+   1. GLOBAL BASE
+   (Backgrounds, Typography, & Borders)
+   ========================================= */
+    --background: 210 20% 96%;        /* Main app background */
+    --radius: 0.5rem;                 /* Global corner rounding */
     
-    --header-bg: 0 0% 100%;
-    --header-text: 0 0% 45.1%;
+    /* Global Typography */
+    --page-heading-text: 0 0% 20%;    /* H1, H2, etc. */
+    --page-subtext: 0 0% 45.1%;       /* Subtitles, descriptions */
+    --icon: 0 100% 15.69%;            /* Default icon color (Maroon) */
+
+
+/* =========================================
+   2. LAYOUT & NAVIGATION
+   (Header, Footer, & Shell)
+   ========================================= */
+    /* Header (Navbar) */
+    --header-bg: 0 100% 15.69%;       /* Aggie Maroon */
+    --header-text: 0 0% 97.3%;
     
-    --footer-bg: 0 0% 100%;
-    --footer-text: 0 0% 45.1%;
-    
+    /* Footer */
+    --footer-bg: 0 100% 15.69%;
+    --footer-text: 0 0% 97.3%;
+
+
+/* =========================================
+   3. INTERACTIVE ELEMENTS
+   (Buttons, Inputs, Focus Rings)
+   ========================================= */
+    /* Primary Buttons */
     --button-bg: 0 100% 15.69%;
     --button-text: 0 0% 97.3%;
+    --button-bg-hover: 0 100% 25%;
+
+    /* Secondary Buttons */
+    --secondary-button-bg: 0 0% 88%;
+    --secondary-button-text: 0 0% 15%;
+    --secondary-button-hover: 0 0% 80%;
+
+    /* Header/Ghost Buttons */
+    --header-button-bg: transparent;
+    --header-button-text: 0 0% 97.3%;
+    --header-button-hover: 0 0% 100%;
+    --header-button-hover-bg: 0 0% 97.3%/10%;
+
+    /* Input & Focus */
+    --input: 0 0% 89.8%;              /* Used for borders of inputs */
+    --ring: 0 69% 30%;                /* Focus ring color */
+
+
+/* =========================================
+   4. COMPONENTS
+   (Cards, Announcements, Etc.)
+   ========================================= */
+    /* Standard Cards */
+    --card: 0 0% 100%;
+    --card-header-text: 0 0% 10%;
+    --card-subtext: 0 0% 23.5%;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    /* Announcement Banner */
+    --announcement-bg: 36 60% 94%;       /* Pale Beige (#fdf4e3) */
+    --announcement-border: 30 50% 78%;   /* Light Maroon/Tan Border (#e6c4a8) */
+    --announcement-accent: 0 41% 45%;    /* Dark Maroon for icons/tags (#a34444) */
+    --announcement-header-text: 0 0% 12%; /* Dark Charcoal for title (#1F2937) */
+    --announcement-text: 0 0% 12%;       /* Dark Charcoal for body text */
+
+
+/* =========================================
+   5. FRAMEWORK UTILITIES 
+   (Likely Shadcn/Tailwind Primitives)
+   ========================================= */
+    --border: 0 0% 89.8%;             /* General borders, dividers */
     
-    --page-heading-text: 0 100% 15.69%;
-    --page-subtext: 0 0% 45.1%;
+    --muted: 0 0% 96.1%;              /* Muted backgrounds */
+    --muted-foreground: 0 0% 45.1%;   /* Muted text */
 
-    --card: 0 0% 100%; /* Used by bg-card (Card component, headers/footers) */
-    --card-foreground: 0 0% 23.5%; /* Used by text-card-foreground (Card component) */
-    
+    --accent: 0 0% 96.1%;             /* Accent backgrounds */
+    --accent-foreground: 0 0% 9%;     /* Accent text */
 
 
-    /*********** SPECIFICS ***********/
-    /* Landing Page Light Mode */
-    --steps-text: 0 0% 97.3%; /* Used by text-steps-text (landing page steps) */
-    
-    /* Login Page Light Mode */
-    --background-login: 4, 23.08%, 25.49%; /* Specific background for login page in light mode */
+/* =========================================
+   6. PAGE SPECIFICS
+   (Overrides for specific routes)
+   ========================================= */
+    /* Landing Page */
+    --steps-text: 0 0% 97.3%;         /* Specific to the "Steps" section */
 
-    /* Dashboard Light Mode */
+    /* Login Page */
+    /* Note: This is very dark for a Light Mode login. Intentional? */
+    --background-login: 4 23.08% 25.49%; 
+
+    /* Dashboard */
     --dash-header-bg: 0 100% 15.69%;
     --dash-header-text: 0 0% 97.3%;
 
-    /* User Profile Light Mode */
+    /* User Profile (Placeholders) */
 
-    /* Admin Light Mode */
-
-
-    /* Light Mode - TAMU Branding */
-
-
-
-    /* Recategorized theme tokens (defaults match current colors) */
-
-    --icon: 0 100% 15.69%;
-    
-
-    --muted: 0 0% 96.1%; /* Used by bg-muted (profile blocks, sections) */
-    --muted-foreground: 0 0% 45.1%; /* Used by text-muted-foreground (helper/secondary text) */
-
-    --accent: 0 0% 96.1%; /* Used by bg-accent (button hover for ghost/outline) */
-    --accent-foreground: 0 0% 9%; /* Used by text-accent-foreground (button hover text) */
-
-    --border: 0 0% 89.8%; /* Used by border-border (base borders, info panels) */
-    --input: 0 0% 89.8%; /* Used by border-input (input/textarea, outline button) */
-    --ring: 0 69% 30%; /* Used by ring-ring (button focus ring) */
-
-    --radius: 0.5rem;
+    /* Admin (Placeholders) */
   }
 
   .dark {
-    /* Default Dark Mode Colors */
-    --background: 0 0% 12%; /* Default background color for dark mode */
+    /* =========================================
+   1. GLOBAL BASE
+   (Backgrounds, Typography, & Borders)
+   ========================================= */
+    --background: 0 0% 12%;           /* Dark Grey Main Background */
+    --radius: 0.5rem;                 /* Kept consistent with light mode */
 
-    --header-bg: 0 0% 17%;
+    /* Global Typography */
+    --page-heading-text: 0 0% 97.3%;  /* White text */
+    --page-subtext: 0 0% 65%;         /* Light Grey text */
+    --icon: 0 100% 15.69%;            /* Default icon color (Maroon) */
+
+
+/* =========================================
+   2. LAYOUT & NAVIGATION
+   (Header, Footer, & Shell)
+   ========================================= */
+    /* Header (Navbar) */
+    --header-bg: 0 0% 17%;            /* Slightly lighter grey */
     --header-text: 0 0% 97.3%;
 
+    /* Footer */
     --footer-bg: 0 0% 17%;
     --footer-text: 0 0% 65%;
-    
-    --button-bg: 0 100% 15.69%;
+
+
+/* =========================================
+   3. INTERACTIVE ELEMENTS
+   (Buttons, Inputs, Focus Rings)
+   ========================================= */
+    /* Primary Buttons */
+    --button-bg: 0 100% 15.69%;       /* Aggie Maroon */
     --button-text: 0 0% 97.3%;
+    --button-bg-hover: 0 100% 25%;
 
-    --page-heading-text: 0 0% 97.3%;
-    --page-subtext: 0 0% 65%;
+    /* Secondary Buttons */
+    --secondary-button-bg: 0 0% 20%;
+    --secondary-button-text: 0 0% 100%;
+    --secondary-button-hover: 0 0% 28%;
 
+    /* Header/Ghost Buttons */
+    --header-button-bg: transparent;
+    --header-button-text: 0 0% 97.3%;
+    --header-button-hover: 0 0% 97.3%;
+    --header-button-hover-bg: 0 0% 97.3%/10%;
+
+    /* Input & Focus */
+    --input: 0 0% 22%;                /* #383838 (Input Borders) */
+    --ring: 0 69% 30%;                /* Maroon Focus Ring */
+
+
+/* =========================================
+   4. COMPONENTS
+   (Cards, Announcements, Etc.)
+   ========================================= */
+    /* Standard Cards */
+    --card: 0 0% 17%;                 /* Lighter than bg for depth (#2b2b2b) */
+    --card-header-text: 0 0% 97.3%;
+    --card-subtext: 0 0% 65%;
+    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+
+    /* Announcement Banner */
+    --announcement-bg: 26 30% 13%;
+    --announcement-border: 40 49% 36%;
+    --announcement-accent: 40 59% 45%;
+    --announcement-header-text: 0 0% 100%;
+
+
+/* =========================================
+   5. FRAMEWORK UTILITIES 
+   (Likely Shadcn/Tailwind Primitives)
+   ========================================= */
+    --border: 0 0% 25%;               /* #404040 (Separators/Lines) */
     
-    --card: 0 0% 17%; /* Slightly lighter for contrast: #2b2b2b; used by bg-card (Card component, headers/footers) */
-    --card-foreground: 0 0% 97.3%; /* Used by text-card-foreground (Card component) */
+    --muted: 0 0% 22%;                /* #383838 (Muted BG) */
+    --muted-foreground: 0 0% 65%;     /* #a6a6a6 (Muted Text) */
+
+    --accent: 0 0% 22%;               /* Accent BG (Hover states) */
+    --accent-foreground: 0 0% 97.3%;  /* Accent Text */
 
 
+/* =========================================
+   6. PAGE SPECIFICS
+   (Overrides for specific routes)
+   ========================================= */
+    /* Landing Page */
+    --steps-text: 0 0% 97.3%;
 
+    /* Login Page */
+    --background-login: 0 0% 12%;     /* Matches main background */
 
-    /*********** SPECIFICS ***********/
-    /* Landing Page Dark Mode */
-    --steps-text: 0 0% 97.3%; /* Used by text-steps-text (landing page steps) */
-
-    /* Login Page Dark Mode */
-    --background-login: 0 0% 12%; /*CURRENTLY SAME AS BACKGROUND*/
-
-    /* Dashboard Dark Mode */
+    /* Dashboard */
     --dash-header-bg: 0 100% 15.69%;
     --dash-header-text: 0 0% 97.3%;
 
-    /* User Profile Page Dark Mode */
+    /* User Profile (Placeholders) */
 
-    /* Admin Page Dark Mode */
-
-
-
-    /* Dark Mode - Google-style with proper contrast */
-    --icon: 0 100% 15.69%;
-    
-
-    --muted: 0 0% 22%; /* #383838 - for disabled inputs; used by bg-muted (profile blocks, sections) */
-    --muted-foreground: 0 0% 65%; /* Light gray: #a6a6a6; used by text-muted-foreground (helper/secondary text) */
-
-    --accent: 0 0% 22%; /* Used by bg-accent (button hover for ghost/outline) */
-    --accent-foreground: 0 0% 97.3%; /* Used by text-accent-foreground (button hover text) */
-
-    --border: 0 0% 25%; /* #404040; used by border-border (base borders, info panels) */
-    --input: 0 0% 22%; /* #383838; used by border-input (input/textarea, outline button) */
-    --ring: 0 69% 30%; /* TAMU Maroon #732424; used by ring-ring (button focus ring) */
+    /* Admin (Placeholders) */
   }
 }
 
