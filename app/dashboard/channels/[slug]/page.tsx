@@ -1,115 +1,45 @@
-'use client'
-
-import { useMemo, useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
-export default function ChannelPage() {
-  const params = useParams()
-  const router = useRouter()
-  const rawSlug = params.slug as string
-  const canonicalSlug = useMemo(() => {
-    const slugAliases: Record<string, string> = {
-      'aggie-ring': 'fundraising',
-      'tickets': 'football-tickets',
-      'jobs': 'jobs-networking',
-    }
-    return slugAliases[rawSlug] ?? rawSlug
-  }, [rawSlug])
-  const supabase = createClient()
+// Slug aliases mapping
+const SLUG_ALIASES: Record<string, string> = {
+  'aggie-ring': 'fundraising',
+  'tickets': 'football-tickets',
+  'jobs': 'jobs-networking',
+}
 
-  const [channel, setChannel] = useState<any>(null)
-  const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [userAuthenticated, setUserAuthenticated] = useState(false)
+export default async function ChannelPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> // <-- Changed to Promise
+}) {
+  const supabase = await createClient()
+  
+  // Auth check
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    redirect('/login')
+  }
 
-  useEffect(() => {
-    const loadChannelData = async () => {
-      // Check for real Supabase authentication
-      const { data: { user } } = await supabase.auth.getUser()
+  // Await params
+  const { slug: rawSlug } = await params // <-- Added await
+  const canonicalSlug = SLUG_ALIASES[rawSlug] ?? rawSlug
 
-      if (!user) {
-        // Redirect to login if not authenticated
-        router.push('/login')
-        return
-      }
+  // Fetch channel
+  const { data: channel, error: channelError } = await supabase
+    .from('channels')
+    .select('*')
+    .in('slug', [canonicalSlug, rawSlug])
+    .maybeSingle()
 
-      setUserAuthenticated(true)
-      await loadSupabaseData()
-    }
-
-    const loadSupabaseData = async () => {
-      try {
-        // Fetch channel from database
-        const { data: channelData, error: channelError } = await supabase
-          .from('channels')
-          .select('*')
-          .in('slug', [canonicalSlug, rawSlug])
-          .maybeSingle()
-
-        if (channelError) {
-          console.error('Error loading channel:', channelError)
-          setChannel(null)
-          setLoading(false)
-          return
-        }
-
-        if (!channelData) {
-          setChannel(null)
-          setLoading(false)
-          return
-        }
-
-        setChannel(channelData)
-
-        // Fetch posts for this channel
-        const { data: postsData, error: postsError } = await supabase
-          .from('posts')
-          .select(`
-            *,
-            author:profiles!posts_author_id_fkey(*),
-            channel:channels(*)
-          `)
-          .eq('channel_id', channelData.id)
-          .order('created_at', { ascending: false })
-          .limit(50)
-
-        if (postsError) {
-          console.error('Error loading posts:', postsError)
-          setPosts([])
-        } else {
-          setPosts(postsData || [])
-        }
-
-        setLoading(false)
-      } catch (error) {
-        console.error('Error in loadSupabaseData:', error)
-        setLoading(false)
-      }
-    }
-
-    loadChannelData()
-  }, [canonicalSlug, rawSlug, router, supabase])
-
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-32 bg-gray-200 rounded mb-6"></div>
-          <div className="space-y-4">
-            <div className="h-24 bg-gray-200 rounded"></div>
-            <div className="h-24 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    )
+  if (channelError) {
+    console.error('Error loading channel:', channelError)
   }
 
   if (!channel) {
@@ -124,6 +54,57 @@ export default function ChannelPage() {
       </div>
     )
   }
+
+  // Fetch posts with authors and channel info
+  const { data: posts, error: postsError } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      author:profiles!posts_author_id_fkey(*),
+      channel:channels(*)
+    `)
+    .eq('channel_id', channel.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (postsError) {
+    console.error('Error loading posts:', postsError)
+  }
+
+  const postsList = posts || []
+  const postIds = postsList.map(p => p.id)
+
+  // Batch fetch ALL comments for ALL posts in ONE query
+  const { data: allComments } = await supabase
+    .from('comments')
+    .select('*')
+    .in('post_id', postIds)
+
+  // Batch fetch ALL likes for ALL posts in ONE query
+  const { data: allLikes } = await supabase
+    .from('post_likes')
+    .select('*')
+    .in('post_id', postIds)
+
+  // Group comments and likes by post_id for easy lookup
+  const commentsByPost = (allComments || []).reduce((acc, comment) => {
+    if (!acc[comment.post_id]) acc[comment.post_id] = []
+    acc[comment.post_id].push(comment)
+    return acc
+  }, {} as Record<string, any[]>)
+
+  const likesByPost = (allLikes || []).reduce((acc, like) => {
+    if (!acc[like.post_id]) acc[like.post_id] = []
+    acc[like.post_id].push(like)
+    return acc
+  }, {} as Record<string, any[]>)
+
+  // Attach comments and likes to each post
+  const postsWithMetadata = postsList.map(post => ({
+    ...post,
+    comments: commentsByPost[post.id] || [],
+    likes: likesByPost[post.id] || [],
+  }))
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -142,8 +123,8 @@ export default function ChannelPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-primary">Posts</h2>
 
-        {posts && posts.length > 0 ? (
-          posts.map((post: any) => (
+        {postsWithMetadata.length > 0 ? (
+          postsWithMetadata.map((post: any) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -198,6 +179,12 @@ export default function ChannelPage() {
                     : post.content
                   }
                 </p>
+                
+                {/* Show comment/like counts if you want */}
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <span>💬 {post.comments.length} comments</span>
+                  <span>❤️ {post.likes.length} likes</span>
+                </div>
               </CardContent>
             </Card>
           ))
