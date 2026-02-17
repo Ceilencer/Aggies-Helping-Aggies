@@ -1,47 +1,49 @@
-'use client'
-
-import { useMemo, useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
-export default function ChannelPage() {
-  const params = useParams()
-  const router = useRouter()
-  const rawSlug = params.slug as string
-  const canonicalSlug = useMemo(() => {
-    const slugAliases: Record<string, string> = {
-      'aggie-ring': 'fundraising',
-      'tickets': 'football-tickets',
-      'jobs': 'jobs-networking',
-    }
-    return slugAliases[rawSlug] ?? rawSlug
-  }, [rawSlug])
-  const supabase = createClient()
+// Slug aliases mapping
+const SLUG_ALIASES: Record<string, string> = {
+  'aggie-ring': 'fundraising',
+  'tickets': 'football-tickets',
+  'jobs': 'jobs-networking',
+}
 
-  const [channel, setChannel] = useState<any>(null)
-  const [posts, setPosts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [userAuthenticated, setUserAuthenticated] = useState(false)
+export default async function ChannelPage({ 
+  params 
+}: { 
+  params: Promise<{ slug: string }> // <-- Changed to Promise
+}) {
+  const supabase = await createClient()
+  
+  // Auth check
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    redirect('/login')
+  }
 
-  useEffect(() => {
-    const loadChannelData = async () => {
-      // Check for real Supabase authentication
-      const { data: { user } } = await supabase.auth.getUser()
+  // Await params
+  const { slug: rawSlug } = await params // <-- Added await
+  const canonicalSlug = SLUG_ALIASES[rawSlug] ?? rawSlug
 
-      if (!user) {
-        // Redirect to login if not authenticated
-        router.push('/login')
-        return
-      }
+  // Fetch channel
+  const { data: channel, error: channelError } = await supabase
+    .from('channels')
+    .select('*')
+    .in('slug', [canonicalSlug, rawSlug])
+    .maybeSingle()
 
+<<<<<<< HEAD
+  if (channelError) {
+    console.error('Error loading channel:', channelError)
+=======
       setUserAuthenticated(true)
       await loadSupabaseData(user.id)
     }
@@ -140,6 +142,7 @@ export default function ChannelPage() {
         </div>
       </div>
     )
+>>>>>>> 837089281b8852e0ecc3b110dc44f8ba610617dc
   }
 
   if (!channel) {
@@ -154,6 +157,57 @@ export default function ChannelPage() {
       </div>
     )
   }
+
+  // Fetch posts with authors and channel info
+  const { data: posts, error: postsError } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      author:profiles!posts_author_id_fkey(*),
+      channel:channels(*)
+    `)
+    .eq('channel_id', channel.id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  if (postsError) {
+    console.error('Error loading posts:', postsError)
+  }
+
+  const postsList = posts || []
+  const postIds = postsList.map(p => p.id)
+
+  // Batch fetch ALL comments for ALL posts in ONE query
+  const { data: allComments } = await supabase
+    .from('comments')
+    .select('*')
+    .in('post_id', postIds)
+
+  // Batch fetch ALL likes for ALL posts in ONE query
+  const { data: allLikes } = await supabase
+    .from('post_likes')
+    .select('*')
+    .in('post_id', postIds)
+
+  // Group comments and likes by post_id for easy lookup
+  const commentsByPost = (allComments || []).reduce((acc, comment) => {
+    if (!acc[comment.post_id]) acc[comment.post_id] = []
+    acc[comment.post_id].push(comment)
+    return acc
+  }, {} as Record<string, any[]>)
+
+  const likesByPost = (allLikes || []).reduce((acc, like) => {
+    if (!acc[like.post_id]) acc[like.post_id] = []
+    acc[like.post_id].push(like)
+    return acc
+  }, {} as Record<string, any[]>)
+
+  // Attach comments and likes to each post
+  const postsWithMetadata = postsList.map(post => ({
+    ...post,
+    comments: commentsByPost[post.id] || [],
+    likes: likesByPost[post.id] || [],
+  }))
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -172,8 +226,8 @@ export default function ChannelPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold text-primary">Posts</h2>
 
-        {posts && posts.length > 0 ? (
-          posts.map((post: any) => (
+        {postsWithMetadata.length > 0 ? (
+          postsWithMetadata.map((post: any) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -228,6 +282,13 @@ export default function ChannelPage() {
                     : post.content
                   }
                 </p>
+<<<<<<< HEAD
+                
+                {/* Show comment/like counts if you want */}
+                <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                  <span>💬 {post.comments.length} comments</span>
+                  <span>❤️ {post.likes.length} likes</span>
+=======
 
                 <div className="flex items-center justify-between space-x-4 py-4 border-t">
                   <div className="flex items-center space-x-4">
@@ -250,6 +311,7 @@ export default function ChannelPage() {
                       View Full Post
                     </Button>
                   </Link>
+>>>>>>> 837089281b8852e0ecc3b110dc44f8ba610617dc
                 </div>
               </CardContent>
             </Card>
