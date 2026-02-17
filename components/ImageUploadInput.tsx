@@ -88,6 +88,13 @@ export function ImageUploadInput({
         </div>
       )}
 
+      {/* Privacy Disclaimer */}
+      <div className="rounded-md bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-3">
+        <p className="text-xs text-blue-700 dark:text-blue-300">
+          <span className="font-semibold">Privacy Notice:</span> Uploaded images are viewable by all community members. Do not upload personal or sensitive information.
+        </p>
+      </div>
+
       {/* Hidden Input */}
       <input
         ref={inputRef}
