@@ -38,7 +38,7 @@ const CHANNELS = [
   },
   {
     id: "tickets",
-    label: "Football Tickets",
+    label: "Tickets",
     href: "/dashboard/channels/tickets",
     icon: Ticket,
   },
