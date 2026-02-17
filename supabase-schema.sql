@@ -296,39 +296,6 @@ CREATE TRIGGER enforce_post_limits
     EXECUTE FUNCTION check_post_limit();
 
 -- =============================================
--- MFA REQUIREMENT CHECK FOR SENSITIVE CHANNELS
--- =============================================
-
-CREATE OR REPLACE FUNCTION check_mfa_for_sensitive_channels()
-RETURNS TRIGGER AS $$
-DECLARE
-    channel_requires_mfa BOOLEAN;
-    user_has_mfa BOOLEAN;
-BEGIN
-    -- Check if channel requires MFA
-    SELECT requires_mfa INTO channel_requires_mfa 
-    FROM channels 
-    WHERE id = NEW.channel_id;
-    
-    -- Check if user has MFA enabled
-    SELECT mfa_enabled INTO user_has_mfa 
-    FROM profiles 
-    WHERE id = NEW.author_id;
-    
-    IF channel_requires_mfa AND NOT user_has_mfa THEN
-        RAISE EXCEPTION 'This channel requires Two-Factor Authentication (MFA) to be enabled';
-    END IF;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER check_mfa_before_post
-    BEFORE INSERT ON posts
-    FOR EACH ROW
-    EXECUTE FUNCTION check_mfa_for_sensitive_channels();
-
--- =============================================
 -- INITIAL DATA - CHANNELS
 -- =============================================
 
@@ -337,7 +304,7 @@ INSERT INTO channels (name, slug, description, type, requires_mfa, is_read_only,
     ('Promotions', 'promotions', 'Business promotions and community events', 'promotions', FALSE, FALSE, '📢'),
     ('Job/Internship/Networking', 'jobs-networking', 'Job opportunities, internships, and networking', 'jobs', FALSE, FALSE, '💼'),
     ('Fundraising', 'fundraising', 'Support Aggie causes and fundraising efforts', 'aggie_ring', FALSE, FALSE, '💍'),
-    ('Football Tickets', 'football-tickets', 'Buy, sell, or trade football game tickets (MFA Required)', 'tickets', TRUE, FALSE, '🎟️'),
+    ('Football Tickets', 'football-tickets', 'Buy, sell, or trade football game tickets', 'tickets', FALSE, FALSE, '🎟️'),
     ('Announcements', 'announcements', 'Official platform announcements (Admin Only)', 'announcements', FALSE, TRUE, '📌');
 
 -- =============================================

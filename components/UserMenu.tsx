@@ -85,6 +85,13 @@ export function UserMenu({
           >
             Profile
           </Link>
+          <Link
+            href="/dashboard/my-posts"
+            className={menuItemClassName}
+            onClick={() => setOpen(false)}
+          >
+            My Posts
+          </Link>
           {isAdmin && (
             <Link
               href="/dashboard/admin"

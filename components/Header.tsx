@@ -88,7 +88,7 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-header-bg shadow-sm">
-      <div className="flex h-16 w-full items-center gap-4 px-4">
+      <div className="relative flex h-16 w-full items-center px-4">
         <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
           <Image
             src="/images/logos/logo-dark.svg"
@@ -100,7 +100,10 @@ export default function Header({
           />
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-center gap-1 md:flex" aria-label="Primary">
+        <nav
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center justify-center gap-1 md:flex"
+          aria-label="Primary"
+        >
           {CHANNELS.map((channel) => {
             const Icon = channel.icon;
             const isActive = channel.id === derivedActiveId;
@@ -118,14 +121,14 @@ export default function Header({
               >
                 <span
                   className={
-                    "flex h-full w-full items-center justify-center border-b-2 text-white" +
+                    "grid h-full w-full place-items-center border-b-2 text-white" +
                     " " +
                     (isActive
                       ? "border-white"
                       : "border-transparent")
                   }
                 >
-                  <Icon className="h-6 w-6" />
+                  <Icon className="h-6 w-6 shrink-0" />
                 </span>
                 <span className="pointer-events-none absolute top-full z-10 mt-2 hidden whitespace-nowrap rounded bg-zinc-900 px-2 py-1 text-xs text-white shadow-sm group-hover:block dark:bg-zinc-100 dark:text-zinc-900">
                   {channel.label}

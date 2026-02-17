@@ -3,6 +3,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import PostLikeButton from '@/components/PostLikeButton'
+import CommentCountButton from '@/components/CommentCountButton'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import { createClient } from '@/lib/supabase/server'
@@ -38,8 +40,109 @@ export default async function ChannelPage({
     .in('slug', [canonicalSlug, rawSlug])
     .maybeSingle()
 
+<<<<<<< HEAD
   if (channelError) {
     console.error('Error loading channel:', channelError)
+=======
+      setUserAuthenticated(true)
+      await loadSupabaseData(user.id)
+    }
+
+    const loadSupabaseData = async (userId: string) => {
+      try {
+        // Fetch channel from database
+        const { data: channelData, error: channelError } = await supabase
+          .from('channels')
+          .select('*')
+          .in('slug', [canonicalSlug, rawSlug])
+          .maybeSingle()
+
+        if (channelError) {
+          console.error('Error loading channel:', channelError)
+          setChannel(null)
+          setLoading(false)
+          return
+        }
+
+        if (!channelData) {
+          setChannel(null)
+          setLoading(false)
+          return
+        }
+
+        setChannel(channelData)
+
+        // Fetch posts for this channel
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            author:profiles!posts_author_id_fkey(*),
+            channel:channels(*)
+          `)
+          .eq('channel_id', channelData.id)
+          .order('created_at', { ascending: false })
+          .limit(50)
+
+        if (postsError) {
+          console.error('Error loading posts:', postsError)
+          setPosts([])
+        } else {
+          // Fetch like counts and comment counts for each post
+          const postsWithLikes = await Promise.all(
+            (postsData || []).map(async (post) => {
+              const { count: like_count } = await supabase
+                .from('post_likes')
+                .select('*', { count: 'exact', head: true })
+                .eq('post_id', post.id)
+
+              const { data: userLike } = await supabase
+                .from('post_likes')
+                .select('id')
+                .eq('post_id', post.id)
+                .eq('user_id', userId)
+                .maybeSingle()
+
+              const { count: comment_count } = await supabase
+                .from('comments')
+                .select('*', { count: 'exact', head: true })
+                .eq('post_id', post.id)
+
+              return {
+                ...post,
+                like_count: like_count || 0,
+                user_has_liked: !!userLike,
+                comment_count: comment_count || 0,
+              }
+            })
+          )
+          setPosts(postsWithLikes)
+        }
+
+        setLoading(false)
+      } catch (error) {
+        console.error('Error in loadSupabaseData:', error)
+        setLoading(false)
+      }
+    }
+
+    loadChannelData()
+  }, [canonicalSlug, rawSlug, router, supabase])
+
+  if (loading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-32 bg-gray-200 rounded mb-6"></div>
+          <div className="space-y-4">
+            <div className="h-24 bg-gray-200 rounded"></div>
+            <div className="h-24 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    )
+>>>>>>> 837089281b8852e0ecc3b110dc44f8ba610617dc
   }
 
   if (!channel) {
@@ -169,7 +272,7 @@ export default async function ChannelPage({
                 </div>
               </CardHeader>
 
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pb-0">
                 <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
@@ -179,11 +282,35 @@ export default async function ChannelPage({
                     : post.content
                   }
                 </p>
+<<<<<<< HEAD
                 
                 {/* Show comment/like counts if you want */}
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <span>💬 {post.comments.length} comments</span>
                   <span>❤️ {post.likes.length} likes</span>
+=======
+
+                <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                  <div className="flex items-center space-x-4">
+                    <PostLikeButton
+                      postId={post.id}
+                      likeCount={post.like_count || 0}
+                      userHasLiked={post.user_has_liked || false}
+                    />
+                    <CommentCountButton
+                      postId={post.id}
+                      commentCount={post.comment_count || 0}
+                    />
+                    <span className="text-sm text-card-subtext">
+                      👁️ {post.view_count} views
+                    </span>
+                  </div>
+                  <Link href={`/dashboard/posts/${post.id}`}>
+                    <Button variant="outline" size="sm">
+                      View Full Post
+                    </Button>
+                  </Link>
+>>>>>>> 837089281b8852e0ecc3b110dc44f8ba610617dc
                 </div>
               </CardContent>
             </Card>

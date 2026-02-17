@@ -4,6 +4,9 @@ import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import PostLikeButton from '@/components/PostLikeButton'
+import CommentCountButton from '@/components/CommentCountButton'
+import { PostImageGrid } from '@/components/PostImageGrid'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 
@@ -71,7 +74,40 @@ export default async function DashboardPage() {
       channel_slug: p.channel?.slug
     })))
   }
-  const posts = postsData
+
+  // Fetch like counts, comment counts, and user like status for posts
+  let postsWithLikes = postsData || []
+  if (postsData && postsData.length > 0 && user) {
+    postsWithLikes = await Promise.all(
+      postsData.map(async (post: any) => {
+        const { count: like_count } = await supabase
+          .from('post_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id)
+
+        const { data: userLike } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        const { count: comment_count } = await supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id)
+
+        return {
+          ...post,
+          like_count: like_count || 0,
+          user_has_liked: !!userLike,
+          comment_count: comment_count || 0,
+        }
+      })
+    )
+  }
+
+  const posts = postsWithLikes
 
   // Fetch announcements
   const { data: announcementsData, error: announcementsError } = await supabase
@@ -204,6 +240,11 @@ export default async function DashboardPage() {
                 <p className="text-card-subtext whitespace-pre-wrap">
                   {announcement.content}
                 </p>
+                
+                {/* Display images in grid */}
+                {announcement.images && announcement.images.length > 0 && (
+                  <PostImageGrid images={announcement.images} postTitle={announcement.title} maxImages={3} />
+                )}
               </CardContent>
             </Card>
           ))
@@ -255,7 +296,7 @@ export default async function DashboardPage() {
                 </div>
               </CardHeader>
               
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-3 pb-0">
                 <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
@@ -266,15 +307,31 @@ export default async function DashboardPage() {
                   }
                 </p>
                 
-                <div className="flex items-center space-x-4 pt-2">
+                {/* Display images in grid */}
+                {post.images && post.images.length > 0 && (
+                  <PostImageGrid images={post.images} postTitle={post.title} maxImages={3} />
+                )}
+                
+                <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                  <div className="flex items-center space-x-4">
+                    <PostLikeButton
+                      postId={post.id}
+                      likeCount={post.like_count || 0}
+                      userHasLiked={post.user_has_liked || false}
+                    />
+                    <CommentCountButton
+                      postId={post.id}
+                      commentCount={post.comment_count || 0}
+                    />
+                    <span className="text-sm text-card-subtext">
+                      👁️ {post.view_count} views
+                    </span>
+                  </div>
                   <Link href={`/dashboard/posts/${post.id}`}>
                     <Button variant="outline" size="sm">
                       View Full Post
                     </Button>
                   </Link>
-                  <span className="text-sm text-card-subtext">
-                    👁️ {post.view_count} views
-                  </span>
                 </div>
               </CardContent>
             </Card>
