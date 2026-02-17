@@ -139,6 +139,15 @@ export default function Header({
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <a
+            href="https://www.zeffy.com/en-US/donation-form/donate-to-aggies-helping-aggies"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden items-center rounded-md px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 sm:inline-flex"
+            aria-label="Donate to Aggies Helping Aggies"
+          >
+            Donate
+          </a>
           <button
             type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full bg-header-bg text-white transition-colors hover:bg-white/10"

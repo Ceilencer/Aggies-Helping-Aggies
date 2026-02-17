@@ -13,6 +13,15 @@ export default function Home() {
             <Logo href="/" />
           </div>
           <div className="flex items-center space-x-4">
+            <a
+              href="https://www.zeffy.com/en-US/donation-form/donate-to-aggies-helping-aggies"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="items-center rounded-md px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 inline-flex"
+              aria-label="Donate to Aggies Helping Aggies"
+            >
+              Donate
+            </a>
             <Link href="/login">
               <Button>Sign In</Button>
             </Link>
