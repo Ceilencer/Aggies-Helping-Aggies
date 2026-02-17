@@ -18,6 +18,17 @@ export interface Profile {
   last_login?: string
 }
 
+export interface AdminNote {
+  id: string
+  user_id: string
+  created_by: string
+  content: string
+  created_at: string
+  updated_at: string
+  // Relations
+  creator?: Profile
+}
+
 export interface VerificationRequest {
   id: string
   user_id: string

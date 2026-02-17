@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import CommentLikeButton from '@/components/CommentLikeButton'
@@ -66,30 +67,32 @@ export default function CommentCard({
     <div className={isReply ? 'ml-8 mt-4' : ''}>
       <Card className="p-4">
         <div className="flex gap-3">
-          {/* Avatar */}
-          {comment.author?.avatar_url ? (
-            <div className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-full">
-              <Image
-                src={comment.author.avatar_url}
-                alt={`${comment.author?.full_name} avatar`}
-                fill
-                sizes="32px"
-                className="object-cover"
-              />
-            </div>
-          ) : (
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-semibold">
-              {getInitials(comment.author?.full_name || 'Unknown')}
-            </div>
-          )}
+          {/* Avatar - Clickable */}
+          <Link href={`/users/${comment.author?.id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+            {comment.author?.avatar_url ? (
+              <div className="relative h-8 w-8 overflow-hidden rounded-full">
+                <Image
+                  src={comment.author.avatar_url}
+                  alt={`${comment.author?.full_name} avatar`}
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-semibold">
+                {getInitials(comment.author?.full_name || 'Unknown')}
+              </div>
+            )}
+          </Link>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap justify-between">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm">
+                <Link href={`/users/${comment.author?.id}`} className="font-semibold text-sm hover:underline">
                   {comment.author?.full_name}
-                </span>
+                </Link>
                 {comment.author?.role && (
                   <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(comment.author.role)}`}>
                     {comment.author.role}

@@ -173,6 +173,23 @@ CREATE TABLE notifications (
 );
 
 -- =============================================
+-- ADMIN NOTES TABLE
+-- =============================================
+
+CREATE TABLE admin_notes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+    created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    
+    content TEXT NOT NULL,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    CONSTRAINT note_length CHECK (char_length(content) >= 1 AND char_length(content) <= 2000)
+);
+
+-- =============================================
 -- INDEXES
 -- =============================================
 
@@ -185,6 +202,8 @@ CREATE INDEX idx_posts_pinned ON posts(is_pinned) WHERE is_pinned = TRUE;
 CREATE INDEX idx_comments_post ON comments(post_id);
 CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_notifications_unread ON notifications(user_id, is_read) WHERE is_read = FALSE;
+CREATE INDEX idx_admin_notes_user ON admin_notes(user_id);
+CREATE INDEX idx_admin_notes_created ON admin_notes(created_at DESC);
 
 -- =============================================
 -- FUNCTIONS & TRIGGERS
@@ -205,7 +224,13 @@ CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON profiles
 CREATE TRIGGER posts_updated_at BEFORE UPDATE ON posts
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
+CREATE TRIGGER comments_updated_at BEFORE UPDATE ON comments
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 CREATE TRIGGER verification_requests_updated_at BEFORE UPDATE ON verification_requests
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER admin_notes_updated_at BEFORE UPDATE ON admin_notes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- =============================================
@@ -319,9 +344,15 @@ ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE post_tracking ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE admin_notes ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
-CREATE POLICY "Public profiles are viewable by verified users"
+CREATE POLICY "Users can view own profile"
+    ON profiles FOR SELECT
+    TO authenticated
+    USING (auth.uid() = id);
+
+CREATE POLICY "Verified profiles are viewable by all authenticated users"
     ON profiles FOR SELECT
     TO authenticated
     USING (is_verified = TRUE);
@@ -474,6 +505,47 @@ CREATE POLICY "Users can update own post tracking"
     TO authenticated
     USING (user_id = auth.uid())
     WITH CHECK (user_id = auth.uid());
+
+-- Admin notes policies
+CREATE POLICY "Only admins can view admin notes"
+    ON admin_notes FOR SELECT
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND role = 'Admin'
+        )
+    );
+
+CREATE POLICY "Only admins can create admin notes"
+    ON admin_notes FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND role = 'Admin'
+        )
+    );
+
+CREATE POLICY "Only admins can update admin notes"
+    ON admin_notes FOR UPDATE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND role = 'Admin'
+        )
+    );
+
+CREATE POLICY "Only admins can delete admin notes"
+    ON admin_notes FOR DELETE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND role = 'Admin'
+        )
+    );
 
 -- =============================================
 -- CRON JOBS (requires pg_cron extension)

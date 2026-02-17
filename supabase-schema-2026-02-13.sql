@@ -531,7 +531,12 @@ CREATE POLICY "Verified users can create posts"
    FROM profiles
   WHERE ((profiles.id = auth.uid()) AND (profiles.is_verified = true))))));
 
-CREATE POLICY "Public profiles are viewable by verified users"
+CREATE POLICY "Users can view own profile"
+  ON public.profiles FOR SELECT
+  TO authenticated
+  USING ((auth.uid() = id));
+
+CREATE POLICY "Verified profiles are viewable by all authenticated users"
   ON public.profiles FOR SELECT
   TO authenticated
   USING ((is_verified = true));
