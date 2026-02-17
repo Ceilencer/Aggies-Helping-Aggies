@@ -221,7 +221,7 @@ export default function PostDetailPage() {
                 postChannelId={post.channel_id}
                 isAdmin={true}
                 channels={channels}
-                onPostDeleted={() => router.push('/dashboard')}
+                onPostDeleted={(_deletedPostId) => router.push('/dashboard')}
               />
             )}
           </div>

@@ -72,6 +72,7 @@ export default function ChannelPage() {
           setChannels(allChannelsData)
         }
 
+        const { data: channelData, error: channelError } = await supabase
           .from('channels')
           .select('*')
           .in('slug', [canonicalSlug, rawSlug])

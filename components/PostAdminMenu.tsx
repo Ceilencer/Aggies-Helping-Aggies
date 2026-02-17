@@ -10,7 +10,7 @@ interface PostAdminMenuProps {
   postChannelId: string
   isAdmin: boolean
   channels: Channel[]
-  onPostDeleted?: () => void
+  onPostDeleted?: (postId: string) => void
   onChannelUpdated?: (channelId: string) => void
 }
 
@@ -63,7 +63,7 @@ export default function PostAdminMenu({
       }
 
       setIsOpen(false)
-      onPostDeleted?.()
+      onPostDeleted?.(postId)
     } catch (error) {
       console.error('Error deleting post:', error)
       alert('Failed to delete post')
