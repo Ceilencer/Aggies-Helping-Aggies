@@ -162,7 +162,7 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: params.id,
+          user_id: id,
           content: noteContent,
         }),
       })
