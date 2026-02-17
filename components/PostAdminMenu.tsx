@@ -113,19 +113,21 @@ export default function PostAdminMenu({
       </Button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-950 border border-border rounded-md shadow-lg z-50 min-w-[150px]">
+        <div className="absolute right-0 top-full mt-1 bg-background text-foreground border border-border rounded-md shadow-lg z-50 min-w-[220px]">
           {/* Change Channel Submenu */}
           <div className="border-b border-border last:border-b-0">
             <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
               Move to Channel
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {channels.map((channel) => (
+              {channels
+                .filter((channel) => channel.slug !== 'announcements')
+                .map((channel) => (
                 <button
                   key={channel.id}
                   onClick={() => handleChangeChannel(channel.id)}
                   disabled={isUpdating || channel.id === postChannelId}
-                  className={`block w-full text-left px-3 py-2 text-sm hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`block w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed ${
                     channel.id === postChannelId ? 'font-semibold' : ''
                   }`}
                 >
@@ -140,7 +142,7 @@ export default function PostAdminMenu({
           <button
             onClick={handleDeletePost}
             disabled={isDeleting}
-            className="block w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="block w-full text-left px-3 py-2 text-sm whitespace-nowrap text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Delete Post
           </button>
