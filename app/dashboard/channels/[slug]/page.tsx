@@ -86,35 +86,35 @@ export default function ChannelPage() {
           console.error('Error loading posts:', postsError)
           setPosts([])
         } else {
-          // Fetch like counts and comment counts for each post
-          const postsWithLikes = await Promise.all(
-            (postsData || []).map(async (post) => {
-              const { count: like_count } = await supabase
-                .from('post_likes')
-                .select('*', { count: 'exact', head: true })
-                .eq('post_id', post.id)
+          const postIds = (postsData || []).map((post) => post.id)
+          let likedPostIds = new Set<string>()
+          let likeIdByPostId = new Map<string, string>()
 
-              const { data: userLike } = await supabase
-                .from('post_likes')
-                .select('id')
-                .eq('post_id', post.id)
-                .eq('user_id', userId)
-                .maybeSingle()
+          if (postIds.length > 0) {
+            const { data: userLikes, error: userLikesError } = await supabase
+              .from('post_likes')
+              .select('id, post_id')
+              .eq('user_id', userId)
+              .in('post_id', postIds)
 
-              const { count: comment_count } = await supabase
-                .from('comments')
-                .select('*', { count: 'exact', head: true })
-                .eq('post_id', post.id)
+            if (userLikesError) {
+              console.error('Error loading user likes:', userLikesError)
+            } else {
+              likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
+              likeIdByPostId = new Map(
+                (userLikes || []).map((like) => [like.post_id, like.id])
+              )
+            }
+          }
 
-              return {
-                ...post,
-                like_count: like_count || 0,
-                user_has_liked: !!userLike,
-                comment_count: comment_count || 0,
-              }
-            })
-          )
-          setPosts(postsWithLikes)
+          const formattedPosts = (postsData || []).map((post) => ({
+            ...post,
+            like_count: post.likes_count ?? 0,
+            comment_count: post.comment_count ?? 0,
+            user_has_liked: likedPostIds.has(post.id),
+            like_id: likeIdByPostId.get(post.id) ?? null,
+          }))
+          setPosts(formattedPosts)
         }
 
         setLoading(false)
@@ -235,6 +235,7 @@ export default function ChannelPage() {
                       postId={post.id}
                       likeCount={post.like_count || 0}
                       userHasLiked={post.user_has_liked || false}
+                      likeId={post.like_id || null}
                     />
                     <CommentCountButton
                       postId={post.id}

@@ -41,36 +41,35 @@ export default async function MyPostsPage() {
     console.error('Error loading posts:', postsError)
   }
 
-  // Fetch like counts, comment counts, and user like status for each post
+  // Fetch comment counts and user like status for each post
   let postsWithCounts = postsData || []
   if (postsData && postsData.length > 0) {
-    postsWithCounts = await Promise.all(
-      postsData.map(async (post: any) => {
-        const { count: like_count } = await supabase
-          .from('post_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', post.id)
+    const postIds = postsData.map((post: any) => post.id)
+    let likedPostIds = new Set<string>()
+    let likeIdByPostId = new Map<string, string>()
 
-        const { data: userLike } = await supabase
-          .from('post_likes')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .maybeSingle()
+    const { data: userLikes, error: userLikesError } = await supabase
+      .from('post_likes')
+      .select('id, post_id')
+      .eq('user_id', user.id)
+      .in('post_id', postIds)
 
-        const { count: comment_count } = await supabase
-          .from('comments')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', post.id)
+    if (userLikesError) {
+      console.error('Error loading user likes:', userLikesError)
+    } else {
+      likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
+      likeIdByPostId = new Map(
+        (userLikes || []).map((like) => [like.post_id, like.id])
+      )
+    }
 
-        return {
-          ...post,
-          like_count: like_count || 0,
-          user_has_liked: !!userLike,
-          comment_count: comment_count || 0,
-        }
-      })
-    )
+    postsWithCounts = postsData.map((post: any) => ({
+      ...post,
+      like_count: post.likes_count ?? 0,
+      comment_count: post.comment_count ?? 0,
+      user_has_liked: likedPostIds.has(post.id),
+      like_id: likeIdByPostId.get(post.id) ?? null,
+    }))
   }
 
   const posts = postsWithCounts
@@ -161,6 +160,7 @@ export default async function MyPostsPage() {
                       postId={post.id}
                       likeCount={post.like_count || 0}
                       userHasLiked={post.user_has_liked || false}
+                      likeId={post.like_id || null}
                     />
                     <CommentCountButton
                       postId={post.id}

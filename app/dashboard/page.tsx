@@ -13,126 +13,86 @@ import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 export default async function DashboardPage() {
   const supabase = await createClient()
 
+  // --- WAVE 1: Authentication ---
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Redirect to landing if not authenticated
   if (!user) {
     redirect('/')
   }
 
-  // Fetch user profile
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-  const profile = profileData
+  // --- WAVE 2: Fetch "Setup" Data in Parallel ---
+  // We fire these three requests at the exact same time.
+  const [profileResponse, announcementChannelResponse, homeChannelsResponse] = await Promise.all([
+    // 1. Get Profile
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    // 2. Get Announcement Channel ID
+    supabase.from('channels').select('id').eq('slug', 'announcements').single(),
+    // 3. Get Home Channel IDs
+    supabase.from('channels').select('id, slug').in('slug', ['general', 'promotions'])
+  ])
 
-  // Get the announcements channel ID first
-  const { data: announcementChannel } = await supabase
-    .from('channels')
-    .select('id')
-    .eq('slug', 'announcements')
-    .single()
+  const profile = profileResponse.data
+  const announcementChannel = announcementChannelResponse.data
+  const homeChannels = homeChannelsResponse.data
+  const homeChannelIds = homeChannels?.map(c => c.id) ?? []
 
-  const homeChannelSlugs = ['general', 'promotions']
-  const { data: homeChannels, error: homeChannelsError } = await supabase
-    .from('channels')
-    .select('id, slug')
-    .in('slug', homeChannelSlugs)
+  // --- WAVE 3: Fetch Content in Parallel ---
+  // Now that we have the IDs from Wave 2, we fetch the heavy content simultaneously.
+  const [postsResponse, announcementsResponse] = await Promise.all([
+    // 1. Fetch Main Feed
+    homeChannelIds.length > 0 
+      ? supabase
+          .from('posts')
+          .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
+          .in('channel_id', homeChannelIds)
+          .order('created_at', { ascending: false })
+          .limit(20)
+      : Promise.resolve({ data: [], error: null }), // Fallback if no channels found
 
-  if (homeChannelsError) {
-    console.error('Error loading home channels:', homeChannelsError)
+    // 2. Fetch Announcements
+    announcementChannel?.id
+      ? supabase
+          .from('posts')
+          .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
+          .eq('channel_id', announcementChannel.id)
+          .order('is_pinned', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(5)
+      : Promise.resolve({ data: [], error: null })
+  ])
+
+  const postsData = postsResponse.data || []
+  const announcements = announcementsResponse.data || []
+
+  // --- WAVE 4: Optimize Likes (Batch Processing) ---
+  // This is fast because we already have the post IDs.
+  let posts = postsData
+
+  if (postsData.length > 0) {
+    const postIds = postsData.map((post: any) => post.id)
+    
+    // Fetch likes for ALL posts in one single query
+    const { data: userLikes } = await supabase
+      .from('post_likes')
+      .select('id, post_id')
+      .eq('user_id', user.id)
+      .in('post_id', postIds)
+
+    // Map them for O(1) lookup
+    const likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
+    const likeIdByPostId = new Map((userLikes || []).map((like) => [like.post_id, like.id]))
+
+    // Merge data efficiently
+    posts = postsData.map((post: any) => ({
+      ...post,
+      like_count: post.likes_count ?? 0,
+      comment_count: post.comment_count ?? 0,
+      user_has_liked: likedPostIds.has(post.id),
+      like_id: likeIdByPostId.get(post.id) ?? null,
+    }))
   }
 
-  const homeChannelIds = homeChannels?.map(channel => channel.id) ?? []
-  let postsData: any[] | null = []
-  let postsError: any = null
-
-  if (homeChannelIds.length > 0) {
-    const response = await supabase
-      .from('posts')
-      .select(`
-        *,
-        author:profiles!posts_author_id_fkey(*),
-        channel:channels!inner(*)
-      `)
-      .in('channel_id', homeChannelIds)
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    postsData = response.data
-    postsError = response.error
-  }
-
-  if (postsError) {
-    console.error('Error loading home feed posts:', postsError)
-  } else {
-    console.log('Loaded home feed posts:', postsData?.map(p => ({
-      title: p.title,
-      channel: p.channel?.name,
-      channel_slug: p.channel?.slug
-    })))
-  }
-
-  // Fetch like counts, comment counts, and user like status for posts
-  let postsWithLikes = postsData || []
-  if (postsData && postsData.length > 0 && user) {
-    postsWithLikes = await Promise.all(
-      postsData.map(async (post: any) => {
-        const { count: like_count } = await supabase
-          .from('post_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', post.id)
-
-        const { data: userLike } = await supabase
-          .from('post_likes')
-          .select('id')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        const { count: comment_count } = await supabase
-          .from('comments')
-          .select('*', { count: 'exact', head: true })
-          .eq('post_id', post.id)
-
-        return {
-          ...post,
-          like_count: like_count || 0,
-          user_has_liked: !!userLike,
-          comment_count: comment_count || 0,
-        }
-      })
-    )
-  }
-
-  const posts = postsWithLikes
-
-  // Fetch announcements
-  const { data: announcementsData, error: announcementsError } = await supabase
-    .from('posts')
-    .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
-    `)
-    .eq('channel_id', announcementChannel?.id)
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  if (announcementsError) {
-    console.error('Error loading announcements:', announcementsError)
-  } else {
-    console.log('Loaded announcement feed items:', announcementsData?.map(p => ({
-      title: p.title,
-      channel: p.channel?.name,
-      channel_slug: p.channel?.slug
-    })))
-  }
-  const announcements = announcementsData
-
+  // --- RENDER (No changes below here) ---
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
@@ -318,6 +278,7 @@ export default async function DashboardPage() {
                       postId={post.id}
                       likeCount={post.like_count || 0}
                       userHasLiked={post.user_has_liked || false}
+                      likeId={post.like_id || null}
                     />
                     <CommentCountButton
                       postId={post.id}

@@ -8,6 +8,7 @@ interface PostLikeButtonProps {
   postId: string
   likeCount: number
   userHasLiked: boolean
+  likeId?: string | null
   onLikeChange?: (newCount: number, newLikeStatus: boolean) => void
 }
 
@@ -15,12 +16,13 @@ export default function PostLikeButton({
   postId,
   likeCount,
   userHasLiked,
+  likeId: initialLikeId = null,
   onLikeChange,
 }: PostLikeButtonProps) {
   const [loading, setLoading] = useState(false)
   const [liked, setLiked] = useState(userHasLiked)
   const [count, setCount] = useState(likeCount)
-  const [likeId, setLikeId] = useState<string | null>(null)
+  const [likeId, setLikeId] = useState<string | null>(initialLikeId)
 
   const handleLike = async () => {
     setLoading(true)

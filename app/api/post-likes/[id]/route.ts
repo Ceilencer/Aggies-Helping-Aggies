@@ -22,7 +22,7 @@ export async function DELETE(
     // Verify user owns this like
     const { data: like, error: fetchError } = await supabase
       .from('post_likes')
-      .select('user_id')
+      .select('user_id, post_id')
       .eq('id', likeId)
       .single()
 
