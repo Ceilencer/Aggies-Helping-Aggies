@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
+import PostCardHeader from '@/components/PostCardHeader'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
@@ -21,19 +22,22 @@ export default async function DashboardPage() {
   }
 
   // --- WAVE 2: Fetch "Setup" Data in Parallel ---
-  // We fire these three requests at the exact same time.
-  const [profileResponse, announcementChannelResponse, homeChannelsResponse] = await Promise.all([
+  // We fire these requests at the exact same time.
+  const [profileResponse, announcementChannelResponse, homeChannelsResponse, allChannelsResponse] = await Promise.all([
     // 1. Get Profile
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     // 2. Get Announcement Channel ID
     supabase.from('channels').select('id').eq('slug', 'announcements').single(),
     // 3. Get Home Channel IDs
-    supabase.from('channels').select('id, slug').in('slug', ['general', 'promotions'])
+    supabase.from('channels').select('id, slug').in('slug', ['general', 'promotions']),
+    // 4. Get All Channels (for admin menu)
+    supabase.from('channels').select('*').order('name')
   ])
 
   const profile = profileResponse.data
   const announcementChannel = announcementChannelResponse.data
   const homeChannels = homeChannelsResponse.data
+  const allChannels = allChannelsResponse.data || []
   const homeChannelIds = homeChannels?.map(c => c.id) ?? []
 
   // --- WAVE 3: Fetch Content in Parallel ---
@@ -214,46 +218,11 @@ export default async function DashboardPage() {
           posts.map((post: any) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3">
-                    {/* Author Avatar */}
-                    {post.author?.avatar_url ? (
-                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                        <Image
-                          src={post.author.avatar_url}
-                          alt={`${post.author?.full_name || 'User'} avatar`}
-                          fill
-                          sizes="40px"
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                        {getInitials(post.author?.full_name || 'Unknown')}
-                      </div>
-                    )}
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-card-header-text">
-                          {post.author?.full_name}
-                        </p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
-                          {post.author?.role}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-card-subtext">
-                        <span>{post.channel?.icon} {post.channel?.name}</span>
-                        <span>•</span>
-                        <span>{formatRelativeTime(post.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {post.is_pinned && (
-                    <span className="text-primary text-sm font-medium">📌 Pinned</span>
-                  )}
-                </div>
+                <PostCardHeader
+                  post={post}
+                  isAdmin={profile?.role === 'Admin'}
+                  channels={allChannels}
+                />
               </CardHeader>
               
               <CardContent className="space-y-3 pb-0">

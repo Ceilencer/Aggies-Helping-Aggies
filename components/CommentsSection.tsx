@@ -9,11 +9,13 @@ import type { Comment, Profile } from '@/lib/types'
 interface CommentsSectionProps {
   postId: string
   currentUserId?: string
+  currentUserRole?: string
 }
 
 export default function CommentsSection({
   postId,
   currentUserId,
+  currentUserRole,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -98,6 +100,7 @@ export default function CommentsSection({
                 <CommentCard
                   comment={comment}
                   currentUserId={currentUserId}
+                  currentUserRole={currentUserRole}
                   postId={postId}
                   onCommentDeleted={handleCommentDeleted}
                   onReplyCreated={handleReplyCreated}
@@ -108,6 +111,7 @@ export default function CommentsSection({
                     key={reply.id}
                     comment={reply}
                     currentUserId={currentUserId}
+                    currentUserRole={currentUserRole}
                     postId={postId}
                     onCommentDeleted={handleCommentDeleted}
                     isReply={true}

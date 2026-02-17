@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentsSection from '@/components/CommentsSection'
+import PostAdminMenu from '@/components/PostAdminMenu'
 import { PostImageDisplay } from '@/components/PostImageDisplay'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import type { Post, Profile } from '@/lib/types'
+import type { Post, Profile, Channel } from '@/lib/types'
 
 export default function PostDetailPage() {
   const params = useParams()
@@ -22,6 +23,8 @@ export default function PostDetailPage() {
 
   const [post, setPost] = useState<Post | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string>('')
+  const [currentUserRole, setCurrentUserRole] = useState<string>('')
+  const [channels, setChannels] = useState<Channel[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
@@ -32,6 +35,17 @@ export default function PostDetailPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           setCurrentUserId(user.id)
+          
+          // Load user's role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+          
+          if (profile) {
+            setCurrentUserRole(profile.role)
+          }
         }
 
         // Fetch post
@@ -48,6 +62,16 @@ export default function PostDetailPage() {
           console.error('Error loading post:', error)
           setPost(null)
           return
+        }
+
+        // Load channels for admin menu
+        const { data: channelsData } = await supabase
+          .from('channels')
+          .select('*')
+          .order('name')
+        
+        if (channelsData) {
+          setChannels(channelsData)
         }
 
         // Get like count
@@ -191,6 +215,15 @@ export default function PostDetailPage() {
                 <Trash2 size={16} />
               </Button>
             )}
+            {currentUserRole === 'Admin' && (
+              <PostAdminMenu
+                postId={post.id}
+                postChannelId={post.channel_id}
+                isAdmin={true}
+                channels={channels}
+                onPostDeleted={() => router.push('/dashboard')}
+              />
+            )}
           </div>
         </CardHeader>
 
@@ -224,7 +257,7 @@ export default function PostDetailPage() {
       </Card>
 
       {/* Comments Section */}
-      <CommentsSection postId={post.id} currentUserId={currentUserId} />
+      <CommentsSection postId={post.id} currentUserId={currentUserId} currentUserRole={currentUserRole} />
     </div>
   )
 }

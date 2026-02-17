@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import CommentLikeButton from '@/components/CommentLikeButton'
 import CommentForm from '@/components/CommentForm'
+import CommentAdminMenu from '@/components/CommentAdminMenu'
 import { formatRelativeTime, getInitials, getRoleBadgeColor } from '@/lib/utils'
 import { Trash2 } from 'lucide-react'
 import type { Comment, Profile } from '@/lib/types'
@@ -13,6 +14,7 @@ import type { Comment, Profile } from '@/lib/types'
 interface CommentCardProps {
   comment: Comment & { author?: Profile; like_count?: number; user_has_liked?: boolean }
   currentUserId?: string
+  currentUserRole?: string
   postId: string
   onCommentDeleted?: (commentId: string) => void
   onReplyCreated?: (reply: any) => void
@@ -22,6 +24,7 @@ interface CommentCardProps {
 export default function CommentCard({
   comment,
   currentUserId,
+  currentUserRole,
   postId,
   onCommentDeleted,
   onReplyCreated,
@@ -82,18 +85,25 @@ export default function CommentCard({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-sm">
-                {comment.author?.full_name}
-              </span>
-              {comment.author?.role && (
-                <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(comment.author.role)}`}>
-                  {comment.author.role}
+            <div className="flex items-center gap-2 flex-wrap justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-sm">
+                  {comment.author?.full_name}
                 </span>
-              )}
-              <span className="text-xs text-muted-foreground">
-                {formatRelativeTime(comment.created_at)}
-              </span>
+                {comment.author?.role && (
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(comment.author.role)}`}>
+                    {comment.author.role}
+                  </span>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {formatRelativeTime(comment.created_at)}
+                </span>
+              </div>
+              <CommentAdminMenu
+                commentId={comment.id}
+                isAdmin={currentUserRole === 'Admin'}
+                onCommentDeleted={onCommentDeleted}
+              />
             </div>
 
             <p className="text-sm text-foreground mt-2 break-words whitespace-pre-wrap">

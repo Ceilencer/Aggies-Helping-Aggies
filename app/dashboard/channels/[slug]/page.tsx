@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
+import PostCardHeader from '@/components/PostCardHeader'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import { createClient } from '@/lib/supabase/client'
@@ -28,8 +29,10 @@ export default function ChannelPage() {
 
   const [channel, setChannel] = useState<any>(null)
   const [posts, setPosts] = useState<any[]>([])
+  const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [userAuthenticated, setUserAuthenticated] = useState(false)
+  const [currentUserRole, setCurrentUserRole] = useState<string>('')
 
   useEffect(() => {
     const loadChannelData = async () => {
@@ -48,8 +51,27 @@ export default function ChannelPage() {
 
     const loadSupabaseData = async (userId: string) => {
       try {
-        // Fetch channel from database
-        const { data: channelData, error: channelError } = await supabase
+        // Load user role
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .single()
+        
+        if (profileData) {
+          setCurrentUserRole(profileData.role)
+        }
+
+        // Load all channels for admin menu
+        const { data: allChannelsData } = await supabase
+          .from('channels')
+          .select('*')
+          .order('name')
+        
+        if (allChannelsData) {
+          setChannels(allChannelsData)
+        }
+
           .from('channels')
           .select('*')
           .in('slug', [canonicalSlug, rawSlug])
@@ -176,46 +198,11 @@ export default function ChannelPage() {
           posts.map((post: any) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3">
-                    {/* Author Avatar */}
-                    {post.author?.avatar_url ? (
-                      <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                        <Image
-                          src={post.author.avatar_url}
-                          alt={`${post.author?.full_name || 'User'} avatar`}
-                          fill
-                          sizes="40px"
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                        {getInitials(post.author?.full_name || 'Unknown')}
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <p className="font-semibold text-card-header-text">
-                          {post.author?.full_name}
-                        </p>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
-                          {post.author?.role}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2 text-sm text-card-subtext">
-                        <span>{post.channel?.icon} {post.channel?.name}</span>
-                        <span>•</span>
-                        <span>{formatRelativeTime(post.created_at)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {post.is_pinned && (
-                    <span className="text-primary text-sm font-medium">📌 Pinned</span>
-                  )}
-                </div>
+                <PostCardHeader
+                  post={post}
+                  isAdmin={currentUserRole === 'Admin'}
+                  channels={channels}
+                />
               </CardHeader>
 
               <CardContent className="space-y-3 pb-0">
