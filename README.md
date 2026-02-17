@@ -14,7 +14,7 @@ Built with **Next.js 16**, **Supabase**, **TypeScript**, and official **TAMU bra
 
 #### 🔐 Multi-Tier Verification System
 - **Tier 1**: Automatic verification for @tamu.edu and @aggienetwork.com email addresses
-- **Tier 2**: Alumni verification questionnaire for former students without TAMU emails
+- **Tier 2**: Former Student verification questionnaire for former students without TAMU emails
 
 #### 👥 Role-Based Access Control
 Four distinct user roles with different posting privileges:
