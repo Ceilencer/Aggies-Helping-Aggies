@@ -64,6 +64,12 @@ export default function PostDetailPage() {
           return
         }
 
+        // If the post is unmoderated, do not allow viewing (only approved posts are shown)
+        if (!postData.is_moderated) {
+          setPost(null)
+          return
+        }
+
         // Load channels for admin menu
         const { data: channelsData } = await supabase
           .from('channels')

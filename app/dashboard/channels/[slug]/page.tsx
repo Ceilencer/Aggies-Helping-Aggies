@@ -93,7 +93,7 @@ export default function ChannelPage() {
 
         setChannel(channelData)
 
-        // Fetch posts for this channel
+        // Fetch posts for this channel. Only include approved posts.
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
           .select(`
@@ -102,6 +102,7 @@ export default function ChannelPage() {
             channel:channels(*)
           `)
           .eq('channel_id', channelData.id)
+          .eq('is_moderated', true)
           .order('created_at', { ascending: false })
           .limit(50)
 

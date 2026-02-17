@@ -43,12 +43,13 @@ export default async function DashboardPage() {
   // --- WAVE 3: Fetch Content in Parallel ---
   // Now that we have the IDs from Wave 2, we fetch the heavy content simultaneously.
   const [postsResponse, announcementsResponse] = await Promise.all([
-    // 1. Fetch Main Feed
-    homeChannelIds.length > 0 
+    // 1. Fetch Main Feed (only approved posts)
+    homeChannelIds.length > 0
       ? supabase
           .from('posts')
           .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
           .in('channel_id', homeChannelIds)
+          .eq('is_moderated', true)
           .order('created_at', { ascending: false })
           .limit(20)
       : Promise.resolve({ data: [], error: null }), // Fallback if no channels found
@@ -59,6 +60,7 @@ export default async function DashboardPage() {
           .from('posts')
           .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
           .eq('channel_id', announcementChannel.id)
+          .eq('is_moderated', true)
           .order('is_pinned', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(5)
