@@ -51,32 +51,39 @@ export default function ChannelPage() {
 
     const loadSupabaseData = async (userId: string) => {
       try {
-        // Load user role
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', userId)
-          .single()
-        
+        // WAVE 1: Fetch user profile and channels in parallel
+        const [profileResponse, allChannelsResponse, channelResponse] = await Promise.all([
+          // 1. Get user profile (role)
+          supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single(),
+          // 2. Get all channels for admin menu
+          supabase
+            .from('channels')
+            .select('*')
+            .order('name'),
+          // 3. Get specific channel by slug
+          supabase
+            .from('channels')
+            .select('*')
+            .in('slug', [canonicalSlug, rawSlug])
+            .maybeSingle(),
+        ])
+
+        const profileData = profileResponse.data
+        const allChannelsData = allChannelsResponse.data || []
+        const channelData = channelResponse.data
+        const channelError = channelResponse.error
+
         if (profileData) {
           setCurrentUserRole(profileData.role)
         }
 
-        // Load all channels for admin menu
-        const { data: allChannelsData } = await supabase
-          .from('channels')
-          .select('*')
-          .order('name')
-        
-        if (allChannelsData) {
+        if (allChannelsData.length > 0) {
           setChannels(allChannelsData)
         }
-
-        const { data: channelData, error: channelError } = await supabase
-          .from('channels')
-          .select('*')
-          .in('slug', [canonicalSlug, rawSlug])
-          .maybeSingle()
 
         if (channelError) {
           console.error('Error loading channel:', channelError)
@@ -93,45 +100,46 @@ export default function ChannelPage() {
 
         setChannel(channelData)
 
-        // Fetch posts for this channel. Only include approved posts.
-        const { data: postsData, error: postsError } = await supabase
-          .from('posts')
-          .select(`
-            *,
-            author:profiles!posts_author_id_fkey(*),
-            channel:channels(*)
-          `)
-          .eq('channel_id', channelData.id)
-          .eq('is_moderated', true)
-          .order('created_at', { ascending: false })
-          .limit(50)
+        // WAVE 2: Fetch posts and user likes in parallel
+        const [postsResponse, userLikesResponse] = await Promise.all([
+          // 1. Fetch posts for this channel (approved only)
+          supabase
+            .from('posts')
+            .select(`
+              *,
+              author:profiles!posts_author_id_fkey(*),
+              channel:channels(*)
+            `)
+            .eq('channel_id', channelData.id)
+            .eq('is_moderated', true)
+            .order('created_at', { ascending: false })
+            .limit(50),
+          // 2. Fetch ALL user likes (we'll filter below)
+          supabase
+            .from('post_likes')
+            .select('id, post_id')
+            .eq('user_id', userId),
+        ])
 
-        if (postsError) {
-          console.error('Error loading posts:', postsError)
+        const postsData = postsResponse.data || []
+        const allUserLikes = userLikesResponse.data || []
+
+        if (postsResponse.error) {
+          console.error('Error loading posts:', postsResponse.error)
           setPosts([])
         } else {
-          const postIds = (postsData || []).map((post) => post.id)
-          let likedPostIds = new Set<string>()
-          let likeIdByPostId = new Map<string, string>()
+          // Create lookup maps for O(1) access
+          const postIds = new Set(postsData.map((post) => post.id))
+          const likedPostIds = new Set(
+            allUserLikes.filter((like) => postIds.has(like.post_id)).map((like) => like.post_id)
+          )
+          const likeIdByPostId = new Map(
+            allUserLikes
+              .filter((like) => postIds.has(like.post_id))
+              .map((like) => [like.post_id, like.id])
+          )
 
-          if (postIds.length > 0) {
-            const { data: userLikes, error: userLikesError } = await supabase
-              .from('post_likes')
-              .select('id, post_id')
-              .eq('user_id', userId)
-              .in('post_id', postIds)
-
-            if (userLikesError) {
-              console.error('Error loading user likes:', userLikesError)
-            } else {
-              likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
-              likeIdByPostId = new Map(
-                (userLikes || []).map((like) => [like.post_id, like.id])
-              )
-            }
-          }
-
-          const formattedPosts = (postsData || []).map((post) => ({
+          const formattedPosts = postsData.map((post) => ({
             ...post,
             like_count: post.likes_count ?? 0,
             comment_count: post.comment_count ?? 0,

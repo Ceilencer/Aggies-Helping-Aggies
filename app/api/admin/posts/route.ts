@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextResponse } from 'next/server'
+import { NextResponse, NextRequest } from 'next/server'
+import { getCachedPendingPosts } from '@/lib/supabase/cached-queries'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
@@ -25,20 +26,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Fetch pending posts (not yet moderated)
-    const { data, error } = await supabase
-      .from('posts')
-      .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
-      .eq('is_moderated', false)
-      .order('created_at', { ascending: false })
-      .limit(50)
+    // Get pagination parameters
+    const searchParams = request.nextUrl.searchParams
+    const offset = parseInt(searchParams.get('offset') || '0', 10)
+    const limit = parseInt(searchParams.get('limit') || '15', 10)
 
-    if (error) {
-      console.error('Supabase error fetching pending posts:', error)
-      return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 })
-    }
+    // Fetch pending posts with caching
+    const result = await getCachedPendingPosts(offset, supabase, limit)
 
-    return NextResponse.json(data || [])
+    return NextResponse.json(result)
   } catch (err) {
     console.error(err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

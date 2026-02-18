@@ -10,6 +10,14 @@ import PostCardHeader from '@/components/PostCardHeader'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
+import {
+  getCachedUserProfile,
+  getCachedAnnouncementChannel,
+  getCachedHomeChannels,
+  getCachedAllChannels,
+  getCachedPostsByChannels,
+  getCachedAnnouncements,
+} from '@/lib/supabase/cached-queries'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -21,75 +29,55 @@ export default async function DashboardPage() {
     redirect('/')
   }
 
-  // --- WAVE 2: Fetch "Setup" Data in Parallel ---
-  // We fire these requests at the exact same time.
-  const [profileResponse, announcementChannelResponse, homeChannelsResponse, allChannelsResponse] = await Promise.all([
-    // 1. Get Profile
-    supabase.from('profiles').select('*').eq('id', user.id).single(),
-    // 2. Get Announcement Channel ID
-    supabase.from('channels').select('id').eq('slug', 'announcements').single(),
-    // 3. Get Home Channel IDs
-    supabase.from('channels').select('id, slug').in('slug', ['general', 'promotions']),
-    // 4. Get All Channels (for admin menu)
-    supabase.from('channels').select('*').order('name')
+  // --- WAVE 2: Fetch Cached Setup Data in Parallel ---
+  const [profileData, announcementChannel, homeChannels, allChannels] = await Promise.all([
+    getCachedUserProfile(user.id, supabase),
+    getCachedAnnouncementChannel(supabase),
+    getCachedHomeChannels(supabase),
+    getCachedAllChannels(supabase),
   ])
 
-  const profile = profileResponse.data
-  const announcementChannel = announcementChannelResponse.data
-  const homeChannels = homeChannelsResponse.data
-  const allChannels = allChannelsResponse.data || []
+  const profile = profileData
   const homeChannelIds = homeChannels?.map(c => c.id) ?? []
 
   // --- WAVE 3: Fetch Content in Parallel ---
-  // Now that we have the IDs from Wave 2, we fetch the heavy content simultaneously.
-  const [postsResponse, announcementsResponse] = await Promise.all([
-    // 1. Fetch Main Feed (only approved posts)
+  const [postsData, announcementsData] = await Promise.all([
     homeChannelIds.length > 0
-      ? supabase
-          .from('posts')
-          .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
-          .in('channel_id', homeChannelIds)
-          .eq('is_moderated', true)
-          .order('created_at', { ascending: false })
-          .limit(20)
-      : Promise.resolve({ data: [], error: null }), // Fallback if no channels found
-
-    // 2. Fetch Announcements
+      ? getCachedPostsByChannels(homeChannelIds, supabase, 20)
+      : Promise.resolve([]),
     announcementChannel?.id
-      ? supabase
-          .from('posts')
-          .select(`*, author:profiles!posts_author_id_fkey(*), channel:channels!inner(*)`)
-          .eq('channel_id', announcementChannel.id)
-          .eq('is_moderated', true)
-          .order('is_pinned', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(5)
-      : Promise.resolve({ data: [], error: null })
+      ? getCachedAnnouncements(announcementChannel.id, supabase, 5)
+      : Promise.resolve([]),
   ])
 
-  const postsData = postsResponse.data || []
-  const announcements = announcementsResponse.data || []
+  // --- WAVE 4: Optimize Likes for Both Posts and Announcements (Batch Processing) ---
+  const allPostIds = [
+    ...postsData.map((post: any) => post.id),
+    ...announcementsData.map((post: any) => post.id),
+  ]
 
-  // --- WAVE 4: Optimize Likes (Batch Processing) ---
-  // This is fast because we already have the post IDs.
   let posts = postsData
+  let announcementsPosts = announcementsData
 
-  if (postsData.length > 0) {
-    const postIds = postsData.map((post: any) => post.id)
-    
-    // Fetch likes for ALL posts in one single query
+  if (allPostIds.length > 0) {
     const { data: userLikes } = await supabase
       .from('post_likes')
       .select('id, post_id')
       .eq('user_id', user.id)
-      .in('post_id', postIds)
+      .in('post_id', allPostIds)
 
-    // Map them for O(1) lookup
     const likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
     const likeIdByPostId = new Map((userLikes || []).map((like) => [like.post_id, like.id]))
 
-    // Merge data efficiently
     posts = postsData.map((post: any) => ({
+      ...post,
+      like_count: post.likes_count ?? 0,
+      comment_count: post.comment_count ?? 0,
+      user_has_liked: likedPostIds.has(post.id),
+      like_id: likeIdByPostId.get(post.id) ?? null,
+    }))
+
+    announcementsPosts = announcementsData.map((post: any) => ({
       ...post,
       like_count: post.likes_count ?? 0,
       comment_count: post.comment_count ?? 0,
@@ -157,8 +145,8 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {announcements && announcements.length > 0 && (
-          announcements.map((announcement: any) => (
+        {announcementsData && announcementsData.length > 0 && (
+          announcementsPosts.map((announcement: any) => (
             <Card
               key={announcement.id}
               className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark"
