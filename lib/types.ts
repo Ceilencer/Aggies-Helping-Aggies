@@ -17,6 +17,7 @@ export interface Profile {
   graduation_year?: number
   major?: string
   last_login?: string
+  rules_acknowledged_at?: string
 }
 
 export interface AdminNote {

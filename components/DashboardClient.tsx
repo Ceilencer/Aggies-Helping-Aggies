@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
+import RulesAcknowledgmentModal from '@/components/RulesAcknowledgmentModal'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import type { Channel, Post, Profile } from '@/lib/types'
 
@@ -44,6 +45,35 @@ export default function DashboardClient({
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [showRulesModal, setShowRulesModal] = useState(false)
+  const [isAcknowledgingRules, setIsAcknowledgingRules] = useState(false)
+
+  // Check if user needs to acknowledge rules on mount
+  useEffect(() => {
+    if (profile && !profile.rules_acknowledged_at) {
+      setShowRulesModal(true)
+    }
+  }, [profile])
+
+  const handleAcknowledgeRules = async () => {
+    try {
+      setIsAcknowledgingRules(true)
+      const response = await fetch('/api/acknowledge-rules', {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to acknowledge rules')
+      }
+
+      setShowRulesModal(false)
+    } catch (error) {
+      console.error('Error acknowledging rules:', error)
+      // Keep modal open on error, user can try again
+    } finally {
+      setIsAcknowledgingRules(false)
+    }
+  }
 
   const openCreatePost = (channelSlug?: string) => {
     setCreatePostChannelSlug(channelSlug)
@@ -301,6 +331,12 @@ export default function DashboardClient({
         postId={activePostId}
         onClose={() => setActivePostId(null)}
         onPostDeleted={handlePostDeleted}
+      />
+
+      <RulesAcknowledgmentModal
+        isOpen={showRulesModal}
+        onAcknowledge={handleAcknowledgeRules}
+        isLoading={isAcknowledgingRules}
       />
     </>
   )
