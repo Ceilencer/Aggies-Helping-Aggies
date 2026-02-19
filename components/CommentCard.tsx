@@ -22,7 +22,6 @@ interface CommentCardProps {
   onReplyCreated?: (reply: any) => void
   onCommentUpdated?: (comment: Comment) => void
   isReply?: boolean
-  onOpenProfile?: (userId: string) => void
 }
 
 export default function CommentCard({
@@ -34,13 +33,11 @@ export default function CommentCard({
   onReplyCreated,
   onCommentUpdated,
   isReply = false,
-  onOpenProfile,
 }: CommentCardProps) {
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [updatedComment, setUpdatedComment] = useState(comment)
-  const authorId = comment.author?.id
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this comment?')) {
@@ -94,66 +91,31 @@ export default function CommentCard({
       <Card className="p-4">
         <div className="flex gap-3">
           {/* Avatar - Clickable */}
-          {onOpenProfile && authorId ? (
-            <button
-              type="button"
-              onClick={() => onOpenProfile(authorId)}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity"
-              aria-label="Open user profile"
-            >
-              {comment.author?.avatar_url ? (
-                <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                  <Image
-                    src={comment.author.avatar_url}
-                    alt={`${comment.author?.full_name} avatar`}
-                    fill
-                    sizes="32px"
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-semibold">
-                  {getInitials(comment.author?.full_name || 'Unknown')}
-                </div>
-              )}
-            </button>
-          ) : (
-            <Link href={`/users/${comment.author?.id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
-              {comment.author?.avatar_url ? (
-                <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                  <Image
-                    src={comment.author.avatar_url}
-                    alt={`${comment.author?.full_name} avatar`}
-                    fill
-                    sizes="32px"
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-semibold">
-                  {getInitials(comment.author?.full_name || 'Unknown')}
-                </div>
-              )}
-            </Link>
-          )}
+          <Link href={`/users/${comment.author?.id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+            {comment.author?.avatar_url ? (
+              <div className="relative h-8 w-8 overflow-hidden rounded-full">
+                <Image
+                  src={comment.author.avatar_url}
+                  alt={`${comment.author?.full_name} avatar`}
+                  fill
+                  sizes="32px"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground font-semibold">
+                {getInitials(comment.author?.full_name || 'Unknown')}
+              </div>
+            )}
+          </Link>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap justify-between">
               <div className="flex items-center gap-2 flex-wrap">
-                {onOpenProfile && authorId ? (
-                  <button
-                    type="button"
-                    onClick={() => onOpenProfile(authorId)}
-                    className="font-semibold text-sm hover:underline"
-                  >
-                    {comment.author?.full_name}
-                  </button>
-                ) : (
-                  <Link href={`/users/${comment.author?.id}`} className="font-semibold text-sm hover:underline">
-                    {comment.author?.full_name}
-                  </Link>
-                )}
+                <Link href={`/users/${comment.author?.id}`} className="font-semibold text-sm hover:underline">
+                  {comment.author?.full_name}
+                </Link>
                 {comment.author?.role && (
                   <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(comment.author.role)}`}>
                     {comment.author.role}

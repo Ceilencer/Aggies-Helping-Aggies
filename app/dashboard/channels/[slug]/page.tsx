@@ -11,7 +11,6 @@ import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
-import UserProfileModal from '@/components/UserProfileModal'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile, Post, Channel } from '@/lib/types'
 
@@ -39,7 +38,6 @@ export default function ChannelPage() {
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(null)
 
   useEffect(() => {
     const loadChannelData = async () => {
@@ -224,7 +222,6 @@ export default function ChannelPage() {
                     setPosts(current => current.filter(item => item.id !== postId))
                   }}
                   onEditClick={() => setEditingPostId(post.id)}
-                  onOpenProfile={(userId) => setActiveProfileId(userId)}
                 />
               </CardHeader>
 
@@ -307,12 +304,6 @@ export default function ChannelPage() {
         onPostDeleted={(postId) => {
           setPosts(current => current.filter(item => item.id !== postId))
         }}
-      />
-
-      <UserProfileModal
-        isOpen={!!activeProfileId}
-        userId={activeProfileId}
-        onClose={() => setActiveProfileId(null)}
       />
 
       {editingPostId && (

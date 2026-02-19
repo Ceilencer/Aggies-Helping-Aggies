@@ -250,7 +250,6 @@ export default function DashboardClient({
                     currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
                     onEditClick={() => setEditingPostId(post.id)}
-                    onOpenProfile={(userId) => setActiveProfileId(userId)}
                   />
                 </CardHeader>
 

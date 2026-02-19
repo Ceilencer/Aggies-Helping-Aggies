@@ -10,14 +10,12 @@ interface CommentsSectionProps {
   postId: string
   currentUserId?: string
   currentUserRole?: string
-  onOpenProfile?: (userId: string) => void
 }
 
 export default function CommentsSection({
   postId,
   currentUserId,
   currentUserRole,
-  onOpenProfile,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -106,7 +104,6 @@ export default function CommentsSection({
                   postId={postId}
                   onCommentDeleted={handleCommentDeleted}
                   onReplyCreated={handleReplyCreated}
-                  onOpenProfile={onOpenProfile}
                 />
                 {/* Replies */}
                 {getReplies(comment.id).map((reply) => (
@@ -118,7 +115,6 @@ export default function CommentsSection({
                     postId={postId}
                     onCommentDeleted={handleCommentDeleted}
                     isReply={true}
-                    onOpenProfile={onOpenProfile}
                   />
                 ))}
               </div>

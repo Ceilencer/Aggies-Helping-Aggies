@@ -10,7 +10,6 @@ import PostLikeButton from '@/components/PostLikeButton'
 import CommentsSection from '@/components/CommentsSection'
 import PostAdminMenu from '@/components/PostAdminMenu'
 import { PostImageDisplay } from '@/components/PostImageDisplay'
-import UserProfileModal from '@/components/UserProfileModal'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trash2 } from 'lucide-react'
@@ -38,7 +37,6 @@ export default function PostDetailPanel({
   const [channels, setChannels] = useState<Channel[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(null)
 
   useEffect(() => {
     const loadPost = async () => {
@@ -200,12 +198,7 @@ export default function PostDetailPanel({
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-3 flex-1">
               {post.author?.avatar_url ? (
-                <button
-                  type="button"
-                  onClick={() => setActiveProfileId(post.author?.id || null)}
-                  className="relative h-10 w-10 overflow-hidden rounded-full flex-shrink-0"
-                  aria-label="Open user profile"
-                >
+                <div className="relative h-10 w-10 overflow-hidden rounded-full flex-shrink-0">
                   <Image
                     src={post.author.avatar_url}
                     alt={`${post.author?.full_name} avatar`}
@@ -213,27 +206,18 @@ export default function PostDetailPanel({
                     sizes="40px"
                     className="object-cover"
                   />
-                </button>
+                </div>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setActiveProfileId(post.author?.id || null)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold flex-shrink-0"
-                  aria-label="Open user profile"
-                >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold flex-shrink-0">
                   {getInitials(post.author?.full_name || 'Unknown')}
-                </button>
+                </div>
               )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => setActiveProfileId(post.author?.id || null)}
-                    className="font-semibold text-card-header-text"
-                  >
+                  <p className="font-semibold text-card-header-text">
                     {post.author?.full_name}
-                  </button>
+                  </p>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role || 'Personal')}`}>
                     {post.author?.role}
                   </span>
@@ -294,17 +278,7 @@ export default function PostDetailPanel({
         </CardContent>
       </Card>
 
-      <CommentsSection
-        postId={post.id}
-        currentUserId={currentUserId}
-        currentUserRole={currentUserRole}
-        onOpenProfile={(userId) => setActiveProfileId(userId)}
-      />
-      <UserProfileModal
-        isOpen={!!activeProfileId}
-        userId={activeProfileId}
-        onClose={() => setActiveProfileId(null)}
-      />
+      <CommentsSection postId={post.id} currentUserId={currentUserId} currentUserRole={currentUserRole} />
     </div>
   )
 }
