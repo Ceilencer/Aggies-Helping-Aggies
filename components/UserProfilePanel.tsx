@@ -382,14 +382,14 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
                               onClick={() =>
                                 handleUpdateNote(note.id)
                               }
-                              size="xs"
+                              size="sm"
                               className="flex-1"
                             >
                               Save
                             </Button>
                             <Button
                               onClick={() => setEditingNoteId(null)}
-                              size="xs"
+                              size="sm"
                               variant="outline"
                               className="flex-1"
                             >
@@ -416,14 +416,14 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
                                 setEditingNoteId(note.id)
                                 setEditingNoteContent(note.content)
                               }}
-                              size="xs"
+                              size="sm"
                               variant="outline"
                             >
                               Edit
                             </Button>
                             <Button
                               onClick={() => handleDeleteNote(note.id)}
-                              size="xs"
+                              size="sm"
                               variant="secondary"
                               className="text-red-600 hover:text-red-700"
                             >
