@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { editCommentSchema } from '@/lib/validations'
-import { filterProfanity } from '@/lib/profanity-filter'
+import { censorProfanity } from '@/lib/profanity-filter'
 
 export async function PUT(
   request: NextRequest,
@@ -24,7 +24,7 @@ export async function PUT(
     let { content } = validation.data
 
     // Optionally filter profanity in comments (can also be moderated)
-    content = filterProfanity(content)
+    content = censorProfanity(content)
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

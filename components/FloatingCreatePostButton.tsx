@@ -6,7 +6,15 @@ import { Plus } from "lucide-react"
 
 const DEFAULT_OFFSET = 24
 
-export default function FloatingCreatePostButton() {
+interface FloatingCreatePostButtonProps {
+  onClick?: () => void
+  href?: string
+}
+
+export default function FloatingCreatePostButton({
+  onClick,
+  href = '/dashboard/post-creation',
+}: FloatingCreatePostButtonProps) {
   const [bottomOffset, setBottomOffset] = useState(DEFAULT_OFFSET)
 
   useEffect(() => {
@@ -51,10 +59,26 @@ export default function FloatingCreatePostButton() {
     }
   }, [])
 
+  const className = "fixed right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-maroon text-white shadow-lg transition-colors hover:bg-brand-maroon-hover"
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={className}
+        style={{ bottom: `${bottomOffset}px` }}
+        aria-label="Create new post"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+    )
+  }
+
   return (
     <Link
-      href="/dashboard/post-creation"
-      className="fixed right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-maroon text-white shadow-lg transition-colors hover:bg-brand-maroon-hover"
+      href={href}
+      className={className}
       style={{ bottom: `${bottomOffset}px` }}
       aria-label="Create new post"
     >
