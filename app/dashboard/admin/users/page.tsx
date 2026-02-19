@@ -1,14 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import UserBanManager from '@/components/UserBanManager'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export default function UserManagementPage() {
-  const [selectedUserId, setSelectedUserId] = useState('')
-  const [searchInput, setSearchInput] = useState('')
+  const searchParams = useSearchParams()
+  const initialSearch = searchParams.get('search') || ''
+  const [selectedUserId, setSelectedUserId] = useState(initialSearch)
+  const [searchInput, setSearchInput] = useState(initialSearch)
+
+  useEffect(() => {
+    if (initialSearch) {
+      setSelectedUserId(initialSearch)
+      setSearchInput(initialSearch)
+    }
+  }, [initialSearch])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()

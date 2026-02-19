@@ -29,6 +29,10 @@ export default function UserBanManager({ userId, onClose }: UserBanManagerProps)
 
   useEffect(() => {
     loadBans()
+    // Auto-show form if userId is provided
+    if (userId) {
+      setShowCreateForm(true)
+    }
   }, [userId])
 
   const loadBans = async () => {
@@ -175,7 +179,7 @@ export default function UserBanManager({ userId, onClose }: UserBanManagerProps)
                   value={targetUserId}
                   onChange={(e) => setTargetUserId(e.target.value)}
                   placeholder="Enter user ID"
-                  disabled={!!userId || creatingBan}
+                  disabled={creatingBan}
                 />
               </div>
 

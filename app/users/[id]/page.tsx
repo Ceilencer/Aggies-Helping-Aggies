@@ -332,6 +332,13 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
                       )}
                     </div>
                   </div>
+                  {isAdmin && (
+                    <Link href={`/dashboard/admin/users?search=${id}`}>
+                      <Button variant="destructive" size="sm">
+                        Ban User
+                      </Button>
+                    </Link>
+                  )}
                 </div>
 
                 {/* Contact Info */}
@@ -340,6 +347,28 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
                     <p className="text-muted-foreground">Email</p>
                     <p className="text-card-header-text">{profile.email}</p>
                   </div>
+                  {/* User ID for Admins */}
+                  {isAdmin && (
+                    <div>
+                      <p className="text-muted-foreground">User ID</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-card-header-text font-mono text-sm break-all">{id}</p>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(id)
+                            showToast({
+                              message: 'User ID copied to clipboard',
+                              type: 'success',
+                            })
+                          }}
+                          className="text-xs px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors"
+                          title="Copy user ID"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {profile.major && (
                     <div>
                       <p className="text-muted-foreground">Major</p>
