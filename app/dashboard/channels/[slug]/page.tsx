@@ -2,16 +2,16 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
 import PostCardHeader from '@/components/PostCardHeader'
+import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
-import CreatePostModal from '@/components/CreatePostModal'
-import PostDetailModal from '@/components/PostDetailModal'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile } from '@/lib/types'
 
 export default function ChannelPage() {
   const params = useParams()
@@ -31,10 +31,8 @@ export default function ChannelPage() {
   const [posts, setPosts] = useState<any[]>([])
   const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [userAuthenticated, setUserAuthenticated] = useState(false)
   const [currentUserRole, setCurrentUserRole] = useState<string>('')
-  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null)
-  const [activePostId, setActivePostId] = useState<string | null>(null)
-  const [createPostOpen, setCreatePostOpen] = useState(false)
 
   useEffect(() => {
     const loadChannelData = async () => {
@@ -47,6 +45,7 @@ export default function ChannelPage() {
         return
       }
 
+      setUserAuthenticated(true)
       await loadSupabaseData(user.id)
     }
 
@@ -57,7 +56,7 @@ export default function ChannelPage() {
           // 1. Get user profile (role)
           supabase
             .from('profiles')
-            .select('*')
+            .select('role')
             .eq('id', userId)
             .single(),
           // 2. Get all channels for admin menu
@@ -80,7 +79,6 @@ export default function ChannelPage() {
 
         if (profileData) {
           setCurrentUserRole(profileData.role)
-          setCurrentUserProfile(profileData)
         }
 
         if (allChannelsData.length > 0) {
@@ -214,9 +212,6 @@ export default function ChannelPage() {
                   post={post}
                   isAdmin={currentUserRole === 'Admin'}
                   channels={channels}
-                  onPostDeleted={(postId) => {
-                    setPosts(current => current.filter(item => item.id !== postId))
-                  }}
                 />
               </CardHeader>
 
@@ -242,15 +237,16 @@ export default function ChannelPage() {
                     <CommentCountButton
                       postId={post.id}
                       commentCount={post.comment_count || 0}
-                      onOpenPost={() => setActivePostId(post.id)}
                     />
                     <span className="text-sm text-card-subtext">
                       👁️ {post.view_count} views
                     </span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
-                    View Full Post
-                  </Button>
+                  <Link href={`/dashboard/posts/${post.id}`}>
+                    <Button variant="outline" size="sm">
+                      View Full Post
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -262,7 +258,9 @@ export default function ChannelPage() {
                 No posts in this channel yet. Be the first to share something!
               </p>
               {!channel.is_read_only && (
-                <Button onClick={() => setCreatePostOpen(true)}>Create First Post</Button>
+                <Link href={`/dashboard/post-creation?channel=${channel.slug}`}>
+                  <Button>Create First Post</Button>
+                </Link>
               )}
             </CardContent>
           </Card>
@@ -270,36 +268,8 @@ export default function ChannelPage() {
       </div>
 
       {!channel.is_read_only && (
-        <FloatingCreatePostButton onClick={() => setCreatePostOpen(true)} />
+        <FloatingCreatePostButton />
       )}
-
-      <CreatePostModal
-        isOpen={createPostOpen}
-        onClose={() => setCreatePostOpen(false)}
-        initialChannelSlug={channel.slug}
-        onPostCreated={(newPost, resolvedChannel) => {
-          const hydratedPost = {
-            ...newPost,
-            author: currentUserProfile || undefined,
-            channel: resolvedChannel || channel,
-            like_count: 0,
-            comment_count: 0,
-            user_has_liked: false,
-            like_id: null,
-            view_count: newPost.view_count ?? 0,
-          }
-          setPosts(current => [hydratedPost, ...current])
-        }}
-      />
-
-      <PostDetailModal
-        isOpen={!!activePostId}
-        postId={activePostId}
-        onClose={() => setActivePostId(null)}
-        onPostDeleted={(postId) => {
-          setPosts(current => current.filter(post => post.id !== postId))
-        }}
-      />
     </div>
   )
 }

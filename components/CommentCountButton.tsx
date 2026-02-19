@@ -7,21 +7,15 @@ import { MessageCircle } from 'lucide-react'
 interface CommentCountButtonProps {
   postId: string
   commentCount: number
-  onOpenPost?: () => void
 }
 
 export default function CommentCountButton({
   postId,
   commentCount,
-  onOpenPost,
 }: CommentCountButtonProps) {
   const router = useRouter()
 
   const handleClick = () => {
-    if (onOpenPost) {
-      onOpenPost()
-      return
-    }
     router.push(`/dashboard/posts/${postId}`)
   }
 
