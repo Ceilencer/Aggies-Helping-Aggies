@@ -303,9 +303,10 @@ export default function UserBanManager({ userId, onClose }: UserBanManagerProps)
                         </div>
                       </div>
                       <Button
-                        variant="destructive"
+                        variant="outline"
                         size="sm"
                         onClick={() => handleLiftBan(ban.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                       >
                         Lift Ban
                       </Button>

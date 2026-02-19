@@ -9,6 +9,7 @@ import PostCardHeader from '@/components/PostCardHeader'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
+import UserProfileModal from '@/components/UserProfileModal'
 import type { Channel, Post, Profile } from '@/lib/types'
 
 interface FeedPost extends Post {
@@ -35,6 +36,7 @@ export default function MyPostsClient({
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null)
 
   const handlePostCreated = (newPost: Post, channel: Channel | null) => {
     const resolvedChannel = channel || channels.find(c => c.id === newPost.channel_id) || undefined
@@ -107,6 +109,7 @@ export default function MyPostsClient({
                     currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
                     onEditClick={() => setEditingPostId(post.id)}
+                    onOpenProfile={(userId) => setActiveProfileId(userId)}
                   />
                 </CardHeader>
 
@@ -181,6 +184,11 @@ export default function MyPostsClient({
         postId={activePostId}
         onClose={() => setActivePostId(null)}
         onPostDeleted={handlePostDeleted}
+      />
+      <UserProfileModal
+        isOpen={!!activeProfileId}
+        userId={activeProfileId}
+        onClose={() => setActiveProfileId(null)}
       />
     </>
   )
