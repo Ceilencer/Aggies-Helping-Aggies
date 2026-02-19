@@ -8,8 +8,9 @@ import { Card } from '@/components/ui/card'
 import CommentLikeButton from '@/components/CommentLikeButton'
 import CommentForm from '@/components/CommentForm'
 import CommentAdminMenu from '@/components/CommentAdminMenu'
+import EditCommentForm from '@/components/EditCommentForm'
 import { formatRelativeTime, getInitials, getRoleBadgeColor } from '@/lib/utils'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Edit2 } from 'lucide-react'
 import type { Comment, Profile } from '@/lib/types'
 
 interface CommentCardProps {
@@ -19,6 +20,7 @@ interface CommentCardProps {
   postId: string
   onCommentDeleted?: (commentId: string) => void
   onReplyCreated?: (reply: any) => void
+  onCommentUpdated?: (comment: Comment) => void
   isReply?: boolean
 }
 
@@ -29,10 +31,13 @@ export default function CommentCard({
   postId,
   onCommentDeleted,
   onReplyCreated,
+  onCommentUpdated,
   isReply = false,
 }: CommentCardProps) {
   const [showReplyForm, setShowReplyForm] = useState(false)
+  const [showEditForm, setShowEditForm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [updatedComment, setUpdatedComment] = useState(comment)
 
   const handleDelete = async () => {
     if (!window.confirm('Are you sure you want to delete this comment?')) {
@@ -58,9 +63,27 @@ export default function CommentCard({
     }
   }
 
+  const handleCommentUpdated = (updatedComment: Comment) => {
+    setUpdatedComment(updatedComment)
+    setShowEditForm(false)
+    onCommentUpdated?.(updatedComment)
+  }
+
   const handleReplyCreated = (reply: any) => {
     setShowReplyForm(false)
     onReplyCreated?.(reply)
+  }
+
+  if (showEditForm) {
+    return (
+      <div className={isReply ? 'ml-8 mt-4' : ''}>
+        <EditCommentForm
+          comment={updatedComment}
+          onCancel={() => setShowEditForm(false)}
+          onCommentUpdated={handleCommentUpdated}
+        />
+      </div>
+    )
   }
 
   return (
@@ -110,7 +133,7 @@ export default function CommentCard({
             </div>
 
             <p className="text-sm text-foreground mt-2 break-words whitespace-pre-wrap">
-              {comment.content}
+              {updatedComment.content}
             </p>
 
             {/* Actions */}
@@ -131,15 +154,25 @@ export default function CommentCard({
                 </Button>
               )}
               {currentUserId === comment.author_id && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 gap-2"
-                >
-                  <Trash2 size={16} />
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEditForm(!showEditForm)}
+                    className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 gap-2"
+                  >
+                    <Edit2 size={16} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 gap-2"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </>
               )}
             </div>
 

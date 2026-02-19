@@ -1,6 +1,7 @@
 export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'announcements' | 'aggie_ring'
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 
 export interface Profile {
   id: string
@@ -70,6 +71,7 @@ export interface Post {
   is_pinned: boolean
   is_moderated: boolean
   moderation_reason?: string
+  approval_status: ApprovalStatus
   view_count: number
   created_at: string
   updated_at: string

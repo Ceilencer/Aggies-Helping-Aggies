@@ -182,13 +182,13 @@ export async function getCachedPendingPosts(
   supabase: SupabaseClient,
   limit: number = 15
 ) {
-  // Get total count
+  // Get total count - posts that are either moderated or pending approval
   const { count, error: countError } = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
-    .eq('is_moderated', false)
+    .or('is_moderated.eq.false,approval_status.eq.pending')
 
-  // Get paginated data
+  // Get paginated data - posts that are either moderated or pending approval
   const { data, error } = await supabase
     .from('posts')
     .select(`
@@ -196,7 +196,7 @@ export async function getCachedPendingPosts(
       author:profiles!posts_author_id_fkey(*),
       channel:channels!inner(*)
     `)
-    .eq('is_moderated', false)
+    .or('is_moderated.eq.false,approval_status.eq.pending')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
   

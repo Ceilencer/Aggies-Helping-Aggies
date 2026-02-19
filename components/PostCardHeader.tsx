@@ -5,22 +5,29 @@ import Image from 'next/image'
 import Link from 'next/link'
 import PostAdminMenu from '@/components/PostAdminMenu'
 import { getInitials, getRoleBadgeColor } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Edit2 } from 'lucide-react'
 import type { Channel } from '@/lib/types'
 
 interface PostCardHeaderProps {
   post: any
   isAdmin: boolean
   channels: Channel[]
+  currentUserId?: string
   onPostDeleted?: (postId: string) => void
+  onEditClick?: () => void
 }
 
 export default function PostCardHeader({
   post,
   isAdmin,
   channels,
+  currentUserId,
   onPostDeleted,
+  onEditClick,
 }: PostCardHeaderProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
+  const isAuthor = currentUserId === post.author?.id
 
   useEffect(() => {
     setFormattedDate(new Date(post.created_at).toLocaleDateString())
@@ -68,6 +75,22 @@ export default function PostCardHeader({
       <div className="flex items-center space-x-2">
         {post.is_pinned && (
           <span className="text-primary text-sm font-medium">📌 Pinned</span>
+        )}
+        
+        {post.approval_status === 'pending' && !isAdmin && (
+          <span className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">⏳ Pending Approval</span>
+        )}
+        
+        {isAuthor && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEditClick}
+            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 gap-2"
+            title="Edit post"
+          >
+            <Edit2 size={18} />
+          </Button>
         )}
         
         {isAdmin && (

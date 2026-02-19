@@ -30,10 +30,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     if (approve) {
-      // Mark post as moderated/approved
+      // Mark post as approved - handle both moderation and approval status
       const { error } = await supabase
         .from('posts')
-        .update({ is_moderated: true, moderation_reason: null })
+        .update({ 
+          is_moderated: true, 
+          moderation_reason: null,
+          approval_status: 'approved'
+        })
         .eq('id', id)
 
       if (error) {

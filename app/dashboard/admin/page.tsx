@@ -7,6 +7,8 @@ type PostItem = {
   title: string
   content: string
   created_at: string
+  approval_status?: string
+  is_moderated?: boolean
   author?: { id: string; full_name?: string; avatar_url?: string }
   channel?: { id: string; name?: string }
 }
@@ -123,7 +125,19 @@ export default function AdminDashboardPage() {
                 <li key={post.id} className="rounded-md border p-4">
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">
-                      <h3 className="text-lg font-medium">{post.title}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-medium">{post.title}</h3>
+                        {post.approval_status === 'pending' && (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                            ⏳ Pending Approval
+                          </span>
+                        )}
+                        {!post.is_moderated && (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
+                            ⚠️ Needs Review
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-card-subtext line-clamp-3">{post.content}</p>
                       <p className="text-xs text-muted-foreground mt-2">
                         {post.author?.full_name || 'Unknown'} · {post.channel?.name || 'Channel'} · {new Date(post.created_at).toLocaleString()}
@@ -131,14 +145,14 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="ml-4 flex-shrink-0 flex gap-2">
                       <button
-                        className="rounded bg-green-600 px-3 py-1 text-white disabled:opacity-50"
+                        className="rounded bg-green-600 px-3 py-1 text-white disabled:opacity-50 hover:bg-green-700"
                         onClick={() => approve(post.id)}
                         disabled={actioning === post.id}
                       >
                         Approve
                       </button>
                       <button
-                        className="rounded bg-red-600 px-3 py-1 text-white disabled:opacity-50"
+                        className="rounded bg-red-600 px-3 py-1 text-white disabled:opacity-50 hover:bg-red-700"
                         onClick={() => deny(post.id)}
                         disabled={actioning === post.id}
                       >

@@ -73,9 +73,29 @@ export const createPostSchema = z.object({
     .max(5000, 'Content must be less than 5000 characters'),
 })
 
+// Edit post form schema
+export const editPostSchema = z.object({
+  title: z
+    .string()
+    .min(5, 'Title must be at least 5 characters')
+    .max(200, 'Title must be less than 200 characters'),
+  content: z
+    .string()
+    .min(10, 'Content must be at least 10 characters')
+    .max(5000, 'Content must be less than 5000 characters'),
+})
+
 // Create comment form schema
 export const createCommentSchema = z.object({
   post_id: z.string().uuid('Invalid post'),
+  content: z
+    .string()
+    .min(1, 'Comment cannot be empty')
+    .max(1000, 'Comment must be less than 1000 characters'),
+})
+
+// Edit comment form schema
+export const editCommentSchema = z.object({
   content: z
     .string()
     .min(1, 'Comment cannot be empty')
@@ -114,6 +134,8 @@ export type SignupInput = z.infer<typeof signupSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type AlumniVerificationInput = z.infer<typeof alumniVerificationSchema>
 export type CreatePostInput = z.infer<typeof createPostSchema>
+export type EditPostInput = z.infer<typeof editPostSchema>
 export type CreateCommentInput = z.infer<typeof createCommentSchema>
+export type EditCommentInput = z.infer<typeof editCommentSchema>
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
 export type VerificationReviewInput = z.infer<typeof verificationReviewSchema>

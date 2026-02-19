@@ -11,6 +11,7 @@ import PostCardHeader from '@/components/PostCardHeader'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import CreatePostModal from '@/components/CreatePostModal'
+import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import type { Channel, Post, Profile } from '@/lib/types'
@@ -42,6 +43,7 @@ export default function DashboardClient({
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
+  const [editingPostId, setEditingPostId] = useState<string | null>(null)
 
   const openCreatePost = (channelSlug?: string) => {
     setCreatePostChannelSlug(channelSlug)
@@ -71,6 +73,26 @@ export default function DashboardClient({
   const handlePostDeleted = (postId: string) => {
     setPostsState(current => current.filter(post => post.id !== postId))
     setAnnouncementsState(current => current.filter(post => post.id !== postId))
+  }
+
+  const handlePostUpdated = (updatedPost: Post) => {
+    const hydratedPost: FeedPost = {
+      ...updatedPost,
+      author: updatedPost.author || profile,
+      channel: updatedPost.channel,
+      like_count: updatedPost.like_count,
+      comment_count: updatedPost.comment_count,
+      user_has_liked: false,
+      like_id: null,
+    }
+
+    setPostsState(current =>
+      current.map(post => post.id === updatedPost.id ? hydratedPost : post)
+    )
+    setAnnouncementsState(current =>
+      current.map(post => post.id === updatedPost.id ? hydratedPost : post)
+    )
+    setEditingPostId(null)
   }
 
   return (
@@ -195,7 +217,9 @@ export default function DashboardClient({
                     post={post}
                     isAdmin={profile?.role === 'Admin'}
                     channels={allChannels}
+                    currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
+                    onEditClick={() => setEditingPostId(post.id)}
                   />
                 </CardHeader>
 
@@ -262,6 +286,16 @@ export default function DashboardClient({
         initialChannelSlug={createPostChannelSlug}
         onPostCreated={handlePostCreated}
       />
+
+      {editingPostId && (
+        <EditPostModal
+          isOpen={!!editingPostId}
+          onClose={() => setEditingPostId(null)}
+          post={[...postsState, ...announcementsState].find(p => p.id === editingPostId) || {} as FeedPost}
+          channel={allChannels.find(c => c.id === [...postsState, ...announcementsState].find(p => p.id === editingPostId)?.channel_id)}
+          onPostUpdated={handlePostUpdated}
+        />
+      )}
 
       <PostDetailModal
         isOpen={!!activePostId}
