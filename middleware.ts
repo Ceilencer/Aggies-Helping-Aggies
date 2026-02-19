@@ -46,49 +46,21 @@ export async function middleware(request: NextRequest) {
   }
   // --- FIX END ---
 
-  // 2. BAN CHECK LOGIC - Check if user is banned (skip for /banned, /auth/callback, and public routes)
-  if (user && !request.nextUrl.pathname.startsWith('/banned') && !request.nextUrl.pathname.startsWith('/auth/callback')) {
-    try {
-      const baseUrl = request.nextUrl.origin
-      const banCheckUrl = `${baseUrl}/api/admin/user-bans/check/${user.id}`
-      
-      // Pass the request cookies for auth context
-      const banCheckResponse = await fetch(banCheckUrl, {
-        credentials: 'include',
-        headers: {
-          cookie: request.headers.get('cookie') || '',
-        },
-      })
-      
-      if (banCheckResponse.ok) {
-        const banData = await banCheckResponse.json()
-        if (banData.is_banned) {
-          // User is banned, redirect to banned page
-          return NextResponse.redirect(new URL('/banned', request.url))
-        }
-      }
-    } catch (err) {
-      // If there's an error checking ban status, continue normally
-      // This prevents the app from breaking if the API call fails
-      console.error('Error checking ban status:', err)
-    }
-  }
-
-  // 3. PROTECTED ROUTES LOGIC
+  // PROTECTED ROUTES LOGIC
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
-  // 4. AUTH ROUTES LOGIC
+  // AUTH ROUTES LOGIC
   if (request.nextUrl.pathname === '/login') {
     if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
-  // 5. HOMEPAGE LOGIC - Redirect to dashboard if authenticated and not banned
+  // HOMEPAGE LOGIC - Redirect to dashboard if authenticated
   if (request.nextUrl.pathname === '/' && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }

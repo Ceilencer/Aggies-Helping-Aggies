@@ -1,5 +1,4 @@
 import { createClient } from '@/lib/supabase/server'
-import { checkUserBan } from '@/lib/supabase/ban-utils'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
@@ -28,19 +27,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
-      )
-    }
-
-    // Check if user is banned
-    const { isBanned, ban } = await checkUserBan(user.id, supabase)
-    if (isBanned) {
-      const banMessage = ban.ban_type === 'permanent'
-        ? `You are permanently banned from this platform. Reason: ${ban.reason}`
-        : `You are temporarily banned from this platform. Reason: ${ban.reason}`
-      
-      return NextResponse.json(
-        { error: banMessage },
-        { status: 403 }
       )
     }
 

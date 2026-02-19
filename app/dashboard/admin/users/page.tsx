@@ -2,7 +2,6 @@
 
 import { useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import UserBanManager from '@/components/UserBanManager'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,21 +9,17 @@ import { Button } from '@/components/ui/button'
 export default function UserManagementPage() {
   const searchParams = useSearchParams()
   const initialSearch = searchParams.get('search') || ''
-  const [selectedUserId, setSelectedUserId] = useState(initialSearch)
   const [searchInput, setSearchInput] = useState(initialSearch)
 
   useEffect(() => {
     if (initialSearch) {
-      setSelectedUserId(initialSearch)
       setSearchInput(initialSearch)
     }
   }, [initialSearch])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    if (searchInput.trim()) {
-      setSelectedUserId(searchInput.trim())
-    }
+    // Search functionality can be extended here
   }
 
   return (
@@ -32,7 +27,7 @@ export default function UserManagementPage() {
       <div>
         <h1 className="text-2xl font-bold">User Management</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage user bans and timeouts
+          Manage platform users
         </p>
       </div>
 
@@ -41,7 +36,7 @@ export default function UserManagementPage() {
         <CardHeader>
           <CardTitle>Search User</CardTitle>
           <CardDescription>
-            Search for a specific user by ID to view or manage their bans
+            Search for a specific user by ID
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -53,12 +48,11 @@ export default function UserManagementPage() {
               className="flex-1"
             />
             <Button type="submit">Search</Button>
-            {selectedUserId && (
+            {searchInput && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  setSelectedUserId('')
                   setSearchInput('')
                 }}
               >
@@ -68,9 +62,6 @@ export default function UserManagementPage() {
           </form>
         </CardContent>
       </Card>
-
-      {/* Ban Manager */}
-      <UserBanManager userId={selectedUserId || undefined} />
     </div>
   )
 }
