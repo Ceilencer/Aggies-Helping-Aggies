@@ -31,18 +31,35 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     if (approve) {
       // Mark post as approved - handle both moderation and approval status
+      const approvePayload = {
+        is_moderated: true,
+        moderation_reason: null,
+        approval_status: 'approved',
+      }
+
       const { error } = await supabase
         .from('posts')
-        .update({ 
-          is_moderated: true, 
-          moderation_reason: null,
-          approval_status: 'approved'
-        })
+        .update(approvePayload)
         .eq('id', id)
 
       if (error) {
-        console.error('Error approving post:', error)
-        return NextResponse.json({ error: 'Failed to approve' }, { status: 500 })
+        const isMissingApprovalStatus =
+          error.code === '42703' || error.message?.includes('approval_status')
+
+        if (isMissingApprovalStatus) {
+          const { error: fallbackError } = await supabase
+            .from('posts')
+            .update({ is_moderated: true, moderation_reason: null })
+            .eq('id', id)
+
+          if (fallbackError) {
+            console.error('Error approving post (fallback):', fallbackError)
+            return NextResponse.json({ error: 'Failed to approve' }, { status: 500 })
+          }
+        } else {
+          console.error('Error approving post:', error)
+          return NextResponse.json({ error: 'Failed to approve' }, { status: 500 })
+        }
       }
 
       return NextResponse.json({ success: true })

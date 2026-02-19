@@ -182,31 +182,59 @@ export async function getCachedPendingPosts(
   supabase: SupabaseClient,
   limit: number = 15
 ) {
-  // Get total count - posts that are either moderated or pending approval
-  const { count, error: countError } = await supabase
+  const isMissingApprovalStatus = (error: { message?: string; code?: string } | null) => {
+    return !!error && (error.code === '42703' || error.message?.includes('approval_status'))
+  }
+
+  const baseSelect = `
+      *,
+      author:profiles!posts_author_id_fkey(*),
+      channel:channels!inner(*)
+    `
+
+  const countResult = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
     .or('is_moderated.eq.false,approval_status.eq.pending')
 
-  // Get paginated data - posts that are either moderated or pending approval
-  const { data, error } = await supabase
+  const dataResult = await supabase
     .from('posts')
-    .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
-    `)
+    .select(baseSelect)
     .or('is_moderated.eq.false,approval_status.eq.pending')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
-  
-  if (error) {
-    console.error('Error fetching pending posts:', error)
-    return { data: [], total: 0 }
+
+  if (!dataResult.error && !countResult.error) {
+    return {
+      data: dataResult.data || [],
+      total: countResult.count || 0,
+    }
   }
-  
-  return {
-    data: data || [],
-    total: count || 0
+
+  if (isMissingApprovalStatus(dataResult.error) || isMissingApprovalStatus(countResult.error)) {
+    const fallbackCount = await supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_moderated', false)
+
+    const fallbackData = await supabase
+      .from('posts')
+      .select(baseSelect)
+      .eq('is_moderated', false)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (fallbackData.error) {
+      console.error('Error fetching pending posts (fallback):', fallbackData.error)
+      return { data: [], total: 0 }
+    }
+
+    return {
+      data: fallbackData.data || [],
+      total: fallbackCount.count || 0,
+    }
   }
+
+  console.error('Error fetching pending posts:', dataResult.error || countResult.error)
+  return { data: [], total: 0 }
 }
