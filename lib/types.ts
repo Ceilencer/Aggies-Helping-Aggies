@@ -2,6 +2,7 @@ export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'announcements' | 'aggie_ring'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+export type BanType = 'permanent' | 'temporary'
 
 export interface Profile {
   id: string
@@ -28,6 +29,22 @@ export interface AdminNote {
   updated_at: string
   // Relations
   creator?: Profile
+}
+
+export interface UserBan {
+  id: string
+  user_id: string
+  banned_by: string
+  ban_type: BanType
+  duration_days?: number | null
+  reason: string
+  is_active: boolean
+  expires_at?: string | null
+  created_at: string
+  updated_at: string
+  // Relations
+  user?: Profile
+  admin?: Profile
 }
 
 export interface VerificationRequest {

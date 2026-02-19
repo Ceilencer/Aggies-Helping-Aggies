@@ -174,6 +174,20 @@ export default function CreatePostForm({
         return
       }
 
+      // Check if user is banned
+      const banCheckRes = await fetch(`/api/admin/user-bans/check/${user.id}`)
+      const banStatus = await banCheckRes.json()
+
+      if (banStatus.is_banned) {
+        const banMessage = banStatus.ban_type === 'permanent'
+          ? `You are permanently banned from this platform. Reason: ${banStatus.reason}`
+          : `You are temporarily banned from this platform. Reason: ${banStatus.reason}`
+        
+        setError(banMessage)
+        setLoading(false)
+        return
+      }
+
       const postData = {
         channel_id: formData.channel_id,
         author_id: user.id,
