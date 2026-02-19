@@ -44,15 +44,19 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
 
       const { data: { user: currentUser } } = await supabase.auth.getUser()
 
+      let currentProfile = null
+
       // Check if current user is admin
       if (currentUser) {
-        const { data: currentProfile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', currentUser.id)
           .single()
 
-        setIsAdmin(currentProfile?.role === 'Admin')
+        currentProfile = profileData
+
+        setIsAdmin(profileData?.role === 'Admin')
       }
 
       // Fetch user profile
@@ -125,7 +129,7 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
       setPosts(enrichedPosts)
 
       // Fetch admin notes if user is admin
-      if (currentUser && isAdmin) {
+      if (currentUser && currentProfile?.role === 'Admin') {
         const { data: notesData, error: notesError } = await supabase
           .from('admin_notes')
           .select(`
