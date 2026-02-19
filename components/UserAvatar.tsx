@@ -10,6 +10,7 @@ interface UserAvatarProps {
   size?: 'sm' | 'md' | 'lg'
   linkToProfile?: boolean
   className?: string
+  onProfileClick?: (userId: string) => void
 }
 
 const sizeClasses = {
@@ -22,7 +23,8 @@ export default function UserAvatar({
   user, 
   size = 'md', 
   linkToProfile = true,
-  className = ''
+  className = '',
+  onProfileClick
 }: UserAvatarProps) {
   const sizeClass = sizeClasses[size]
   
@@ -44,6 +46,18 @@ export default function UserAvatar({
 
   if (!linkToProfile) {
     return avatarElement
+  }
+
+  // If we have a callback, use it instead of Link
+  if (onProfileClick) {
+    return (
+      <button 
+        onClick={() => onProfileClick(user.id)}
+        className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+      >
+        {avatarElement}
+      </button>
+    )
   }
 
   return (

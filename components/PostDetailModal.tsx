@@ -8,6 +8,7 @@ interface PostDetailModalProps {
   postId: string | null
   onClose: () => void
   onPostDeleted?: (postId: string) => void
+  onProfileClick?: (userId: string) => void
 }
 
 export default function PostDetailModal({
@@ -15,6 +16,7 @@ export default function PostDetailModal({
   postId,
   onClose,
   onPostDeleted,
+  onProfileClick,
 }: PostDetailModalProps) {
   if (!postId) return null
 
@@ -24,6 +26,7 @@ export default function PostDetailModal({
         postId={postId}
         onClose={onClose}
         onPostDeleted={onPostDeleted}
+        onProfileClick={onProfileClick}
       />
     </Modal>
   )

@@ -20,6 +20,7 @@ interface PostDetailPanelProps {
   showBackButton?: boolean
   onClose?: () => void
   onPostDeleted?: (postId: string) => void
+  onProfileClick?: (userId: string) => void
 }
 
 export default function PostDetailPanel({
@@ -27,6 +28,7 @@ export default function PostDetailPanel({
   showBackButton = false,
   onClose,
   onPostDeleted,
+  onProfileClick,
 }: PostDetailPanelProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -278,7 +280,7 @@ export default function PostDetailPanel({
         </CardContent>
       </Card>
 
-      <CommentsSection postId={post.id} currentUserId={currentUserId} currentUserRole={currentUserRole} />
+      <CommentsSection postId={post.id} currentUserId={currentUserId} currentUserRole={currentUserRole} onProfileClick={onProfileClick} />
     </div>
   )
 }

@@ -12,6 +12,7 @@ export interface Profile {
   is_verified: boolean
   is_alumni: boolean
   mfa_enabled: boolean
+  rules_acknowledged_at?: string
   created_at: string
   updated_at: string
   graduation_year?: number

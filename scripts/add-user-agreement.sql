@@ -1,0 +1,3 @@
+-- User agreement tracking using existing rules_acknowledged_at column
+-- This column already exists in the profiles table
+-- No additional columns needed

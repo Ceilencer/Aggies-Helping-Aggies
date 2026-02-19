@@ -13,6 +13,9 @@ import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
+import UserAgreementModal from '@/components/UserAgreementModal'
+import UserProfileModal from '@/components/UserProfileModal'
+import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
 
@@ -35,6 +38,8 @@ export default function DashboardClient({
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const agreementState = useFirstTimeAgreement(profile)
 
   const openCreatePost = (channelSlug?: string) => {
     setCreatePostChannelSlug(channelSlug)
@@ -91,6 +96,16 @@ export default function DashboardClient({
 
   return (
     <>
+      <UserAgreementModal
+        isOpen={agreementState.isOpen}
+        onAgree={agreementState.handleAgree}
+        isLoading={agreementState.isLoading}
+      />
+      <UserProfileModal
+        isOpen={selectedUserId !== null}
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+      />
       <div className="space-y-6">
         <Card>
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
@@ -211,6 +226,7 @@ export default function DashboardClient({
                     currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
                     onEditClick={() => setEditingPostId(post.id)}
+                    onProfileClick={setSelectedUserId}
                   />
                 </CardHeader>
 
@@ -292,6 +308,7 @@ export default function DashboardClient({
         postId={activePostId}
         onClose={() => setActivePostId(null)}
         onPostDeleted={handlePostDeleted}
+        onProfileClick={setSelectedUserId}
       />
     </>
   )

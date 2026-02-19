@@ -16,6 +16,7 @@ interface PostCardHeaderProps {
   currentUserId?: string
   onPostDeleted?: (postId: string) => void
   onEditClick?: () => void
+  onProfileClick?: (userId: string) => void
 }
 
 export default function PostCardHeader({
@@ -25,6 +26,7 @@ export default function PostCardHeader({
   currentUserId,
   onPostDeleted,
   onEditClick,
+  onProfileClick,
 }: PostCardHeaderProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
   const isAuthor = currentUserId === post.author?.id
@@ -40,14 +42,18 @@ export default function PostCardHeader({
         <UserAvatar 
           user={post.author}
           size="md"
-          linkToProfile={true}
+          linkToProfile={false}
+          onProfileClick={onProfileClick}
         />
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2">
-            <Link href={`/users/${post.author?.id}`} className="font-semibold text-card-header-text hover:underline">
+            <button 
+              onClick={() => post.author?.id && onProfileClick?.(post.author.id)}
+              className="font-semibold text-card-header-text hover:underline cursor-pointer text-left"
+            >
               {post.author?.full_name}
-            </Link>
+            </button>
             <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
               {post.author?.role}
             </span>

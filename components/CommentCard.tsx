@@ -22,6 +22,7 @@ interface CommentCardProps {
   onReplyCreated?: (reply: any) => void
   onCommentUpdated?: (comment: Comment) => void
   isReply?: boolean
+  onProfileClick?: (userId: string) => void
 }
 
 export default function CommentCard({
@@ -33,6 +34,7 @@ export default function CommentCard({
   onReplyCreated,
   onCommentUpdated,
   isReply = false,
+  onProfileClick,
 }: CommentCardProps) {
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -91,7 +93,10 @@ export default function CommentCard({
       <Card className="p-4">
         <div className="flex gap-3">
           {/* Avatar - Clickable */}
-          <Link href={`/users/${comment.author?.id}`} className="flex-shrink-0 hover:opacity-80 transition-opacity">
+          <button 
+            onClick={() => comment.author?.id && onProfileClick?.(comment.author.id)}
+            className="flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
+          >
             {comment.author?.avatar_url ? (
               <div className="relative h-8 w-8 overflow-hidden rounded-full">
                 <Image
@@ -107,15 +112,18 @@ export default function CommentCard({
                 {getInitials(comment.author?.full_name || 'Unknown')}
               </div>
             )}
-          </Link>
+          </button>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap justify-between">
               <div className="flex items-center gap-2 flex-wrap">
-                <Link href={`/users/${comment.author?.id}`} className="font-semibold text-sm hover:underline">
+                <button 
+                  onClick={() => comment.author?.id && onProfileClick?.(comment.author.id)}
+                  className="font-semibold text-sm hover:underline cursor-pointer text-left"
+                >
                   {comment.author?.full_name}
-                </Link>
+                </button>
                 {comment.author?.role && (
                   <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(comment.author.role)}`}>
                     {comment.author.role}
