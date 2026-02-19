@@ -83,6 +83,11 @@ export interface Post {
   user_has_liked?: boolean
 }
 
+// Extended Post type for feed displays with like information
+export interface FeedPost extends Post {
+  like_id?: string | null
+}
+
 export interface Comment {
   id: string
   post_id: string

@@ -14,16 +14,7 @@ import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
-import type { Channel, Post, Profile } from '@/lib/types'
-
-interface FeedPost extends Post {
-  author?: Profile
-  channel?: Channel
-  comment_count?: number
-  like_count?: number
-  like_id?: string | null
-  user_has_liked?: boolean
-}
+import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
 
 interface DashboardClientProps {
   profile: Profile | null
