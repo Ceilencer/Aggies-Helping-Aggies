@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
+import PostDetailModal from '@/components/PostDetailModal'
 import Image from 'next/image'
-import Link from 'next/link'
 import { getInitials, getRoleBadgeColor } from '@/lib/utils'
 
 interface UserProfilePageProps {
@@ -29,6 +29,7 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
   const [isSubmittingNote, setIsSubmittingNote] = useState(false)
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editingNoteContent, setEditingNoteContent] = useState('')
+  const [activePostId, setActivePostId] = useState<string | null>(null)
   const { showToast, ToastContainer } = useToast()
 
   const supabase = createClient()
@@ -78,6 +79,7 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
           channel:channel_id(id, name, slug, color)
         `)
         .eq('author_id', id)
+        .eq('is_moderated', true)
         .order('created_at', { ascending: false })
 
       if (postsError) throw postsError
@@ -491,10 +493,11 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
             ) : (
               <div className="space-y-4">
                 {posts.map((post) => (
-                  <Link
+                  <button
                     key={post.id}
-                    href={`/dashboard/posts/${post.id}`}
-                    className="block"
+                    type="button"
+                    className="block w-full text-left"
+                    onClick={() => setActivePostId(post.id)}
                   >
                     <Card className="hover:shadow-md transition-shadow cursor-pointer">
                       <CardContent className="pt-6">
@@ -513,7 +516,7 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
                               {post.channel?.name}
                             </span>
                           </div>
-                          <p className="text-sm text-card-subtext line-clamp-2">
+                          <p className="text-sm text-card-subtext line-clamp-2 break-words [overflow-wrap:anywhere]">
                             {post.content}
                           </p>
                           <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
@@ -528,13 +531,19 @@ export default function UserProfilePage({ params }: UserProfilePageProps) {
                         </div>
                       </CardContent>
                     </Card>
-                  </Link>
+                  </button>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <PostDetailModal
+        isOpen={!!activePostId}
+        postId={activePostId}
+        onClose={() => setActivePostId(null)}
+      />
     </>
   )
 }

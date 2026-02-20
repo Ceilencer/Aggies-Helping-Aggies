@@ -258,7 +258,7 @@ export default function PostDetailPanel({
             <h1 className="text-3xl font-bold text-card-header-text mb-4">
               {post.title}
             </h1>
-            <p className="text-card-subtext whitespace-pre-wrap">
+            <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
               {post.content}
             </p>
           </div>

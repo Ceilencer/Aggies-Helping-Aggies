@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ui/toast'
+import PostDetailModal from '@/components/PostDetailModal'
 import Image from 'next/image'
-import Link from 'next/link'
 import { getInitials, getRoleBadgeColor } from '@/lib/utils'
 
 interface UserProfilePanelProps {
@@ -76,6 +76,7 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
   const [hasMoreComments, setHasMoreComments] = useState(false)
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false)
   const [isLoadingMoreComments, setIsLoadingMoreComments] = useState(false)
+  const [activePostId, setActivePostId] = useState<string | null>(null)
   const { showToast, ToastContainer } = useToast()
   const router = useRouter()
 
@@ -100,6 +101,7 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
         channel:channel_id(id, name, slug, color)
       `)
       .eq('author_id', userId)
+      .eq('is_moderated', true)
       .order('created_at', { ascending: false })
       .range(offset, offset + SECTION_PAGE_SIZE - 1)
 
@@ -657,9 +659,13 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{new Date(comment.created_at).toLocaleDateString()}</span>
                       {comment.post?.id ? (
-                        <Link href={`/dashboard/posts/${comment.post.id}`} className="hover:underline">
+                        <button
+                          type="button"
+                          onClick={() => setActivePostId(comment.post!.id)}
+                          className="hover:underline"
+                        >
                           {comment.post.title || 'View post'}
-                        </Link>
+                        </button>
                       ) : (
                         <span>Post unavailable</span>
                       )}
@@ -720,10 +726,11 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
               </p>
             ) : (
               posts.map((post) => (
-                <Link
+                <button
                   key={post.id}
-                  href={`/dashboard/posts/${post.id}`}
-                  className="block"
+                  type="button"
+                  onClick={() => setActivePostId(post.id)}
+                  className="block w-full text-left"
                 >
                   <div className="p-3 border rounded hover:bg-muted transition-colors cursor-pointer">
                     <div className="space-y-2">
@@ -741,7 +748,7 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
                           {post.channel?.name}
                         </span>
                       </div>
-                      <p className="text-xs text-card-subtext line-clamp-2">
+                      <p className="text-xs text-card-subtext line-clamp-2 break-words [overflow-wrap:anywhere]">
                         {post.content}
                       </p>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -755,7 +762,7 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
                       </div>
                     </div>
                   </div>
-                </Link>
+                </button>
               ))
             )}
             {isLoadingMorePosts && (
@@ -765,6 +772,12 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
         </div>
         )}
       </div>
+
+      <PostDetailModal
+        isOpen={!!activePostId}
+        postId={activePostId}
+        onClose={() => setActivePostId(null)}
+      />
     </>
   )
 }

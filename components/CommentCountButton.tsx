@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { MessageCircle } from 'lucide-react'
 
@@ -15,14 +14,10 @@ export default function CommentCountButton({
   commentCount,
   onOpenPost,
 }: CommentCountButtonProps) {
-  const router = useRouter()
-
   const handleClick = () => {
     if (onOpenPost) {
       onOpenPost()
-      return
     }
-    router.push(`/dashboard/posts/${postId}`)
   }
 
   return (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,6 +26,8 @@ interface DashboardClientProps {
   allChannels: Channel[]
 }
 
+const HOME_FEED_PAGE_SIZE = 5
+
 export default function DashboardClient({
   profile,
   posts,
@@ -34,12 +36,81 @@ export default function DashboardClient({
 }: DashboardClientProps) {
   const [postsState, setPostsState] = useState<FeedPost[]>(posts)
   const [announcementsState, setAnnouncementsState] = useState<FeedPost[]>(announcements)
+  const [postsOffset, setPostsOffset] = useState(posts.length)
+  const [hasMorePosts, setHasMorePosts] = useState(posts.length > 0)
+  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false)
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const agreementState = useFirstTimeAgreement(profile)
+
+  const loadMorePosts = useCallback(async () => {
+    if (isLoadingMorePosts || !hasMorePosts) {
+      return
+    }
+
+    setIsLoadingMorePosts(true)
+    try {
+      const response = await fetch(`/api/posts/feed?offset=${postsOffset}&limit=${HOME_FEED_PAGE_SIZE}`, {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to load more posts: ${response.status}`)
+      }
+
+      const data = await response.json() as {
+        posts?: FeedPost[]
+        nextOffset?: number
+        hasMore?: boolean
+      }
+
+      const incomingPosts = data.posts || []
+      if (incomingPosts.length > 0) {
+        setPostsState((current) => {
+          const existingIds = new Set(current.map(post => post.id))
+          const uniqueIncoming = incomingPosts.filter(post => !existingIds.has(post.id))
+          return uniqueIncoming.length > 0 ? [...current, ...uniqueIncoming] : current
+        })
+      }
+
+      setPostsOffset(typeof data.nextOffset === 'number' ? data.nextOffset : postsOffset + incomingPosts.length)
+      setHasMorePosts(data.hasMore === true)
+    } catch (error) {
+      console.error('Error loading more home feed posts:', error)
+      setHasMorePosts(false)
+    } finally {
+      setIsLoadingMorePosts(false)
+    }
+  }, [hasMorePosts, isLoadingMorePosts, postsOffset])
+
+  useEffect(() => {
+    if (!hasMorePosts) {
+      return
+    }
+
+    const trigger = loadMoreTriggerRef.current
+    if (!trigger) {
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void loadMorePosts()
+        }
+      },
+      { root: null, rootMargin: '180px 0px', threshold: 0.1 }
+    )
+
+    observer.observe(trigger)
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasMorePosts, loadMorePosts])
 
   const openCreatePost = (channelSlug?: string) => {
     setCreatePostChannelSlug(channelSlug)
@@ -47,6 +118,11 @@ export default function DashboardClient({
   }
 
   const handlePostCreated = (newPost: Post, channel: Channel | null) => {
+    const isApproved = newPost.approval_status === 'approved' || newPost.is_moderated === true
+    if (!isApproved) {
+      return
+    }
+
     const resolvedChannel = channel || allChannels.find(c => c.id === newPost.channel_id) || undefined
     const hydratedPost: FeedPost = {
       ...newPost,
@@ -63,11 +139,18 @@ export default function DashboardClient({
       setAnnouncementsState(current => [hydratedPost, ...current])
     } else {
       setPostsState(current => [hydratedPost, ...current])
+      setPostsOffset(current => current + 1)
     }
   }
 
   const handlePostDeleted = (postId: string) => {
-    setPostsState(current => current.filter(post => post.id !== postId))
+    setPostsState(current => {
+      const exists = current.some(post => post.id === postId)
+      if (exists) {
+        setPostsOffset(previous => Math.max(previous - 1, 0))
+      }
+      return current.filter(post => post.id !== postId)
+    })
     setAnnouncementsState(current => current.filter(post => post.id !== postId))
   }
 
@@ -203,7 +286,7 @@ export default function DashboardClient({
                   <h3 className="text-xl font-bold text-card-header-text">
                     {announcement.title}
                   </h3>
-                  <p className="text-card-subtext whitespace-pre-wrap">
+                  <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                     {announcement.content}
                   </p>
 
@@ -234,7 +317,7 @@ export default function DashboardClient({
                   <h3 className="text-xl font-bold text-card-header-text">
                     {post.title}
                   </h3>
-                  <p className="text-card-subtext whitespace-pre-wrap">
+                  <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                     {post.content.length > 300
                       ? `${post.content.substring(0, 300)}...`
                       : post.content
@@ -280,6 +363,17 @@ export default function DashboardClient({
                 </Button>
               </CardContent>
             </Card>
+          )}
+
+          {postsState.length > 0 && (
+            <div ref={loadMoreTriggerRef} className="py-4 text-center">
+              {isLoadingMorePosts && (
+                <p className="text-sm text-muted-foreground">Loading more posts...</p>
+              )}
+              {!hasMorePosts && (
+                <p className="text-sm text-muted-foreground">You&apos;ve reached the end of your home feed.</p>
+              )}
+            </div>
           )}
         </div>
 

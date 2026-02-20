@@ -5,7 +5,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   try {
     const { id } = await params
     const body = await request.json()
-    const { approve } = body as { approve?: boolean }
+    const { approve, reason } = body as { approve?: boolean; reason?: string }
 
     const supabase = await createClient()
 
@@ -64,12 +64,38 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       return NextResponse.json({ success: true })
     } else {
-      // Deny -> delete post
-      const { error } = await supabase.from('posts').delete().eq('id', id)
-      if (error) {
-        console.error('Error deleting post:', error)
-        return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
+      // Deny -> mark as rejected (preserve history for user status tracking)
+      const rejectPayload = {
+        is_moderated: false,
+        approval_status: 'rejected',
+        moderation_reason: reason || 'Post did not meet community guidelines',
       }
+
+      const { error } = await supabase
+        .from('posts')
+        .update(rejectPayload)
+        .eq('id', id)
+
+      if (error) {
+        const isMissingApprovalStatus =
+          error.code === '42703' || error.message?.includes('approval_status')
+
+        if (isMissingApprovalStatus) {
+          const { error: fallbackError } = await supabase
+            .from('posts')
+            .update({ is_moderated: false, moderation_reason: reason || 'Post did not meet community guidelines' })
+            .eq('id', id)
+
+          if (fallbackError) {
+            console.error('Error rejecting post (fallback):', fallbackError)
+            return NextResponse.json({ error: 'Failed to reject' }, { status: 500 })
+          }
+        } else {
+          console.error('Error rejecting post:', error)
+          return NextResponse.json({ error: 'Failed to reject' }, { status: 500 })
+        }
+      }
+
       return NextResponse.json({ success: true })
     }
   } catch (err) {

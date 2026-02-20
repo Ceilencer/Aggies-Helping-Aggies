@@ -195,12 +195,12 @@ export async function getCachedPendingPosts(
   const countResult = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
-    .or('is_moderated.eq.false,approval_status.eq.pending')
+    .eq('approval_status', 'pending')
 
   const dataResult = await supabase
     .from('posts')
     .select(baseSelect)
-    .or('is_moderated.eq.false,approval_status.eq.pending')
+    .eq('approval_status', 'pending')
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 

@@ -2,6 +2,7 @@
 
 import Modal from '@/components/Modal'
 import CreatePostForm from '@/components/CreatePostForm'
+import { useToast } from '@/components/ui/toast'
 import type { Channel, Post } from '@/lib/types'
 
 interface CreatePostModalProps {
@@ -17,16 +18,26 @@ export default function CreatePostModal({
   initialChannelSlug,
   onPostCreated,
 }: CreatePostModalProps) {
+  const { showToast, ToastContainer } = useToast()
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
-      <CreatePostForm
-        initialChannelSlug={initialChannelSlug}
-        onCancel={onClose}
-        onPostCreated={(post, channel) => {
-          onPostCreated?.(post, channel)
-          onClose()
-        }}
-      />
-    </Modal>
+    <>
+      <ToastContainer />
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <CreatePostForm
+          initialChannelSlug={initialChannelSlug}
+          onCancel={onClose}
+          onPostCreated={(post, channel) => {
+            showToast({
+              message: 'Post submitted. Waiting for admin approval.',
+              type: 'info',
+              positionClassName: 'top-24',
+            })
+            onPostCreated?.(post, channel)
+            onClose()
+          }}
+        />
+      </Modal>
+    </>
   )
 }

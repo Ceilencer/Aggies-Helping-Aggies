@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   // --- WAVE 3: Fetch Content in Parallel ---
   const [postsData, announcementsData] = await Promise.all([
     homeChannelIds.length > 0
-      ? getCachedPostsByChannels(homeChannelIds, supabase, 20)
+      ? getCachedPostsByChannels(homeChannelIds, supabase, 5)
       : Promise.resolve([]),
     announcementChannel?.id
       ? getCachedAnnouncements(announcementChannel.id, supabase, 5)

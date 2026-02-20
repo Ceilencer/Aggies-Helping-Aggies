@@ -121,9 +121,11 @@ export default function AdminDashboardPage() {
   const deny = async (id: string) => {
     setActioning(id)
     try {
-      const res = await fetch(`/api/posts/${id}/admin-delete`, {
-        method: 'DELETE',
+      const res = await fetch(`/api/admin/posts/${id}`, {
+        method: 'PATCH',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approve: false }),
       })
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
@@ -185,7 +187,7 @@ export default function AdminDashboardPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-card-subtext line-clamp-3">{post.content}</p>
+                      <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
                       <p className="text-xs text-muted-foreground mt-2">
                         {post.author?.full_name || 'Unknown'} · {post.channel?.name || 'Channel'} · {new Date(post.created_at).toLocaleString()}
                       </p>

@@ -8,13 +8,15 @@ export interface ToastProps {
   type?: "success" | "error" | "info"
   duration?: number
   onClose?: () => void
+  positionClassName?: string
 }
 
 export const Toast: React.FC<ToastProps> = ({ 
   message, 
   type = "info", 
   duration = 3000,
-  onClose 
+  onClose,
+  positionClassName,
 }) => {
   React.useEffect(() => {
     if (duration > 0) {
@@ -34,6 +36,7 @@ export const Toast: React.FC<ToastProps> = ({
   return (
     <div className={cn(
       "fixed top-4 right-4 z-50 p-4 rounded-lg text-white shadow-lg animate-in fade-in slide-in-from-top-2",
+      positionClassName,
       bgColor
     )}>
       <div className="flex items-center gap-2">
@@ -71,6 +74,7 @@ export function useToast() {
             message={toast.message}
             type={toast.type}
             duration={toast.duration}
+            positionClassName={toast.positionClassName}
             onClose={() => removeToast(toast.id)}
           />
         ))}

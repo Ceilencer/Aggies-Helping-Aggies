@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/components/ui/toast'
 import { ImageUploadInput } from '@/components/ImageUploadInput'
 import { ImagePreview } from '@/components/ImagePreview'
 import { validatePost } from '@/lib/profanity-filter'
@@ -39,6 +40,7 @@ export default function CreatePostForm({
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [userRole, setUserRole] = useState<string>('Personal')
+  const { showToast, ToastContainer } = useToast()
 
   useEffect(() => {
     const initialize = async () => {
@@ -202,13 +204,35 @@ export default function CreatePostForm({
         author_id: user.id,
         title: formData.title.trim(),
         content: formData.content.trim(),
+        is_moderated: false,
+        moderation_reason: null,
       }
 
-      const { data: newPost, error: insertError } = await supabase
+      let newPost: any = null
+      let insertError: any = null
+
+      const primaryInsert = await supabase
         .from('posts')
-        .insert(postData)
+        .insert({ ...postData, approval_status: 'pending' })
         .select()
         .single()
+
+      newPost = primaryInsert.data
+      insertError = primaryInsert.error
+
+      const isMissingApprovalStatus =
+        !!insertError && (insertError.code === 'PGRST204' || insertError.code === '42703' || insertError.message?.includes('approval_status'))
+
+      if (isMissingApprovalStatus) {
+        const fallbackInsert = await supabase
+          .from('posts')
+          .insert(postData)
+          .select()
+          .single()
+
+        newPost = fallbackInsert.data
+        insertError = fallbackInsert.error
+      }
 
       if (insertError) {
         if (insertError.message?.includes('post limit')) {
@@ -260,6 +284,14 @@ export default function CreatePostForm({
         ? { ...newPost, images: uploadedImageUrls }
         : newPost
 
+      if (!onPostCreated) {
+        showToast({
+          message: 'Post submitted. Waiting for admin approval.',
+          type: 'info',
+          positionClassName: 'top-24',
+        })
+      }
+
       if (onPostCreated) {
         onPostCreated(finalPost, selectedChannel)
         return
@@ -285,8 +317,10 @@ export default function CreatePostForm({
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <Card>
+    <>
+      <ToastContainer />
+      <div className="max-w-3xl mx-auto">
+        <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-primary dark:text-white">
             Create New Post
@@ -418,7 +452,8 @@ export default function CreatePostForm({
             </div>
           </form>
         </CardContent>
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </>
   )
 }

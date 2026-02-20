@@ -67,6 +67,27 @@ export default function MyPostsClient({
   const editingPost = postsState.find(post => post.id === editingPostId)
   const editingChannel = channels.find(channel => channel.id === editingPost?.channel_id)
 
+  const getApprovalBadge = (approvalStatus?: string) => {
+    if (approvalStatus === 'approved') {
+      return {
+        label: '✅ Approved',
+        className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+      }
+    }
+
+    if (approvalStatus === 'rejected') {
+      return {
+        label: '❌ Rejected',
+        className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100',
+      }
+    }
+
+    return {
+      label: '⏳ Pending Approval',
+      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100',
+    }
+  }
+
   return (
     <>
       <div className="max-w-4xl mx-auto space-y-6">
@@ -74,7 +95,7 @@ export default function MyPostsClient({
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
             <CardTitle className="text-2xl text-dash-header-text">My Posts</CardTitle>
             <CardDescription className="text-dash-header-text/80">
-              View all posts you've created
+              Track your post status (pending, approved, or rejected)
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
@@ -91,6 +112,16 @@ export default function MyPostsClient({
             postsState.map((post: FeedPost) => (
               <Card key={post.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
+                  {(() => {
+                    const badge = getApprovalBadge(post.approval_status)
+                    return (
+                      <div className="mb-2">
+                        <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                    )
+                  })()}
                   <PostCardHeader
                     post={post}
                     isAdmin={profile?.role === 'Admin'}
@@ -105,12 +136,18 @@ export default function MyPostsClient({
                   <h3 className="text-xl font-bold text-card-header-text">
                     {post.title}
                   </h3>
-                  <p className="text-card-subtext whitespace-pre-wrap">
+                  <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                     {post.content.length > 300
                       ? `${post.content.substring(0, 300)}...`
                       : post.content
                     }
                   </p>
+
+                  {post.approval_status === 'rejected' && post.moderation_reason && (
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      Rejection reason: {post.moderation_reason}
+                    </p>
+                  )}
 
                   <div className="flex items-center justify-between space-x-4 py-4 border-t">
                     <div className="flex items-center space-x-4">
