@@ -175,17 +175,26 @@ export default function CreatePostForm({
       }
 
       // Check if user is banned
-      const banCheckRes = await fetch(`/api/admin/user-bans/check/${user.id}`)
-      const banStatus = await banCheckRes.json()
+      // If the endpoint is unavailable or returns non-JSON, do not block post creation.
+      try {
+        const banCheckRes = await fetch(`/api/admin/user-bans/check/${user.id}`)
+        const contentType = banCheckRes.headers.get('content-type') || ''
 
-      if (banStatus.is_banned) {
-        const banMessage = banStatus.ban_type === 'permanent'
-          ? `You are permanently banned from this platform. Reason: ${banStatus.reason}`
-          : `You are temporarily banned from this platform. Reason: ${banStatus.reason}`
-        
-        setError(banMessage)
-        setLoading(false)
-        return
+        if (banCheckRes.ok && contentType.includes('application/json')) {
+          const banStatus = await banCheckRes.json()
+
+          if (banStatus.is_banned) {
+            const banMessage = banStatus.ban_type === 'permanent'
+              ? `You are permanently banned from this platform. Reason: ${banStatus.reason}`
+              : `You are temporarily banned from this platform. Reason: ${banStatus.reason}`
+
+            setError(banMessage)
+            setLoading(false)
+            return
+          }
+        }
+      } catch (banCheckError) {
+        console.warn('Ban check endpoint unavailable, skipping ban check:', banCheckError)
       }
 
       const postData = {
