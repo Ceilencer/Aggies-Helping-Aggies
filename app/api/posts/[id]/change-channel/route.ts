@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { channelChangeRequestSchema } from '@/lib/validations'
 
 export async function PUT(
   request: NextRequest,
@@ -8,44 +10,23 @@ export async function PUT(
   try {
     const { id } = await params
     const supabase = await createClient()
-    const { channel_id } = await request.json()
+    const body = await request.json()
+    const validation = channelChangeRequestSchema.safeParse(body)
 
     // Validate input
-    if (!channel_id) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Channel ID is required' },
+        { error: validation.error.errors[0]?.message || 'Channel ID is required' },
         { status: 400 }
       )
     }
+    const { channel_id } = validation.data
 
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user is an admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
-    }
-
-    if (profile.role !== 'Admin') {
-      return NextResponse.json(
-        { error: 'Only admins can change post channels' },
-        { status: 403 }
-      )
+    const admin = await requireAdminUser(supabase, {
+      forbiddenMessage: 'Only admins can change post channels',
+    })
+    if ('error' in admin) {
+      return admin.error
     }
 
     // Verify post exists

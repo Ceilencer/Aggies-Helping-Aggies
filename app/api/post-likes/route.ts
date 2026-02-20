@@ -1,17 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { postIdRequestSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { post_id } = await request.json()
+    const body = await request.json()
+    const validation = postIdRequestSchema.safeParse(body)
 
-    if (!post_id) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Post ID is required' },
+        { error: validation.error.errors[0]?.message || 'Post ID is required' },
         { status: 400 }
       )
     }
+    const { post_id } = validation.data
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

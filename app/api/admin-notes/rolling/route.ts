@@ -1,33 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { rollingAdminNoteUpsertSchema } from '@/lib/validations'
 
 async function requireAdmin() {
   const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return { supabase, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  const admin = await requireAdminUser(supabase)
+  if ('error' in admin) {
+    return { supabase, error: admin.error }
   }
 
-  const { data: actorProfile, error: actorProfileError } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (actorProfileError || !actorProfile) {
-    return { supabase, error: NextResponse.json({ error: 'Profile not found' }, { status: 404 }) }
-  }
-
-  if (actorProfile.role !== 'Admin') {
-    return { supabase, error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
-  }
-
-  return { supabase, user }
+  return { supabase, user: admin.user }
 }
 
 export async function GET(request: NextRequest) {
@@ -71,11 +54,12 @@ export async function PUT(request: NextRequest) {
 
     const { supabase, user } = adminContext
 
-    const { user_id, content } = await request.json()
-
-    if (!user_id || !content || !String(content).trim()) {
+    const body = await request.json()
+    const validation = rollingAdminNoteUpsertSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    const { user_id, content } = validation.data
 
     const normalizedContent = String(content).trim()
 

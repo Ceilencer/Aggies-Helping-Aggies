@@ -129,6 +129,83 @@ export const verificationReviewSchema = z.object({
   rejection_reason: z.string().optional(),
 })
 
+export const postIdRequestSchema = z.object({
+  post_id: z.string().min(1, 'Post ID is required'),
+})
+
+export const commentIdRequestSchema = z.object({
+  comment_id: z.string().min(1, 'Comment ID is required'),
+})
+
+export const channelChangeRequestSchema = z.object({
+  channel_id: z.string().min(1, 'Channel ID is required'),
+})
+
+export const channelPatchRequestSchema = z.object({
+  channel_id: z.string().min(1, 'channel_id is required'),
+})
+
+export const createCommentRequestSchema = z
+  .object({
+    post_id: z.string().min(1),
+    content: z.string(),
+    parent_comment_id: z.string().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.post_id || data.content.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Post ID and content are required',
+      })
+    }
+    if (data.content.length > 1000) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Comment must be 1000 characters or less',
+      })
+    }
+  })
+
+export const adminNoteCreateSchema = z.object({
+  user_id: z.string().min(1, 'Missing required fields'),
+  content: z.string().min(1, 'Missing required fields'),
+})
+
+export const adminNoteUpdateSchema = z.object({
+  content: z.string().min(1, 'Missing required fields'),
+})
+
+export const rollingAdminNoteUpsertSchema = z
+  .object({
+    user_id: z.string().min(1),
+    content: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.user_id || !data.content || data.content.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Missing required fields',
+      })
+    }
+  })
+
+export const adminPostReviewSchema = z.object({
+  approve: z.boolean().optional(),
+  reason: z.string().optional(),
+})
+
+export const adminRoleUpdateSchema = z.object({
+  role: z.enum(['Personal', 'Business', 'Charity', 'Admin'], {
+    errorMap: () => ({ message: 'Invalid account type' }),
+  }),
+})
+
+export const adminFlairUpdateSchema = z.object({
+  flair: z.enum(['Student', 'Former Student', 'Parent', 'Faculty', 'BCS Local'], {
+    errorMap: () => ({ message: 'Invalid flair value' }),
+  }),
+})
+
 // Types inferred from schemas
 export type SignupInput = z.infer<typeof signupSchema>
 export type LoginInput = z.infer<typeof loginSchema>
@@ -139,3 +216,6 @@ export type CreateCommentInput = z.infer<typeof createCommentSchema>
 export type EditCommentInput = z.infer<typeof editCommentSchema>
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>
 export type VerificationReviewInput = z.infer<typeof verificationReviewSchema>
+export type CreateCommentRequestInput = z.infer<typeof createCommentRequestSchema>
+export type PostIdRequestInput = z.infer<typeof postIdRequestSchema>
+export type CommentIdRequestInput = z.infer<typeof commentIdRequestSchema>

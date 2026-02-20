@@ -1,32 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, NextRequest } from 'next/server'
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { adminPostReviewSchema } from '@/lib/validations'
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const body = await request.json()
-    const { approve, reason } = body as { approve?: boolean; reason?: string }
+    const validation = adminPostReviewSchema.safeParse(body)
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.errors[0]?.message || 'Invalid request body' }, { status: 400 })
+    }
+    const { approve, reason } = validation.data
 
     const supabase = await createClient()
 
-    // Verify user is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    if (profile.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
     if (approve) {

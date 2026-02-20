@@ -1,6 +1,6 @@
 # Howdy Helps - Aggies Helping Aggies
 
-> **Project Snapshot**: February 17, 2026
+> **Project Snapshot**: February 20, 2026
 
 A verified community engagement platform exclusively for Texas A&M University students, alumni, and affiliates. Support fellow Aggies with fundraising, connect through shared experiences, and engage with the Aggie network through a secure, moderated platform.
 
@@ -100,6 +100,12 @@ Four distinct user roles with different posting privileges:
 - **Build Tool**: Next.js with Turbopack
 - **Package Manager**: npm/yarn
 - **Linting**: ESLint with Next.js config
+
+### API & State Architecture (P0)
+- **Shared API Auth Guards**: `lib/utils/api-auth.ts` centralizes authenticated/admin route protection
+- **Route Boundary Validation**: API routes use `safeParse` with schemas from `lib/validations.ts`
+- **Client Logic Extraction**: Large UI components delegate feed/form/profile logic to focused hooks
+- **Behavior Preservation**: Route status codes, response messages, and UX flows remain unchanged
 
 ### Key Libraries
 ```json
@@ -276,7 +282,13 @@ howdy-helps-capstone/
 │   ├── validations.ts                        # Zod schemas
 │   ├── hooks/
 │   │   ├── use-dark-mode.ts                  # Dark mode hook
-│   │   └── useImageUpload.ts                 # Image upload logic
+│   │   ├── useImageUpload.ts                 # Image upload logic
+│   │   ├── useHomeFeedState.ts               # Dashboard feed state/actions
+│   │   ├── useCreatePostForm.ts              # Create post workflow state
+│   │   ├── useChannelFeedState.ts            # Channel feed state/actions
+│   │   └── useUserProfilePanelState.ts       # Profile panel + admin actions
+│   ├── utils/
+│   │   └── api-auth.ts                       # Shared API auth/admin guards
 │   └── supabase/
 │       ├── client.ts                         # Client-side Supabase
 │       ├── middleware.ts                     # Auth middleware
@@ -582,6 +594,23 @@ For production deployment with high traffic, consider upgrading to Supabase Pro.
 
 ## 🧪 Development & Testing
 
+### Latest Smoke Test Results (Post-P0 Refactor)
+
+Executed in this workspace after the P0 refactor:
+
+- ✅ `npm run build` passed (compile, type checks, route generation)
+- ✅ `npm run verify-supabase` passed connectivity and core table checks
+- ⚠️ `channels` table exists but has no seeded rows in this environment
+- ⚠️ `npm run lint` currently fails due Next.js 16 lint command behavior in this setup
+
+Recommended quick validation sequence:
+
+```bash
+npm run build
+npm run verify-supabase
+npm run lint
+```
+
 ### Available Scripts
 
 ```bash
@@ -696,7 +725,7 @@ This project is for **educational purposes only** as part of a university capsto
 ### Project Status
 **Status**: Active Development  
 **Version**: 0.1.0 (MVP + Enhancements)  
-**Last Updated**: February 17, 2026  
+**Last Updated**: February 20, 2026  
 **Deployment**: Vercel-ready  
 **Database**: Supabase PostgreSQL  
 

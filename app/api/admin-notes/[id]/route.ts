@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { adminNoteUpdateSchema } from '@/lib/validations'
 
 export async function PUT(
   request: NextRequest,
@@ -8,31 +10,20 @@ export async function PUT(
   try {
     const { id } = await params
     const supabase = await createClient()
-    
-    // Get current user and check if admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const { content } = await request.json()
-
-    if (!content) {
+    const body = await request.json()
+    const validation = adminNoteUpdateSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
+    const { content } = validation.data
 
     // Update admin note
     const { data: note, error } = await supabase
@@ -67,21 +58,9 @@ export async function DELETE(
   try {
     const { id } = await params
     const supabase = await createClient()
-    
-    // Get current user and check if admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
     // Delete admin note

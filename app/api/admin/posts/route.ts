@@ -1,29 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, NextRequest } from 'next/server'
 import { getCachedPendingPosts } from '@/lib/supabase/cached-queries'
+import { requireAdminUser } from '@/lib/utils/api-auth'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Verify user is admin
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    if (profile.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
     // Get pagination parameters

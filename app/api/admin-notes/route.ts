@@ -1,24 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { adminNoteCreateSchema } from '@/lib/validations'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
-    // Get current user and check if admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
     // Get user_id from query params
@@ -54,31 +44,22 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    
-    // Get current user and check if admin
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    const { user } = admin
 
-    if (profile?.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const { user_id, content } = await request.json()
-
-    if (!user_id || !content) {
+    const body = await request.json()
+    const validation = adminNoteCreateSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
+    const { user_id, content } = validation.data
 
     // Create admin note
     const { data: note, error } = await supabase

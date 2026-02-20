@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { UserRole } from '@/lib/types'
-
-const ALLOWED_ROLES: UserRole[] = ['Personal', 'Business', 'Charity', 'Admin']
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { adminRoleUpdateSchema } from '@/lib/validations'
 
 export async function PATCH(
   request: NextRequest,
@@ -11,35 +10,17 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const role = body?.role as UserRole | undefined
-
-    if (!role || !ALLOWED_ROLES.includes(role)) {
+    const validation = adminRoleUpdateSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json({ error: 'Invalid account type' }, { status: 400 })
     }
+    const { role } = validation.data
 
     const supabase = await createClient()
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { data: actorProfile, error: actorProfileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (actorProfileError || !actorProfile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
-    }
-
-    if (actorProfile.role !== 'Admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = await requireAdminUser(supabase)
+    if ('error' in admin) {
+      return admin.error
     }
 
     const { data: updatedProfile, error: updateError } = await supabase

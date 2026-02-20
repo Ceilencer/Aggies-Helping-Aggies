@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdminUser } from '@/lib/utils/api-auth'
+import { channelPatchRequestSchema } from '@/lib/validations'
 
 export async function DELETE(
   request: NextRequest,
@@ -9,27 +11,13 @@ export async function DELETE(
     const { id: postId } = await params
     const supabase = await createClient()
 
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Get user profile to check if admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile || profile.role !== 'Admin') {
-      return NextResponse.json(
-        { error: 'Only admins can delete posts' },
-        { status: 403 }
-      )
+    const admin = await requireAdminUser(supabase, {
+      forbiddenMessage: 'Only admins can delete posts',
+      profileNotFoundMessage: 'Only admins can delete posts',
+      profileNotFoundStatus: 403,
+    })
+    if ('error' in admin) {
+      return admin.error
     }
 
     // Delete post
@@ -64,36 +52,22 @@ export async function PATCH(
     const { id: postId } = await params
     const supabase = await createClient()
     const body = await request.json()
-    const { channel_id } = body
-
-    if (!channel_id) {
+    const validation = channelPatchRequestSchema.safeParse(body)
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'channel_id is required' },
+        { error: validation.error.errors[0]?.message || 'channel_id is required' },
         { status: 400 }
       )
     }
+    const { channel_id } = validation.data
 
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Get user profile to check if admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile || profile.role !== 'Admin') {
-      return NextResponse.json(
-        { error: 'Only admins can move posts' },
-        { status: 403 }
-      )
+    const admin = await requireAdminUser(supabase, {
+      forbiddenMessage: 'Only admins can move posts',
+      profileNotFoundMessage: 'Only admins can move posts',
+      profileNotFoundStatus: 403,
+    })
+    if ('error' in admin) {
+      return admin.error
     }
 
     // Verify channel exists

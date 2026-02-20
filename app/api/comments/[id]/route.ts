@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 
 export async function DELETE(
   request: NextRequest,
@@ -10,14 +11,11 @@ export async function DELETE(
     const supabase = await createClient()
     const commentId = id
 
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) {
+      return auth.error
     }
+    const { user } = auth
 
     // Verify user owns the comment
     const { data: comment, error: fetchError } = await supabase

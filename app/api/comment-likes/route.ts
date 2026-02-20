@@ -1,17 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { commentIdRequestSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { comment_id } = await request.json()
+    const body = await request.json()
+    const validation = commentIdRequestSchema.safeParse(body)
 
-    if (!comment_id) {
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Comment ID is required' },
+        { error: validation.error.errors[0]?.message || 'Comment ID is required' },
         { status: 400 }
       )
     }
+    const { comment_id } = validation.data
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import PostDetailModal from '@/components/PostDetailModal'
 import UserAgreementModal from '@/components/UserAgreementModal'
 import UserProfileModal from '@/components/UserProfileModal'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
+import { useHomeFeedState } from '@/lib/hooks/useHomeFeedState'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
 
@@ -26,19 +27,27 @@ interface DashboardClientProps {
   allChannels: Channel[]
 }
 
-const HOME_FEED_PAGE_SIZE = 5
-
 export default function DashboardClient({
   profile,
   posts,
   announcements,
   allChannels,
 }: DashboardClientProps) {
-  const [postsState, setPostsState] = useState<FeedPost[]>(posts)
-  const [announcementsState, setAnnouncementsState] = useState<FeedPost[]>(announcements)
-  const [postsOffset, setPostsOffset] = useState(posts.length)
-  const [hasMorePosts, setHasMorePosts] = useState(posts.length > 0)
-  const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false)
+  const {
+    postsState,
+    announcementsState,
+    hasMorePosts,
+    isLoadingMorePosts,
+    loadMorePosts,
+    handlePostCreated,
+    handlePostDeleted,
+    handlePostUpdated,
+  } = useHomeFeedState({
+    profile,
+    posts,
+    announcements,
+    allChannels,
+  })
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
@@ -46,46 +55,6 @@ export default function DashboardClient({
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const agreementState = useFirstTimeAgreement(profile)
-
-  const loadMorePosts = useCallback(async () => {
-    if (isLoadingMorePosts || !hasMorePosts) {
-      return
-    }
-
-    setIsLoadingMorePosts(true)
-    try {
-      const response = await fetch(`/api/posts/feed?offset=${postsOffset}&limit=${HOME_FEED_PAGE_SIZE}`, {
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to load more posts: ${response.status}`)
-      }
-
-      const data = await response.json() as {
-        posts?: FeedPost[]
-        nextOffset?: number
-        hasMore?: boolean
-      }
-
-      const incomingPosts = data.posts || []
-      if (incomingPosts.length > 0) {
-        setPostsState((current) => {
-          const existingIds = new Set(current.map(post => post.id))
-          const uniqueIncoming = incomingPosts.filter(post => !existingIds.has(post.id))
-          return uniqueIncoming.length > 0 ? [...current, ...uniqueIncoming] : current
-        })
-      }
-
-      setPostsOffset(typeof data.nextOffset === 'number' ? data.nextOffset : postsOffset + incomingPosts.length)
-      setHasMorePosts(data.hasMore === true)
-    } catch (error) {
-      console.error('Error loading more home feed posts:', error)
-      setHasMorePosts(false)
-    } finally {
-      setIsLoadingMorePosts(false)
-    }
-  }, [hasMorePosts, isLoadingMorePosts, postsOffset])
 
   useEffect(() => {
     if (!hasMorePosts) {
@@ -117,60 +86,8 @@ export default function DashboardClient({
     setCreatePostOpen(true)
   }
 
-  const handlePostCreated = (newPost: Post, channel: Channel | null) => {
-    const isApproved = newPost.approval_status === 'approved' || newPost.is_moderated === true
-    if (!isApproved) {
-      return
-    }
-
-    const resolvedChannel = channel || allChannels.find(c => c.id === newPost.channel_id) || undefined
-    const hydratedPost: FeedPost = {
-      ...newPost,
-      author: profile || undefined,
-      channel: resolvedChannel,
-      like_count: 0,
-      comment_count: 0,
-      user_has_liked: false,
-      like_id: null,
-      view_count: newPost.view_count ?? 0,
-    }
-
-    if (resolvedChannel?.slug === 'announcements') {
-      setAnnouncementsState(current => [hydratedPost, ...current])
-    } else {
-      setPostsState(current => [hydratedPost, ...current])
-      setPostsOffset(current => current + 1)
-    }
-  }
-
-  const handlePostDeleted = (postId: string) => {
-    setPostsState(current => {
-      const exists = current.some(post => post.id === postId)
-      if (exists) {
-        setPostsOffset(previous => Math.max(previous - 1, 0))
-      }
-      return current.filter(post => post.id !== postId)
-    })
-    setAnnouncementsState(current => current.filter(post => post.id !== postId))
-  }
-
-  const handlePostUpdated = (updatedPost: Post) => {
-    const hydratedPost: FeedPost = {
-      ...updatedPost,
-      author: updatedPost.author || profile || undefined,
-      channel: updatedPost.channel,
-      like_count: updatedPost.like_count,
-      comment_count: updatedPost.comment_count,
-      user_has_liked: false,
-      like_id: null,
-    }
-
-    setPostsState(current =>
-      current.map(post => post.id === updatedPost.id ? hydratedPost : post)
-    )
-    setAnnouncementsState(current =>
-      current.map(post => post.id === updatedPost.id ? hydratedPost : post)
-    )
+  const onPostUpdated = (updatedPost: Post) => {
+    handlePostUpdated(updatedPost)
     setEditingPostId(null)
   }
 
@@ -393,7 +310,7 @@ export default function DashboardClient({
           onClose={() => setEditingPostId(null)}
           post={editingPost}
           channel={editingChannel}
-          onPostUpdated={handlePostUpdated}
+          onPostUpdated={onPostUpdated}
         />
       )}
 

@@ -1,25 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { createCommentRequestSchema } from '@/lib/validations'
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { post_id, content, parent_comment_id } = await request.json()
+    const body = await request.json()
+    const validation = createCommentRequestSchema.safeParse(body)
 
     // Validate input
-    if (!post_id || !content?.trim()) {
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]?.message || 'Post ID and content are required'
       return NextResponse.json(
-        { error: 'Post ID and content are required' },
+        { error: firstError },
         { status: 400 }
       )
     }
-
-    if (content.length > 1000) {
-      return NextResponse.json(
-        { error: 'Comment must be 1000 characters or less' },
-        { status: 400 }
-      )
-    }
+    const { post_id, content, parent_comment_id } = validation.data
 
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
