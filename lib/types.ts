@@ -1,4 +1,5 @@
 export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
+export type FlairType = 'Student' | 'Former Student' | 'Parent' | 'Faculty' | 'BCS Local'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'announcements' | 'aggie_ring'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
@@ -9,6 +10,7 @@ export interface Profile {
   full_name: string
   avatar_url?: string
   role: UserRole
+  flair: FlairType
   is_verified: boolean
   is_alumni: boolean
   mfa_enabled: boolean

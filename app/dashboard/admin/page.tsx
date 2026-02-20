@@ -1,5 +1,6 @@
 "use client"
 
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 type PostItem = {
@@ -23,16 +24,34 @@ export default function AdminDashboardPage() {
   const [page, setPage] = useState(0)
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const [accessDenied, setAccessDenied] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true
     const load = async () => {
       setLoading(true)
       try {
+        setAccessDenied(false)
+        setLoadError(null)
         const offset = 0
         const limit = POSTS_PER_PAGE
         const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${limit}`, { credentials: 'include' })
-        if (!res.ok) throw new Error('Failed to load')
+
+        if (res.status === 401 || res.status === 403) {
+          if (mounted) {
+            setAccessDenied(true)
+            setPosts([])
+            setTotalCount(0)
+            setHasMore(false)
+          }
+          return
+        }
+
+        if (!res.ok) {
+          throw new Error('Failed to load admin posts')
+        }
+
         const { data, total } = await res.json()
         if (mounted) {
           setPosts(data || [])
@@ -42,6 +61,7 @@ export default function AdminDashboardPage() {
         }
       } catch (e) {
         console.error(e)
+        if (mounted) setLoadError('Unable to load admin posts right now.')
       } finally {
         if (mounted) setLoading(false)
       }
@@ -51,13 +71,23 @@ export default function AdminDashboardPage() {
   }, [])
 
   const loadMore = async () => {
+    if (accessDenied) return
+
     setLoadingMore(true)
     try {
       const nextPage = page + 1
       const offset = nextPage * POSTS_PER_PAGE
       const limit = POSTS_PER_PAGE
       const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${limit}`, { credentials: 'include' })
-      if (!res.ok) throw new Error('Failed to load')
+
+      if (res.status === 401 || res.status === 403) {
+        setAccessDenied(true)
+        setHasMore(false)
+        return
+      }
+
+      if (!res.ok) throw new Error('Failed to load admin posts')
+
       const { data } = await res.json()
       setPosts((prev) => [...prev, ...(data || [])])
       setPage(nextPage)
@@ -80,6 +110,7 @@ export default function AdminDashboardPage() {
       })
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
+      setTotalCount((count) => Math.max(0, count - 1))
     } catch (e) {
       console.error(e)
     } finally {
@@ -96,6 +127,7 @@ export default function AdminDashboardPage() {
       })
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
+      setTotalCount((count) => Math.max(0, count - 1))
     } catch (e) {
       console.error(e)
     } finally {
@@ -107,6 +139,21 @@ export default function AdminDashboardPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Admin Dashboard</h1>
 
+      {accessDenied && (
+        <div className="rounded-md border p-4">
+          <p className="text-sm text-muted-foreground">
+            You no longer have admin access.
+          </p>
+          <Link href="/dashboard" className="text-sm font-medium text-primary hover:underline">
+            Return to dashboard
+          </Link>
+        </div>
+      )}
+
+      {loadError && !accessDenied && (
+        <p className="text-sm text-red-600">{loadError}</p>
+      )}
+
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Pending Posts</h2>
@@ -114,7 +161,7 @@ export default function AdminDashboardPage() {
             Showing {posts.length} of {totalCount}
           </span>
         </div>
-        {loading ? (
+        {accessDenied ? null : loading ? (
           <p className="text-muted-foreground">Loading…</p>
         ) : posts.length === 0 ? (
           <p className="text-muted-foreground">No pending posts.</p>
