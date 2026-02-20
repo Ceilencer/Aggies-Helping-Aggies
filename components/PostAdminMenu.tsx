@@ -120,9 +120,7 @@ export default function PostAdminMenu({
               Move to Channel
             </div>
             <div className="max-h-48 overflow-y-auto">
-              {channels
-                .filter((channel) => channel.slug !== 'announcements')
-                .map((channel) => (
+              {channels.map((channel) => (
                 <button
                   key={channel.id}
                   onClick={() => handleChangeChannel(channel.id)}

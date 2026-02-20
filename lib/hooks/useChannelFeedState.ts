@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Profile } from '@/lib/types'
+import type { ChannelAnnouncement, Profile } from '@/lib/types'
 
 const POSTS_PAGE_SIZE = 5
 
@@ -15,6 +15,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const supabase = useMemo(() => createClient(), [])
 
   const [channel, setChannel] = useState<any>(null)
+  const [channelAnnouncement, setChannelAnnouncement] = useState<ChannelAnnouncement | null>(null)
   const [posts, setPosts] = useState<any[]>([])
   const [channels, setChannels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -66,6 +67,40 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
       fetchedCount: postsData.length,
     }
   }, [formatPosts, supabase])
+
+  const fetchChannelAnnouncement = useCallback(async (channelId: string) => {
+    const { data, error } = await supabase
+      .from('channel_announcements')
+      .select(`
+        id,
+        channel_id,
+        title,
+        content,
+        updated_by,
+        created_at,
+        updated_at,
+        updated_by_profile:profiles!channel_announcements_updated_by_fkey(id, full_name, avatar_url, role)
+      `)
+      .eq('channel_id', channelId)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error loading channel announcement:', error)
+      setChannelAnnouncement(null)
+      return
+    }
+
+    const normalizedAnnouncement = data
+      ? {
+          ...data,
+          updated_by_profile: Array.isArray(data.updated_by_profile)
+            ? data.updated_by_profile[0] || null
+            : data.updated_by_profile || null,
+        }
+      : null
+
+    setChannelAnnouncement(normalizedAnnouncement)
+  }, [supabase])
 
   const loadMorePosts = useCallback(async () => {
     if (!channel?.id || !currentUserId || isLoadingMore || !hasMorePosts) {
@@ -158,6 +193,8 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
 
         setChannel(channelData)
 
+        await fetchChannelAnnouncement(channelData.id)
+
         const { data: allUserLikes, error: userLikesError } = await supabase
           .from('post_likes')
           .select('id, post_id')
@@ -200,7 +237,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     }
 
     loadChannelData()
-  }, [canonicalSlug, rawSlug, router, supabase, fetchPostsPage])
+  }, [canonicalSlug, rawSlug, router, supabase, fetchChannelAnnouncement, fetchPostsPage])
 
   useEffect(() => {
     if (!channel?.id || loading || !hasMorePosts) {
@@ -230,6 +267,8 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   return {
     channel,
     setChannel,
+    channelAnnouncement,
+    setChannelAnnouncement,
     posts,
     setPosts,
     channels,

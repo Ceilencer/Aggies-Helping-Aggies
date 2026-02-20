@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import Modal from '@/components/Modal'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
 import PostCardHeader from '@/components/PostCardHeader'
@@ -13,8 +14,11 @@ import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import UserProfileModal from '@/components/UserProfileModal'
+import ChannelAnnouncementModal from '@/components/ChannelAnnouncementModal'
+import UserAvatar from '@/components/UserAvatar'
 import { useChannelFeedState } from '@/lib/hooks/useChannelFeedState'
-import type { Profile, Post, Channel } from '@/lib/types'
+import { formatRelativeTime } from '@/lib/utils'
+import type { Profile, Post, Channel, ChannelAnnouncement } from '@/lib/types'
 
 function ChannelLoadingSkeleton() {
   return (
@@ -33,6 +37,23 @@ function ChannelLoadingSkeleton() {
         <div className="p-6 border-t">
           <div className="h-10 w-40 rounded bg-muted" />
         </div>
+      </div>
+
+      {/* Announcement Card */}
+      <div className="rounded-lg border bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-muted" />
+            <div className="space-y-2">
+              <div className="h-4 w-36 rounded bg-muted" />
+              <div className="h-3 w-16 rounded bg-muted" />
+            </div>
+          </div>
+          <div className="h-4 w-24 rounded bg-muted" />
+        </div>
+        <div className="h-6 w-3/5 rounded bg-muted" />
+        <div className="h-4 w-full rounded bg-muted" />
+        <div className="h-4 w-5/6 rounded bg-muted" />
       </div>
 
       {/* Posts */}
@@ -83,6 +104,8 @@ export default function ChannelPage() {
   const {
     channel,
     setChannel,
+    channelAnnouncement,
+    setChannelAnnouncement,
     posts,
     setPosts,
     channels,
@@ -100,6 +123,43 @@ export default function ChannelPage() {
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false)
+  const [announcementPopupOpen, setAnnouncementPopupOpen] = useState(false)
+
+  const markAnnouncementSeen = (updatedAt: string) => {
+    if (!channel?.id || typeof window === 'undefined') {
+      return
+    }
+
+    const seenKey = `channel-announcement-seen:${channel.id}`
+    window.localStorage.setItem(seenKey, updatedAt)
+  }
+
+  useEffect(() => {
+    if (!channel?.id || !channelAnnouncement?.updated_at) {
+      setAnnouncementPopupOpen(false)
+      return
+    }
+
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const seenKey = `channel-announcement-seen:${channel.id}`
+    const seenVersion = window.localStorage.getItem(seenKey)
+
+    if (seenVersion !== channelAnnouncement.updated_at) {
+      setAnnouncementPopupOpen(true)
+    }
+  }, [channel?.id, channelAnnouncement?.updated_at])
+
+  const dismissAnnouncementPopup = () => {
+    if (channelAnnouncement?.updated_at) {
+      markAnnouncementSeen(channelAnnouncement.updated_at)
+    }
+
+    setAnnouncementPopupOpen(false)
+  }
 
   if (loading) {
     return <ChannelLoadingSkeleton />
@@ -136,9 +196,53 @@ export default function ChannelPage() {
                 Create New Post
               </Button>
             )}
+            {currentUserRole === 'Admin' && (
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => setAnnouncementEditorOpen(true)}
+              >
+                {channelAnnouncement ? 'Edit Announcement' : 'Post Announcement'}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
+
+      {channelAnnouncement && (
+        <>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-2xl font-bold text-page-heading-text">Announcement</h2>
+          </div>
+          <Card className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark">
+            <CardHeader>
+              <div className="flex items-center gap-3 min-w-0">
+                {channelAnnouncement.updated_by_profile ? (
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar user={channelAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-card-header-text truncate">
+                        {channelAnnouncement.updated_by_profile.full_name}
+                      </p>
+                      <p className="text-xs text-card-subtext">Updated {formatRelativeTime(channelAnnouncement.updated_at)}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-card-subtext">Updated {formatRelativeTime(channelAnnouncement.updated_at)}</p>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <h2 className="text-xl font-bold text-card-header-text mb-2">
+                {channelAnnouncement.title}
+              </h2>
+              <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                {channelAnnouncement.content}
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Posts */}
       <div className="space-y-4">
@@ -275,6 +379,48 @@ export default function ChannelPage() {
           }}
         />
       )}
+
+      <ChannelAnnouncementModal
+        isOpen={announcementEditorOpen}
+        channelSlug={channel.slug}
+        initialAnnouncement={channelAnnouncement}
+        onClose={() => setAnnouncementEditorOpen(false)}
+        onSaved={(announcement) => {
+          markAnnouncementSeen(announcement.updated_at)
+          setChannelAnnouncement(announcement)
+          setAnnouncementPopupOpen(false)
+        }}
+      />
+
+      <Modal
+        isOpen={announcementPopupOpen}
+        onClose={dismissAnnouncementPopup}
+        title={`${channel.name} Announcement`}
+        headerExtra={channelAnnouncement?.updated_by_profile ? (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1">
+            <UserAvatar user={channelAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-card-header-text truncate leading-tight">
+                {channelAnnouncement.updated_by_profile.full_name}
+              </p>
+              <p className="text-[11px] text-card-subtext leading-tight">Admin</p>
+            </div>
+          </div>
+        ) : undefined}
+        size="md"
+      >
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-card-header-text">
+            {channelAnnouncement?.title}
+          </h2>
+          <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+            {channelAnnouncement?.content}
+          </p>
+          <div className="flex justify-end">
+            <Button onClick={dismissAnnouncementPopup}>Close</Button>
+          </div>
+        </div>
+      </Modal>
 
       <UserProfileModal
         isOpen={selectedUserId !== null}

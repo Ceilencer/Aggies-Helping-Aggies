@@ -98,8 +98,6 @@ export function getChannelIcon(type: string): string {
       return '🎟️'
     case 'promotions':
       return '📢'
-    case 'announcements':
-      return '📌'
     case 'aggie_ring':
       return '💍'
     default:

@@ -6,18 +6,15 @@ const HOME_FEED_PAGE_SIZE = 5
 type UseHomeFeedStateArgs = {
   profile: Profile | null
   posts: FeedPost[]
-  announcements: FeedPost[]
   allChannels: Channel[]
 }
 
 export function useHomeFeedState({
   profile,
   posts,
-  announcements,
   allChannels,
 }: UseHomeFeedStateArgs) {
   const [postsState, setPostsState] = useState<FeedPost[]>(posts)
-  const [announcementsState, setAnnouncementsState] = useState<FeedPost[]>(announcements)
   const [postsOffset, setPostsOffset] = useState(posts.length)
   const [hasMorePosts, setHasMorePosts] = useState(posts.length > 0)
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false)
@@ -80,12 +77,8 @@ export function useHomeFeedState({
       view_count: newPost.view_count ?? 0,
     }
 
-    if (resolvedChannel?.slug === 'announcements') {
-      setAnnouncementsState(current => [hydratedPost, ...current])
-    } else {
-      setPostsState(current => [hydratedPost, ...current])
-      setPostsOffset(current => current + 1)
-    }
+    setPostsState(current => [hydratedPost, ...current])
+    setPostsOffset(current => current + 1)
   }, [allChannels, profile])
 
   const handlePostDeleted = useCallback((postId: string) => {
@@ -96,7 +89,6 @@ export function useHomeFeedState({
       }
       return current.filter(post => post.id !== postId)
     })
-    setAnnouncementsState(current => current.filter(post => post.id !== postId))
   }, [])
 
   const handlePostUpdated = useCallback((updatedPost: Post) => {
@@ -113,14 +105,10 @@ export function useHomeFeedState({
     setPostsState(current =>
       current.map(post => post.id === updatedPost.id ? hydratedPost : post)
     )
-    setAnnouncementsState(current =>
-      current.map(post => post.id === updatedPost.id ? hydratedPost : post)
-    )
   }, [profile])
 
   return {
     postsState,
-    announcementsState,
     hasMorePosts,
     isLoadingMorePosts,
     loadMorePosts,

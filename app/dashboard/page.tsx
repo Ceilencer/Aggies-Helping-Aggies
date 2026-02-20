@@ -3,12 +3,11 @@ import { redirect } from 'next/navigation'
 import DashboardClient from '@/components/DashboardClient'
 import {
   getCachedUserProfile,
-  getCachedAnnouncementChannel,
   getCachedHomeChannels,
   getCachedAllChannels,
   getCachedPostsByChannels,
-  getCachedAnnouncements,
 } from '@/lib/supabase/cached-queries'
+import type { ChannelAnnouncement } from '@/lib/types'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -21,9 +20,8 @@ export default async function DashboardPage() {
   }
 
   // --- WAVE 2: Fetch Cached Setup Data in Parallel ---
-  const [profileData, announcementChannel, homeChannels, allChannels] = await Promise.all([
+  const [profileData, homeChannels, allChannels] = await Promise.all([
     getCachedUserProfile(user.id, supabase),
-    getCachedAnnouncementChannel(supabase),
     getCachedHomeChannels(supabase),
     getCachedAllChannels(supabase),
   ])
@@ -32,23 +30,43 @@ export default async function DashboardPage() {
   const homeChannelIds = homeChannels?.map(c => c.id) ?? []
 
   // --- WAVE 3: Fetch Content in Parallel ---
-  const [postsData, announcementsData] = await Promise.all([
-    homeChannelIds.length > 0
-      ? getCachedPostsByChannels(homeChannelIds, supabase, 5)
-      : Promise.resolve([]),
-    announcementChannel?.id
-      ? getCachedAnnouncements(announcementChannel.id, supabase, 5)
-      : Promise.resolve([]),
-  ])
+  const postsData = homeChannelIds.length > 0
+    ? await getCachedPostsByChannels(homeChannelIds, supabase, 5)
+    : []
 
-  // --- WAVE 4: Optimize Likes for Both Posts and Announcements (Batch Processing) ---
-  const allPostIds = [
-    ...postsData.map((post: any) => post.id),
-    ...announcementsData.map((post: any) => post.id),
-  ]
+  // --- WAVE 4: Optimize Likes for Posts (Batch Processing) ---
+  const allPostIds = postsData.map((post: any) => post.id)
 
   let posts = postsData
-  let announcementsPosts = announcementsData
+
+  const homeChannel = allChannels.find((channel: any) => channel.slug === 'home')
+  let initialHomeAnnouncement: ChannelAnnouncement | null = null
+
+  if (homeChannel?.id) {
+    const { data: announcementData } = await supabase
+      .from('channel_announcements')
+      .select(`
+        id,
+        channel_id,
+        title,
+        content,
+        updated_by,
+        created_at,
+        updated_at,
+        updated_by_profile:profiles!channel_announcements_updated_by_fkey(id, full_name, avatar_url, role)
+      `)
+      .eq('channel_id', homeChannel.id)
+      .maybeSingle()
+
+    if (announcementData) {
+      initialHomeAnnouncement = {
+        ...announcementData,
+        updated_by_profile: Array.isArray((announcementData as any).updated_by_profile)
+          ? (announcementData as any).updated_by_profile[0] || null
+          : (announcementData as any).updated_by_profile || null,
+      }
+    }
+  }
 
   if (allPostIds.length > 0) {
     const { data: userLikes } = await supabase
@@ -67,22 +85,14 @@ export default async function DashboardPage() {
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
     }))
-
-    announcementsPosts = announcementsData.map((post: any) => ({
-      ...post,
-      like_count: post.likes_count ?? 0,
-      comment_count: post.comment_count ?? 0,
-      user_has_liked: likedPostIds.has(post.id),
-      like_id: likeIdByPostId.get(post.id) ?? null,
-    }))
   }
 
   return (
     <DashboardClient
       profile={profile}
       posts={posts}
-      announcements={announcementsPosts}
       allChannels={allChannels}
+      initialHomeAnnouncement={initialHomeAnnouncement}
     />
   )
 }

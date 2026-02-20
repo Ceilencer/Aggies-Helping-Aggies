@@ -54,24 +54,6 @@ export async function getCachedChannelBySlug(slug: string, supabase: SupabaseCli
 }
 
 /**
- * Get announcement channel
- * Next.js automatically deduplicates requests within the same render
- */
-export async function getCachedAnnouncementChannel(supabase: SupabaseClient) {
-  const { data, error } = await supabase
-    .from('channels')
-    .select('id')
-    .eq('slug', 'announcements')
-    .single()
-  
-  if (error) {
-    console.error('Error fetching announcement channel:', error)
-    return null
-  }
-  return data
-}
-
-/**
  * Get home channel IDs (general, promotions)
  * Next.js automatically deduplicates requests within the same render
  */
@@ -139,35 +121,6 @@ export async function getCachedPostsByChannels(
   
   if (error) {
     console.error('Error fetching posts:', error)
-    return []
-  }
-  return data || []
-}
-
-/**
- * Get announcements
- * Next.js automatically deduplicates requests within the same render
- */
-export async function getCachedAnnouncements(
-  channelId: string,
-  supabase: SupabaseClient,
-  limit: number = 5
-) {
-  const { data, error } = await supabase
-    .from('posts')
-    .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
-    `)
-    .eq('channel_id', channelId)
-    .eq('is_moderated', true)
-    .order('is_pinned', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(limit)
-  
-  if (error) {
-    console.error('Error fetching announcements:', error)
     return []
   }
   return data || []

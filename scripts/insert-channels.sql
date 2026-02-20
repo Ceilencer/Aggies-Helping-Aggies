@@ -3,6 +3,7 @@
 
 INSERT INTO channels (name, slug, description, type, requires_mfa, is_read_only, icon) 
 VALUES
+    ('Home', 'home', 'Home feed announcements managed by admins', 'general', FALSE, TRUE, '🏠'),
     ('General', 'general', 'General community discussions and questions', 'general', FALSE, FALSE, '💬'),
     ('Promotions', 'promotions', 'Business promotions and community events', 'promotions', FALSE, FALSE, '📢'),
     ('Job/Internship/Networking', 'jobs-networking', 'Job opportunities, internships, and networking', 'jobs', FALSE, FALSE, '💼'),

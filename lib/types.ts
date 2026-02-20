@@ -1,7 +1,7 @@
 export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
 export type FlairType = 'Student' | 'Former Student' | 'Parent' | 'Faculty' | 'BCS Local'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
-export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'announcements' | 'aggie_ring'
+export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'aggie_ring'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 
 export interface Profile {
@@ -62,6 +62,17 @@ export interface Channel {
   color: string
   created_at: string
   updated_at: string
+}
+
+export interface ChannelAnnouncement {
+  id: string
+  channel_id: string
+  title: string
+  content: string
+  updated_by?: string | null
+  created_at: string
+  updated_at: string
+  updated_by_profile?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'> | null
 }
 
 export interface Post {

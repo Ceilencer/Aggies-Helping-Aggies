@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import Modal from '@/components/Modal'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
 import PostCardHeader from '@/components/PostCardHeader'
@@ -15,27 +15,28 @@ import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import UserAgreementModal from '@/components/UserAgreementModal'
 import UserProfileModal from '@/components/UserProfileModal'
+import ChannelAnnouncementModal from '@/components/ChannelAnnouncementModal'
+import UserAvatar from '@/components/UserAvatar'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
 import { useHomeFeedState } from '@/lib/hooks/useHomeFeedState'
-import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
-import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
+import { formatRelativeTime, getInitials } from '@/lib/utils'
+import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
 
 interface DashboardClientProps {
   profile: Profile | null
   posts: FeedPost[]
-  announcements: FeedPost[]
   allChannels: Channel[]
+  initialHomeAnnouncement: ChannelAnnouncement | null
 }
 
 export default function DashboardClient({
   profile,
   posts,
-  announcements,
   allChannels,
+  initialHomeAnnouncement,
 }: DashboardClientProps) {
   const {
     postsState,
-    announcementsState,
     hasMorePosts,
     isLoadingMorePosts,
     loadMorePosts,
@@ -45,7 +46,6 @@ export default function DashboardClient({
   } = useHomeFeedState({
     profile,
     posts,
-    announcements,
     allChannels,
   })
   const [activePostId, setActivePostId] = useState<string | null>(null)
@@ -53,8 +53,19 @@ export default function DashboardClient({
   const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [homeAnnouncement, setHomeAnnouncement] = useState<ChannelAnnouncement | null>(initialHomeAnnouncement)
+  const [homeAnnouncementEditorOpen, setHomeAnnouncementEditorOpen] = useState(false)
+  const [homeAnnouncementPopupOpen, setHomeAnnouncementPopupOpen] = useState(false)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const agreementState = useFirstTimeAgreement(profile)
+
+  const markHomeAnnouncementSeen = (updatedAt: string) => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem('home-announcement-seen', updatedAt)
+  }
 
   useEffect(() => {
     if (!hasMorePosts) {
@@ -81,6 +92,18 @@ export default function DashboardClient({
     }
   }, [hasMorePosts, loadMorePosts])
 
+  useEffect(() => {
+    if (!homeAnnouncement?.updated_at || typeof window === 'undefined') {
+      setHomeAnnouncementPopupOpen(false)
+      return
+    }
+
+    const seenVersion = window.localStorage.getItem('home-announcement-seen')
+    if (seenVersion !== homeAnnouncement.updated_at) {
+      setHomeAnnouncementPopupOpen(true)
+    }
+  }, [homeAnnouncement?.updated_at])
+
   const openCreatePost = (channelSlug?: string) => {
     setCreatePostChannelSlug(channelSlug)
     setCreatePostOpen(true)
@@ -91,7 +114,14 @@ export default function DashboardClient({
     setEditingPostId(null)
   }
 
-  const editingPost = [...postsState, ...announcementsState].find(post => post.id === editingPostId)
+  const dismissHomeAnnouncementPopup = () => {
+    if (homeAnnouncement?.updated_at) {
+      markHomeAnnouncementSeen(homeAnnouncement.updated_at)
+    }
+    setHomeAnnouncementPopupOpen(false)
+  }
+
+  const editingPost = postsState.find(post => post.id === editingPostId)
   const editingChannel = allChannels.find(channel => channel.id === editingPost?.channel_id)
 
   return (
@@ -138,82 +168,58 @@ export default function DashboardClient({
               <Button size="lg" onClick={() => openCreatePost()}>
                 Create New Post
               </Button>
-              <Link href="/dashboard/my-posts">
-                <Button size="lg" variant="outline">
-                  View My Posts
+              {profile?.role === 'Admin' && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={() => setHomeAnnouncementEditorOpen(true)}
+                >
+                  {homeAnnouncement ? 'Edit Announcement' : 'Post Announcement'}
                 </Button>
-              </Link>
+              )}
             </div>
           </CardContent>
         </Card>
 
+        {homeAnnouncement && (
+          <>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-2xl font-bold text-page-heading-text">Announcement</h2>
+            </div>
+            <Card className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark">
+              <CardHeader>
+                <div className="flex items-center gap-3 min-w-0">
+                  {homeAnnouncement.updated_by_profile ? (
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserAvatar user={homeAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-card-header-text truncate">
+                          {homeAnnouncement.updated_by_profile.full_name}
+                        </p>
+                        <p className="text-xs text-card-subtext">Updated {formatRelativeTime(homeAnnouncement.updated_at)}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-card-subtext">Updated {formatRelativeTime(homeAnnouncement.updated_at)}</p>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <h2 className="text-xl font-bold text-card-header-text mb-2">
+                  {homeAnnouncement.title}
+                </h2>
+                <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                  {homeAnnouncement.content}
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-page-heading-text">Home Feed</h2>
-            {profile?.role === 'Admin' && (
-              <Button variant="outline" size="sm" onClick={() => openCreatePost('announcements')}>
-                Post Announcement
-              </Button>
-            )}
           </div>
-
-          {announcementsState && announcementsState.length > 0 && (
-            announcementsState.map((announcement: FeedPost) => (
-              <Card
-                key={announcement.id}
-                className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark"
-              >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      {announcement.author?.avatar_url ? (
-                        <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                          <Image
-                            src={announcement.author.avatar_url}
-                            alt={`${announcement.author?.full_name || 'User'} avatar`}
-                            fill
-                            sizes="40px"
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold">
-                          {getInitials(announcement.author?.full_name || 'Unknown')}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <p className="font-semibold text-card-header-text">
-                            {announcement.author?.full_name}
-                          </p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(announcement.author?.role || 'Personal')}`}>
-                            {announcement.author?.role}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm text-card-subtext">
-                          <span>{announcement.channel?.icon} {announcement.channel?.name}</span>
-                          <span>•</span>
-                          <span>📌 {formatRelativeTime(announcement.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <h3 className="text-xl font-bold text-card-header-text">
-                    {announcement.title}
-                  </h3>
-                  <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {announcement.content}
-                  </p>
-
-                  {announcement.images && announcement.images.length > 0 && (
-                    <PostImageGrid images={announcement.images} postTitle={announcement.title} maxImages={3} />
-                  )}
-                </CardContent>
-              </Card>
-            ))
-          )}
 
           {postsState && postsState.length > 0 ? (
             postsState.map((post: FeedPost) => (
@@ -313,6 +319,50 @@ export default function DashboardClient({
           onPostUpdated={onPostUpdated}
         />
       )}
+
+      <ChannelAnnouncementModal
+        isOpen={homeAnnouncementEditorOpen}
+        channelSlug="home"
+        initialAnnouncement={homeAnnouncement}
+        onClose={() => setHomeAnnouncementEditorOpen(false)}
+        onSaved={(announcement) => {
+          markHomeAnnouncementSeen(announcement.updated_at)
+          setHomeAnnouncement(announcement)
+          setHomeAnnouncementPopupOpen(false)
+        }}
+      />
+
+      <Modal
+        isOpen={homeAnnouncementPopupOpen}
+        onClose={dismissHomeAnnouncementPopup}
+        title="Home Announcement"
+        headerExtra={homeAnnouncement?.updated_by_profile ? (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1">
+            <UserAvatar user={homeAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-card-header-text truncate leading-tight">
+                {homeAnnouncement.updated_by_profile.full_name}
+              </p>
+              <p className="text-[11px] text-card-subtext leading-tight">Updated {formatRelativeTime(homeAnnouncement.updated_at)}</p>
+            </div>
+          </div>
+        ) : (
+          <span className="text-[11px] text-card-subtext leading-tight">Updated {formatRelativeTime(homeAnnouncement?.updated_at || '')}</span>
+        )}
+        size="md"
+      >
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-card-header-text">
+            {homeAnnouncement?.title}
+          </h2>
+          <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+            {homeAnnouncement?.content}
+          </p>
+          <div className="flex justify-end">
+            <Button onClick={dismissHomeAnnouncementPopup}>Close</Button>
+          </div>
+        </div>
+      </Modal>
 
       <PostDetailModal
         isOpen={!!activePostId}
