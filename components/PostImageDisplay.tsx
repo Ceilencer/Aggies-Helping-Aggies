@@ -52,7 +52,7 @@ export function PostImageDisplay({ images, postTitle }: PostImageDisplayProps) {
           onClick={() => setSelectedImageIndex(null)}
         >
           <div
-            className="relative max-w-4xl max-h-[90vh] w-full"
+            className="relative max-w-4xl max-h-[90vh] w-full h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Main Image */}

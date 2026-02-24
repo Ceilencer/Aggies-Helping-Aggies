@@ -29,21 +29,27 @@ export function PostImageGrid({
   const displayImages = images.slice(0, maxImages)
   const hasMore = images.length > maxImages
 
+  // Choose grid layout: single image should span full width
+  const gridColsClass = displayImages.length === 1 ? 'grid-cols-1' : 'grid-cols-3'
+
+  // fixed height for all thumbnails so layout is consistent
+  const cellHeightClass = 'h-40 sm:h-48'
+
   return (
     <>
       {/* Image Grid */}
-      <div className="grid grid-cols-3 gap-2 mt-3 rounded-lg overflow-hidden">
+      <div className={`grid ${gridColsClass} gap-2 mt-3 rounded-lg overflow-hidden`}>
         {displayImages.map((imageUrl, index) => (
           <button
             key={`${imageUrl}-${index}`}
             onClick={() => setSelectedImageIndex(index)}
-            className="relative w-full h-20 sm:h-24 bg-muted hover:opacity-75 transition-opacity overflow-hidden"
+            className={`relative w-full bg-muted hover:opacity-75 transition-opacity overflow-hidden flex items-center justify-center ${cellHeightClass}`}
           >
             <Image
               src={imageUrl}
               alt={`${postTitle} - Image ${index + 1}`}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 768px) 80px, 96px"
               unoptimized
             />
@@ -52,8 +58,7 @@ export function PostImageGrid({
 
         {/* Remaining Images Counter */}
         {hasMore && (
-          <div className="relative w-full h-20 sm:h-24 bg-muted/80 flex items-center justify-center">
-            <div className="text-center">
+          <div className={`relative w-full bg-muted/80 flex items-center justify-center ${cellHeightClass}`}>            <div className="text-center">
               <p className="text-sm font-semibold text-foreground dark:text-white">
                 +{images.length - maxImages}
               </p>
@@ -72,11 +77,11 @@ export function PostImageGrid({
           onClick={() => setSelectedImageIndex(null)}
         >
           <div
-            className="relative max-w-4xl max-h-[90vh] w-full"
+            className="relative max-w-4xl max-h-[90vh] w-full h-[80vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Main Image */}
-            <div className="relative w-full h-full bg-black rounded-lg overflow-hidden aspect-auto max-h-[80vh]">
+            <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
               <Image
                 src={images[selectedImageIndex]}
                 alt={`${postTitle} - Image ${selectedImageIndex + 1}`}
