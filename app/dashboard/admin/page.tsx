@@ -139,7 +139,12 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <Link href="/dashboard/admin/reported-posts" className="text-sm text-primary hover:underline font-medium">
+          View Reported Posts & Comments →
+        </Link>
+      </div>
 
       {accessDenied && (
         <div className="rounded-md border p-4">

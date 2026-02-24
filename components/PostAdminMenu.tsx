@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { MoreVertical } from 'lucide-react'
+import { MoreVertical, Flag } from 'lucide-react'
+import ReportModal from '@/components/ReportModal'
 import type { Channel } from '@/lib/types'
 
 interface PostAdminMenuProps {
@@ -12,6 +13,7 @@ interface PostAdminMenuProps {
   channels: Channel[]
   onPostDeleted?: (postId: string) => void
   onChannelUpdated?: (channelId: string) => void
+  onReported?: () => void
 }
 
 export default function PostAdminMenu({
@@ -21,10 +23,12 @@ export default function PostAdminMenu({
   channels,
   onPostDeleted,
   onChannelUpdated,
+  onReported,
 }: PostAdminMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close menu when clicking outside
@@ -43,8 +47,18 @@ export default function PostAdminMenu({
     }
   }, [isOpen])
 
-  if (!isAdmin) {
-    return null
+  if (!isAdmin && !isOpen) {
+    return (
+      <div ref={menuRef} className="relative">
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          itemType="post"
+          itemId={postId}
+          onReportSubmitted={onReported}
+        />
+      </div>
+    )
   }
 
   const handleDeletePost = async () => {
@@ -102,48 +116,75 @@ export default function PostAdminMenu({
 
   return (
     <div ref={menuRef} className="relative">
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        itemType="post"
+        itemId={postId}
+        onReportSubmitted={onReported}
+      />
+
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
         className="h-8 w-8 p-0"
-        title="Admin Options"
+        title="More options"
       >
         <MoreVertical size={16} />
       </Button>
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-1 bg-background text-foreground border border-border rounded-md shadow-lg z-50 min-w-[220px]">
-          {/* Change Channel Submenu */}
-          <div className="border-b border-border last:border-b-0">
-            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
-              Move to Channel
-            </div>
-            <div className="max-h-48 overflow-y-auto">
-              {channels.map((channel) => (
-                <button
-                  key={channel.id}
-                  onClick={() => handleChangeChannel(channel.id)}
-                  disabled={isUpdating || channel.id === postChannelId}
-                  className={`block w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed ${
-                    channel.id === postChannelId ? 'font-semibold' : ''
-                  }`}
-                >
-                  {channel.icon && <span className="mr-2">{channel.icon}</span>}
-                  {channel.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Delete Button */}
+          {/* Report Button */}
           <button
-            onClick={handleDeletePost}
-            disabled={isDeleting}
-            className="block w-full text-left px-3 py-2 text-sm whitespace-nowrap text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => {
+              setIsReportModalOpen(true)
+              setIsOpen(false)
+            }}
+            className="block w-full text-left px-3 py-2 text-sm whitespace-nowrap text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 flex items-center gap-2"
           >
-            Delete Post
+            <Flag size={14} />
+            Report Post
           </button>
+
+          {isAdmin && (
+            <>
+              {/* Divider */}
+              <div className="border-t border-border" />
+
+              {/* Change Channel Submenu */}
+              <div className="border-b border-border last:border-b-0">
+                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
+                  Move to Channel
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {channels.map((channel) => (
+                    <button
+                      key={channel.id}
+                      onClick={() => handleChangeChannel(channel.id)}
+                      disabled={isUpdating || channel.id === postChannelId}
+                      className={`block w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed ${
+                        channel.id === postChannelId ? 'font-semibold' : ''
+                      }`}
+                    >
+                      {channel.icon && <span className="mr-2">{channel.icon}</span>}
+                      {channel.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Delete Button */}
+              <button
+                onClick={handleDeletePost}
+                disabled={isDeleting}
+                className="block w-full text-left px-3 py-2 text-sm whitespace-nowrap text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Delete Post
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>
