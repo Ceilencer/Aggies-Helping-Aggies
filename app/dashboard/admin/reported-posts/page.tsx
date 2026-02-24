@@ -233,7 +233,9 @@ export default function ReportedPostsPage() {
                           </span>
                           {report.is_resolved && (
                             <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                              ✓ {report.resolution_action?.charAt(0).toUpperCase() + report.resolution_action?.slice(1) || 'Resolved'}
+                              ✓ {report.resolution_action
+                                ? report.resolution_action.charAt(0).toUpperCase() + report.resolution_action.slice(1)
+                                : 'Resolved'}
                             </span>
                           )}
                         </div>

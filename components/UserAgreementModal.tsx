@@ -22,7 +22,7 @@ export default function UserAgreementModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={() => {}} title="Welcome to Howdy Helps!" size="md">
+    <Modal isOpen={isOpen} onClose={() => {}} title="Welcome to Aggies Helping Aggies!" size="md">
       <div className="flex flex-col gap-4 p-6">
         {/* Header */}
         <div className="mb-2">
@@ -120,7 +120,7 @@ export default function UserAgreementModal({
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          You must accept to continue using Howdy Helps
+          You must accept to continue using Aggies Helping Aggies
         </p>
       </div>
     </Modal>
