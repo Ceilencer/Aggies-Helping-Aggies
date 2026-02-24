@@ -158,7 +158,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Mark report as resolved
-    const { data: updatedReport, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from('reports')
       .update({
         is_resolved: true,
@@ -167,8 +167,6 @@ export async function PATCH(request: NextRequest) {
         resolved_at: new Date().toISOString(),
       })
       .eq('id', reportId)
-      .select()
-      .single()
 
     if (updateError) {
       console.error('Error updating report:', updateError)
@@ -180,7 +178,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       message: `Report ${action}ed successfully`,
-      report: updatedReport,
     })
   } catch (error) {
     console.error('Error in admin reports endpoint:', error)
