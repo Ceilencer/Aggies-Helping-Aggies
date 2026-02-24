@@ -446,6 +446,16 @@ CREATE POLICY "Admins can update any post"
         )
     );
 
+CREATE POLICY "Admins can delete any post"
+    ON posts FOR DELETE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND role = 'Admin'
+        )
+    );
+
 -- Comments policies
 CREATE POLICY "Comments are viewable by verified users"
     ON comments FOR SELECT
@@ -477,6 +487,16 @@ CREATE POLICY "Users can delete own comments"
     ON comments FOR DELETE
     TO authenticated
     USING (author_id = auth.uid());
+
+CREATE POLICY "Admins can delete any comment"
+    ON comments FOR DELETE
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() AND role = 'Admin'
+        )
+    );
 
 -- Notifications policies
 CREATE POLICY "Users can view own notifications"

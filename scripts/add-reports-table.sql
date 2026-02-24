@@ -43,12 +43,12 @@ ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
 -- Users can view all reports (for now, admins will review)
 CREATE POLICY "Reports are viewable by authenticated users"
     ON reports FOR SELECT
-    USING (auth.role() = 'authenticated_user');
+    USING (auth.role() = 'authenticated');
 
 -- Only authenticated users can create reports
 CREATE POLICY "Authenticated users can create reports"
     ON reports FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated_user' AND reported_by = auth.uid());
+    WITH CHECK (auth.role() = 'authenticated' AND reported_by = auth.uid());
 
 -- Only admins can update/resolve reports
 CREATE POLICY "Only admins can resolve reports"

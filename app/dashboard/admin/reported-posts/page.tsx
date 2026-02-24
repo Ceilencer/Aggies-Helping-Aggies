@@ -121,12 +121,17 @@ export default function ReportedPostsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reportId, action }),
       })
-      if (!res.ok) throw new Error('Failed to resolve report')
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Failed to resolve report')
+      }
       setReports((p) => p.filter((x) => x.id !== reportId))
       setTotalCount((count) => Math.max(0, count - 1))
     } catch (e) {
       console.error(e)
-      alert('Failed to resolve report')
+      if (e instanceof Error && !e.message.includes('Failed to resolve')) {
+        alert(e.message)
+      }
     } finally {
       setActioning(null)
     }

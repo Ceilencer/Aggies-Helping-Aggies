@@ -437,6 +437,13 @@ CREATE POLICY "Users can delete own comments"
   TO authenticated
   USING ((author_id = auth.uid()));
 
+CREATE POLICY "Admins can delete any comment"
+  ON public.comments FOR DELETE
+  TO authenticated
+  USING ((EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'Admin'::user_role)))));
+
 CREATE POLICY "Users can update own comments"
   ON public.comments FOR UPDATE
   TO authenticated
@@ -496,6 +503,13 @@ CREATE POLICY "Users can view own post tracking"
 
 CREATE POLICY "Admins can update any post"
   ON public.posts FOR UPDATE
+  TO authenticated
+  USING ((EXISTS ( SELECT 1
+   FROM profiles
+  WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'Admin'::user_role)))));
+
+CREATE POLICY "Admins can delete any post"
+  ON public.posts FOR DELETE
   TO authenticated
   USING ((EXISTS ( SELECT 1
    FROM profiles

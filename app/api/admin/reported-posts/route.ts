@@ -137,7 +137,7 @@ export async function PATCH(request: NextRequest) {
         if (deleteError) {
           console.error('Error deleting post:', deleteError)
           return NextResponse.json(
-            { error: 'Failed to delete post' },
+            { error: `Failed to delete post: ${deleteError.message}` },
             { status: 500 }
           )
         }
@@ -150,7 +150,7 @@ export async function PATCH(request: NextRequest) {
         if (deleteError) {
           console.error('Error deleting comment:', deleteError)
           return NextResponse.json(
-            { error: 'Failed to delete comment' },
+            { error: `Failed to delete comment: ${deleteError.message}` },
             { status: 500 }
           )
         }
