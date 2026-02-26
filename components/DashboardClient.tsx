@@ -265,7 +265,6 @@ export default function DashboardClient({
                         onOpenPost={() => setActivePostId(post.id)}
                       />
                       <span className="text-sm text-card-subtext">
-                        👁️ {post.view_count} views
                       </span>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>

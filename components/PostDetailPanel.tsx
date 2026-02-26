@@ -274,7 +274,7 @@ export default function PostDetailPanel({
               userHasLiked={post.user_has_liked || false}
             />
             <span className="text-sm text-card-subtext">
-              👁️ {post.view_count} views
+              {/* view_count removed */}
             </span>
           </div>
         </CardContent>

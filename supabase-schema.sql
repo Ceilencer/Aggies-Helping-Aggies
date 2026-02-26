@@ -105,7 +105,7 @@ CREATE TABLE posts (
     is_moderated BOOLEAN DEFAULT FALSE,
     moderation_reason TEXT,
     
-    view_count INTEGER DEFAULT 0,
+    -- view_count removed
     
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),

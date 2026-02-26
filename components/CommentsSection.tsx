@@ -107,9 +107,10 @@ export default function CommentsSection({
                   onCommentDeleted={handleCommentDeleted}
                   onReplyCreated={handleReplyCreated}
                   onProfileClick={onProfileClick}
+                  replyCount={getReplies(comment.id).length}
                 />
                 {/* Replies */}
-                {getReplies(comment.id).map((reply) => (
+                {getReplies(comment.id).map((reply, idx) => (
                   <CommentCard
                     key={reply.id}
                     comment={reply}
@@ -119,6 +120,8 @@ export default function CommentsSection({
                     onCommentDeleted={handleCommentDeleted}
                     isReply={true}
                     onProfileClick={onProfileClick}
+                    replyIndex={idx}
+                    replyCount={getReplies(comment.id).length}
                   />
                 ))}
               </div>

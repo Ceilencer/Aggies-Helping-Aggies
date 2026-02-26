@@ -16,7 +16,7 @@ export function hydratePost(
     comment_count: post.comment_count ?? 0,
     user_has_liked: post.user_has_liked ?? false,
     like_id: null,
-    view_count: post.view_count ?? 0,
+    // view_count removed
   }
 }
 

@@ -23,6 +23,8 @@ interface CommentCardProps {
   onCommentUpdated?: (comment: Comment) => void
   isReply?: boolean
   onProfileClick?: (userId: string) => void
+  replyCount?: number
+  replyIndex?: number
 }
 
 export default function CommentCard({

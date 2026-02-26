@@ -37,7 +37,7 @@ export default function MyPostsClient({
       comment_count: 0,
       user_has_liked: false,
       like_id: null,
-      view_count: newPost.view_count ?? 0,
+      // view_count removed
     }
 
     setPostsState(current => [hydratedPost, ...current])
@@ -163,7 +163,6 @@ export default function MyPostsClient({
                         onOpenPost={() => setActivePostId(post.id)}
                       />
                       <span className="text-sm text-card-subtext">
-                        👁️ {post.view_count} views
                       </span>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>

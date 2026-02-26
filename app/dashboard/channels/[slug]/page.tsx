@@ -293,7 +293,6 @@ export default function ChannelPage() {
                       onOpenPost={() => setActivePostId(post.id)}
                     />
                     <span className="text-sm text-card-subtext">
-                      👁️ {post.view_count} views
                     </span>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
@@ -350,7 +349,7 @@ export default function ChannelPage() {
             comment_count: 0,
             user_has_liked: false,
             like_id: null,
-            view_count: newPost.view_count ?? 0,
+            // view_count removed
           }
           setPosts(current => [hydratedPost, ...current])
           setPostOffset(current => current + 1)

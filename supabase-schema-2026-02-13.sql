@@ -90,7 +90,7 @@ CREATE TABLE posts (
   is_pinned BOOLEAN DEFAULT false,
   is_moderated BOOLEAN DEFAULT false,
   moderation_reason TEXT,
-  view_count INTEGER DEFAULT 0,
+  -- view_count removed
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now(),
   CONSTRAINT posts_pkey PRIMARY KEY (id),

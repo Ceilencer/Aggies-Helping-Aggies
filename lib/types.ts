@@ -86,7 +86,7 @@ export interface Post {
   is_moderated: boolean
   moderation_reason?: string
   approval_status: ApprovalStatus
-  view_count: number
+  // view_count removed
   created_at: string
   updated_at: string
   // Relations
