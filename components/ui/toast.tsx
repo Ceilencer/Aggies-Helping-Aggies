@@ -55,9 +55,10 @@ export const Toast: React.FC<ToastProps> = ({
 // Simple toast hook
 export function useToast() {
   const [toasts, setToasts] = React.useState<Array<ToastProps & { id: number }>>([])
+  const nextId = React.useRef(0)
 
   const showToast = React.useCallback((props: ToastProps) => {
-    const id = Date.now()
+    const id = ++nextId.current
     setToasts(prev => [...prev, { ...props, id }])
   }, [])
 

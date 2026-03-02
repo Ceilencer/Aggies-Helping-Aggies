@@ -9,7 +9,7 @@ export async function getCachedUserProfile(userId: string, supabase: SupabaseCli
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
   
   if (error) {
     console.error('Error fetching profile:', error)

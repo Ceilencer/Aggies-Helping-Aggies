@@ -46,22 +46,25 @@ export async function middleware(request: NextRequest) {
   }
   // --- FIX END ---
 
-  // PROTECTED ROUTES LOGIC
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+  const pathname = request.nextUrl.pathname
+
+  // PROTECTED ROUTES — require authentication
+  const protectedPrefixes = ['/dashboard', '/verification-questionnaire', '/pending-approval']
+  if (protectedPrefixes.some((p) => pathname.startsWith(p))) {
     if (!user) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
 
   // AUTH ROUTES LOGIC
-  if (request.nextUrl.pathname === '/login') {
+  if (pathname === '/login') {
     if (user) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
   // HOMEPAGE LOGIC - Redirect to dashboard if authenticated
-  if (request.nextUrl.pathname === '/' && user) {
+  if (pathname === '/' && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

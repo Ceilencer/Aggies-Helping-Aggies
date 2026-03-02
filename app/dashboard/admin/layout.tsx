@@ -10,6 +10,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { href: '/dashboard/admin', label: 'Posts Moderation' },
     { href: '/dashboard/admin/users', label: 'User Management' },
+    { href: '/dashboard/admin/pending-verifications', label: 'Pending Verifications' },
   ]
 
   return (

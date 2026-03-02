@@ -25,6 +25,11 @@ export default function UserManagementPage() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
+  const handleUserDeleted = (deletedId: string) => {
+    setResults(prev => prev.filter(u => u.id !== deletedId))
+    setSelectedUserId(null)
+  }
+
   useEffect(() => {
     if (initialSearch) {
       setSearchInput(initialSearch)
@@ -80,6 +85,7 @@ export default function UserManagementPage() {
         isOpen={selectedUserId !== null}
         userId={selectedUserId}
         onClose={() => setSelectedUserId(null)}
+        onDeleted={() => handleUserDeleted(selectedUserId!)}
       />
 
       <div className="space-y-6">

@@ -16,9 +16,7 @@ function LoginForm() {
 
   useEffect(() => {
     const errorParam = searchParams.get('error')
-    if (errorParam === 'invalid_email') {
-      setError('Please use a valid @tamu.edu or @aggienetwork.com email address')
-    } else if (errorParam === 'auth_failed') {
+    if (errorParam === 'auth_failed') {
       setError('Authentication failed. Please try again.')
     }
   }, [searchParams])
@@ -40,7 +38,8 @@ function LoginForm() {
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
-            hd: 'tamu.edu',
+            // Note: `hd` is intentionally omitted so non-TAMU Google accounts
+            // can also sign in and go through the manual verification flow.
           },
         },
       })
@@ -70,7 +69,9 @@ function LoginForm() {
             Howdy Ags!
           </CardTitle>
           <CardDescription>
-            Sign in with your TAMU Google account to continue
+            Sign in with Google to join the community. TAMU accounts
+            (@tamu.edu) get instant access; other accounts will be
+            reviewed by our team.
           </CardDescription>
         </CardHeader>
         <CardContent>

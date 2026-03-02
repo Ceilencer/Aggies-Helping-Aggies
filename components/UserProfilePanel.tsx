@@ -1,5 +1,6 @@
 'use client'
 
+import * as React from 'react'
 import { UserRole, FlairType } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -13,6 +14,7 @@ import { useUserProfilePanelState } from '@/lib/hooks/useUserProfilePanelState'
 interface UserProfilePanelProps {
   userId: string
   onClose?: () => void
+  onDeleted?: () => void
 }
 
 const ACCOUNT_TYPE_OPTIONS: Array<{ value: UserRole; label: string }> = [
@@ -30,7 +32,7 @@ const FLAIR_OPTIONS: Array<{ value: FlairType; label: string }> = [
   { value: 'BCS Local', label: 'BCS Local' },
 ]
 
-export default function UserProfilePanel({ userId, onClose }: UserProfilePanelProps) {
+export default function UserProfilePanel({ userId, onClose, onDeleted }: UserProfilePanelProps) {
   const { showToast, ToastContainer } = useToast()
   const {
     profile,
@@ -62,6 +64,32 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
     handleRoleUpdate,
     handleFlairUpdate,
   } = useUserProfilePanelState({ userId, showToast })
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true)
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || 'Failed to delete account')
+      }
+      onDeleted?.()
+    } catch (err) {
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to delete account',
+        type: 'error',
+      })
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -288,6 +316,50 @@ export default function UserProfilePanel({ userId, onClose }: UserProfilePanelPr
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="mt-6 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4">
+              <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">Danger Zone</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Permanently delete this account and all associated data. This cannot be undone.
+              </p>
+              {showDeleteConfirm ? (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                    Delete <span className="font-bold">{profile.full_name}</span>&apos;s account permanently?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={handleDeleteAccount}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Yes, delete account'}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={isDeleting}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  Delete Account
+                </Button>
+              )}
             </div>
           </div>
         )}

@@ -3,6 +3,8 @@ export type FlairType = 'Student' | 'Former Student' | 'Parent' | 'Faculty' | 'B
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'aggie_ring'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+/** User account lifecycle status stored on the profiles table. */
+export type AccountStatus = 'active' | 'pending_approval' | 'suspended'
 
 export interface Profile {
   id: string
@@ -10,16 +12,31 @@ export interface Profile {
   full_name: string
   avatar_url?: string
   role: UserRole
-  flair: FlairType
+  flair?: FlairType
   is_verified: boolean
   is_alumni: boolean
   mfa_enabled: boolean
   rules_acknowledged_at?: string
+  account_status: AccountStatus
+  approved_by?: string | null
+  approved_at?: string | null
   created_at: string
   updated_at: string
   graduation_year?: number
   major?: string
   last_login?: string
+}
+
+export interface RejectedAccount {
+  id: string
+  user_id: string
+  email: string
+  full_name: string
+  rejected_by?: string | null
+  rejected_at: string
+  rejection_reason?: string | null
+  questionnaire?: Record<string, unknown> | null
+  created_at: string
 }
 
 export interface AdminNote {

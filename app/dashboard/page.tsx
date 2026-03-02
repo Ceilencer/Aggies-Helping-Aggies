@@ -27,6 +27,20 @@ export default async function DashboardPage() {
   ])
 
   const profile = profileData
+
+  // --- GUARD: profile missing means creation failed – send back to login ---
+  if (!profile) {
+    redirect('/login?error=auth_failed')
+  }
+
+  // --- GUARD: Block pending / suspended accounts from the dashboard ---
+  if (profile?.account_status === 'pending_approval') {
+    redirect('/pending-approval')
+  }
+  if (profile?.account_status === 'suspended') {
+    redirect('/login')
+  }
+
   const homeChannelIds = homeChannels?.map(c => c.id) ?? []
 
   // --- WAVE 3: Fetch Content in Parallel ---

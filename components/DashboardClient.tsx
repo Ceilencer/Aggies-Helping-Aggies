@@ -60,11 +60,11 @@ export default function DashboardClient({
   const agreementState = useFirstTimeAgreement(profile)
 
   const markHomeAnnouncementSeen = (updatedAt: string) => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !profile?.id) {
       return
     }
 
-    window.localStorage.setItem('home-announcement-seen', updatedAt)
+    window.localStorage.setItem(`home-announcement-seen-${profile.id}`, updatedAt)
   }
 
   useEffect(() => {
@@ -93,16 +93,16 @@ export default function DashboardClient({
   }, [hasMorePosts, loadMorePosts])
 
   useEffect(() => {
-    if (!homeAnnouncement?.updated_at || typeof window === 'undefined') {
+    if (agreementState.isOpen || !homeAnnouncement?.updated_at || !profile?.id || typeof window === 'undefined') {
       setHomeAnnouncementPopupOpen(false)
       return
     }
 
-    const seenVersion = window.localStorage.getItem('home-announcement-seen')
+    const seenVersion = window.localStorage.getItem(`home-announcement-seen-${profile.id}`)
     if (seenVersion !== homeAnnouncement.updated_at) {
       setHomeAnnouncementPopupOpen(true)
     }
-  }, [homeAnnouncement?.updated_at])
+  }, [homeAnnouncement?.updated_at, agreementState.isOpen, profile?.id])
 
   const openCreatePost = (channelSlug?: string) => {
     setCreatePostChannelSlug(channelSlug)
