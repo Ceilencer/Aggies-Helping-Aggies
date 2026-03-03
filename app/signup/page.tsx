@@ -113,14 +113,6 @@ function SignupForm() {
               </div>
             </div>
           </div>
-
-          <div className="mt-4">
-            <Link href="/alumni-verification">
-              <Button variant="outline" className="w-full">
-                Alumni Without TAMU Email?
-              </Button>
-            </Link>
-          </div>
         </CardContent>
       </Card>
     </div>

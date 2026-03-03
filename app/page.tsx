@@ -44,11 +44,6 @@ export default function Home() {
               Join the Community
             </Button>
           </Link>
-          <Link href="/alumni-verification">
-            <Button size="lg" variant="outline" className="text-lg">
-              Former Student Verification
-            </Button>
-          </Link>
         </div>
         
         {/* Trust Badge */}
