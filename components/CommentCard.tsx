@@ -14,7 +14,7 @@ import { Trash2, Edit2 } from 'lucide-react'
 import type { Comment, Profile } from '@/lib/types'
 
 interface CommentCardProps {
-  comment: Comment & { author?: Profile; like_count?: number; user_has_liked?: boolean }
+  comment: Comment & { author?: Profile; like_count?: number; user_has_liked?: boolean; like_id?: string | null }
   currentUserId?: string
   currentUserRole?: string
   postId: string
@@ -152,6 +152,7 @@ export default function CommentCard({
                 commentId={comment.id}
                 likeCount={comment.like_count || 0}
                 userHasLiked={comment.user_has_liked || false}
+                likeId={comment.like_id ?? null}
               />
               {!isReply && (
                 <Button

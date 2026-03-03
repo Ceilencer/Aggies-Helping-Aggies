@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     // Get current user for like status
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Fetch comments with like counts
+    // Fetch comments - likes_count is maintained by DB trigger on comment_likes
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`
@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
         moderation_reason,
         created_at,
         updated_at,
+        likes_count,
         author:profiles!comments_author_id_fkey(
           id,
           full_name,
@@ -50,32 +51,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get like counts for each comment
-    const commentsWithLikes = await Promise.all(
-      (comments || []).map(async (comment) => {
-        const { count: like_count } = await supabase
-          .from('comment_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('comment_id', comment.id)
+    // Batch-fetch which comments the current user has liked (single query)
+    const likedCommentIds = new Set<string>()
+    const likeIdByCommentId = new Map<string, string>()
+    if (user && comments && comments.length > 0) {
+      const commentIds = comments.map((c) => c.id)
+      const { data: userLikes } = await supabase
+        .from('comment_likes')
+        .select('id, comment_id')
+        .eq('user_id', user.id)
+        .in('comment_id', commentIds)
 
-        let user_has_liked = false
-        if (user) {
-          const { data: userLike } = await supabase
-            .from('comment_likes')
-            .select('id')
-            .eq('comment_id', comment.id)
-            .eq('user_id', user.id)
-            .maybeSingle()
-          user_has_liked = !!userLike
-        }
-
-        return {
-          ...comment,
-          like_count: like_count || 0,
-          user_has_liked,
-        }
+      userLikes?.forEach((like) => {
+        likedCommentIds.add(like.comment_id)
+        likeIdByCommentId.set(like.comment_id, like.id)
       })
-    )
+    }
+
+    const commentsWithLikes = (comments || []).map((comment) => ({
+      ...comment,
+      like_count: comment.likes_count ?? 0,
+      user_has_liked: likedCommentIds.has(comment.id),
+      like_id: likeIdByCommentId.get(comment.id) ?? null,
+    }))
 
     return NextResponse.json(commentsWithLikes)
   } catch (error) {
