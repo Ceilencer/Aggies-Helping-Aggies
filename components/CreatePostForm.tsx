@@ -31,6 +31,7 @@ export default function CreatePostForm({
     loading,
     uploading,
     userRole,
+    postCounts,
     imageUpload,
     handleSubmit,
     handleCancel,
@@ -64,23 +65,32 @@ export default function CreatePostForm({
 
             <div className="rounded-lg bg-muted/50 border border-border p-4">
               <h4 className="font-semibold text-primary dark:text-white mb-2">Posting Limits for {userRole} Accounts</h4>
-              <ul className="text-sm text-muted-foreground dark:text-white/80 space-y-1">
-                {userRole === 'Personal' && (
-                  <>
-                    <li>• Up to 2 posts per day</li>
-                    <li>• Up to 60 posts per month</li>
-                  </>
-                )}
-                {userRole === 'Charity' && (
-                  <>
-                    <li>• Up to 1 post per day</li>
-                    <li>• Up to 30 posts per month</li>
-                  </>
-                )}
-                {userRole === 'Business' && (
-                  <li>• Up to 1 post per month</li>
-                )}
-              </ul>
+              {userRole === 'Admin' ? (
+                <p className="text-sm text-muted-foreground dark:text-white/80">• Unlimited posts</p>
+              ) : (
+                <ul className="text-sm space-y-1">
+                  {userRole !== 'Business' && (
+                    postCounts.dailyUsed >= postCounts.dailyLimit ? (
+                      <li className="text-red-600 dark:text-red-400 font-semibold">
+                        ✕ Daily limit reached — you've used all {postCounts.dailyLimit} post{postCounts.dailyLimit !== 1 ? 's' : ''} for today. Resets the next calendar day.
+                      </li>
+                    ) : (
+                      <li className="text-muted-foreground dark:text-white/80">
+                        • Today: {postCounts.dailyLimit - postCounts.dailyUsed} of {postCounts.dailyLimit} post{postCounts.dailyLimit !== 1 ? 's' : ''} remaining
+                      </li>
+                    )
+                  )}
+                  {postCounts.monthlyUsed >= postCounts.monthlyLimit ? (
+                    <li className="text-red-600 dark:text-red-400 font-semibold">
+                      ✕ Monthly limit reached — you've used all {postCounts.monthlyLimit} post{postCounts.monthlyLimit !== 1 ? 's' : ''} for this month.
+                    </li>
+                  ) : (
+                    <li className="text-muted-foreground dark:text-white/80">
+                      • This month: {postCounts.monthlyLimit - postCounts.monthlyUsed} of {postCounts.monthlyLimit} post{postCounts.monthlyLimit !== 1 ? 's' : ''} remaining
+                    </li>
+                  )}
+                </ul>
+              )}
             </div>
 
             <div className="space-y-2">

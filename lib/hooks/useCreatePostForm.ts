@@ -3,7 +3,15 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { validatePost } from '@/lib/profanity-filter'
-import type { Channel, Post } from '@/lib/types'
+import { POST_LIMITS } from '@/lib/types'
+import type { Channel, Post, UserRole } from '@/lib/types'
+
+type PostCounts = {
+  dailyUsed: number
+  monthlyUsed: number
+  dailyLimit: number
+  monthlyLimit: number
+}
 
 type UseCreatePostFormArgs = {
   initialChannelSlug?: string
@@ -32,6 +40,12 @@ export function useCreatePostForm({
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [userRole, setUserRole] = useState<string>('Personal')
+  const [postCounts, setPostCounts] = useState<PostCounts>({
+    dailyUsed: 0,
+    monthlyUsed: 0,
+    dailyLimit: POST_LIMITS['Personal'].daily,
+    monthlyLimit: POST_LIMITS['Personal'].monthly,
+  })
 
   useEffect(() => {
     const initialize = async () => {
@@ -79,16 +93,24 @@ export function useCreatePostForm({
   const loadUserRole = async (): Promise<string> => {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
+      const [profileResult, trackingResult] = await Promise.all([
+        supabase.from('profiles').select('role').eq('id', user.id).single(),
+        supabase.rpc('get_post_counts'),
+      ])
 
-      if (profile) {
-        setUserRole(profile.role)
-        return profile.role
-      }
+      const role = (profileResult.data?.role as UserRole) ?? 'Personal'
+      setUserRole(role)
+
+      const limits = POST_LIMITS[role] ?? POST_LIMITS['Personal']
+      const tracking = Array.isArray(trackingResult.data) ? trackingResult.data[0] : trackingResult.data
+      setPostCounts({
+        dailyUsed: tracking?.daily_post_count ?? 0,
+        monthlyUsed: tracking?.monthly_post_count ?? 0,
+        dailyLimit: limits.daily,
+        monthlyLimit: limits.monthly,
+      })
+
+      return role
     }
 
     setUserRole('Personal')
@@ -313,6 +335,7 @@ export function useCreatePostForm({
     loading,
     uploading,
     userRole,
+    postCounts,
     imageUpload,
     handleSubmit,
     handleCancel,
