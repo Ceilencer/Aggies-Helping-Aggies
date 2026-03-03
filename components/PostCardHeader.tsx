@@ -17,6 +17,7 @@ interface PostCardHeaderProps {
   onPostDeleted?: (postId: string) => void
   onEditClick?: () => void
   onProfileClick?: (userId: string) => void
+  onViewPendingEdit?: () => void
 }
 
 export default function PostCardHeader({
@@ -27,6 +28,7 @@ export default function PostCardHeader({
   onPostDeleted,
   onEditClick,
   onProfileClick,
+  onViewPendingEdit,
 }: PostCardHeaderProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
   const isAuthor = currentUserId === post.author?.id
@@ -74,14 +76,31 @@ export default function PostCardHeader({
         {post.approval_status === 'pending' && !isAdmin && (
           <span className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">⏳ Pending Approval</span>
         )}
+
+        {post.approval_status === 'pending_edit' && isAuthor && (
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">✏️ Edit Pending Review</span>
+            {onViewPendingEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-6 text-xs px-2 py-0"
+                onClick={onViewPendingEdit}
+              >
+                View Pending Edit
+              </Button>
+            )}
+          </div>
+        )}
         
         {isAuthor && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onEditClick}
-            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 gap-2"
-            title="Edit post"
+            disabled={!onEditClick}
+            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            title={onEditClick ? 'Edit post' : 'Edit pending admin review'}
           >
             <Edit2 size={18} />
           </Button>

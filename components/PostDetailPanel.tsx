@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentsSection from '@/components/CommentsSection'
+import PostHistory from '@/components/PostHistory'
 import PostAdminMenu from '@/components/PostAdminMenu'
 import { PostImageDisplay } from '@/components/PostImageDisplay'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
@@ -281,6 +282,17 @@ export default function PostDetailPanel({
       </Card>
 
       <CommentsSection postId={post.id} currentUserId={currentUserId} currentUserRole={currentUserRole} onProfileClick={onProfileClick} />
+
+      {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
+        <Card>
+          <CardContent className="pt-6">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+              Post History
+            </h3>
+            <PostHistory postId={post.id} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

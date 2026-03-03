@@ -36,6 +36,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
       comment_count: post.comment_count ?? 0,
       user_has_liked: likedIds.has(post.id),
       like_id: likeIdsByPost.get(post.id) ?? null,
+      pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
     }))
   }, [])
 
@@ -50,7 +51,8 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
       .select(`
         *,
         author:profiles!posts_author_id_fkey(*),
-        channel:channels(*)
+        channel:channels(*),
+        pending_edit:post_edits(proposed_title, proposed_content)
       `)
       .eq('channel_id', channelId)
       .eq('is_moderated', true)

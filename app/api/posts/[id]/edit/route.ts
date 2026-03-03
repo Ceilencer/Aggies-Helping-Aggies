@@ -44,11 +44,11 @@ export async function PUT(
     // Get the post to verify ownership
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .select('author_id')
+      .select('author_id, approval_status')
       .eq('id', postId)
       .single()
 
-    if (postError) {
+    if (postError || !post) {
       return NextResponse.json(
         { error: 'Post not found' },
         { status: 404 }
@@ -77,37 +77,96 @@ export async function PUT(
       )
     }
 
-    // Update post - set approval_status to 'pending' if edited by non-admin
-    const updateData: any = {
-      title,
-      content,
+    // --- ADMIN: apply edit immediately ---
+    if (profile.role === 'Admin') {
+      const { data: updatedPost, error: updateError } = await supabase
+        .from('posts')
+        .update({ title, content })
+        .eq('id', postId)
+        .select(`
+          *,
+          author:profiles!posts_author_id_fkey(*),
+          channel:channels!inner(*)
+        `)
+        .single()
+
+      if (updateError) {
+        console.error('Error updating post (admin):', updateError)
+        return NextResponse.json({ error: 'Failed to update post' }, { status: 500 })
+      }
+
+      return NextResponse.json(updatedPost)
     }
 
-    // If a non-admin user edits, post goes back to pending approval
-    if (profile.role !== 'Admin') {
-      updateData.approval_status = 'pending'
-    }
-
-    const { data: updatedPost, error: updateError } = await supabase
-      .from('posts')
-      .update(updateData)
-      .eq('id', postId)
-      .select(`
-        *,
-        author:profiles!posts_author_id_fkey(*),
-        channel:channels!inner(*)
-      `)
-      .single()
-
-    if (updateError) {
-      console.error('Error updating post:', updateError)
+    // --- NON-ADMIN: store proposed edit, do NOT touch post content ---
+    // Prevent submitting another edit while one is already pending
+    if (post.approval_status === 'pending_edit') {
       return NextResponse.json(
-        { error: 'Failed to update post' },
-        { status: 500 }
+        { error: 'You already have an edit pending admin review. Please wait for it to be reviewed.' },
+        { status: 409 }
       )
     }
 
-    return NextResponse.json(updatedPost)
+    // Upsert into post_edits (replace any stale row for this post)
+    const { error: editInsertError } = await supabase
+      .from('post_edits')
+      .upsert(
+        {
+          post_id: postId,
+          submitted_by: user.id,
+          proposed_title: title,
+          proposed_content: content,
+        },
+        { onConflict: 'post_id' }
+      )
+
+    if (editInsertError) {
+      console.error('Error inserting post edit:', editInsertError)
+      return NextResponse.json({ error: 'Failed to submit edit for review' }, { status: 500 })
+    }
+
+    // Flag the post as having a pending edit (does NOT change visible content)
+    const { error: statusError } = await supabase
+      .from('posts')
+      .update({ approval_status: 'pending_edit' })
+      .eq('id', postId)
+
+    if (statusError) {
+      console.error('Error setting pending_edit status:', statusError)
+      return NextResponse.json({ error: 'Failed to submit edit for review' }, { status: 500 })
+    }
+
+    // Record history event
+    const { data: authorProfile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+    await supabase.from('post_history').insert({
+      post_id: postId,
+      event_type: 'edit_submitted',
+      actor_id: user.id,
+      actor_name: authorProfile?.full_name ?? 'User',
+    })
+
+    // Return the current (unmodified) post so the UI can update its state
+    // Include pending_edit so the "View Pending Edit" button appears immediately
+    const { data: currentPost } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        author:profiles!posts_author_id_fkey(*),
+        channel:channels!inner(*),
+        pending_edit:post_edits(proposed_title, proposed_content)
+      `)
+      .eq('id', postId)
+      .single()
+
+    const pendingEdit = Array.isArray((currentPost as any)?.pending_edit)
+      ? ((currentPost as any).pending_edit[0] ?? null)
+      : (currentPost as any)?.pending_edit ?? null
+
+    return NextResponse.json({ ...currentPost, pending_edit: pendingEdit, _pendingEdit: true })
   } catch (error) {
     console.error('Error in PUT /api/posts/[id]/edit:', error)
     return NextResponse.json(

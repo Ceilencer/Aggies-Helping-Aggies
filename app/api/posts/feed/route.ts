@@ -34,7 +34,8 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         author:profiles!posts_author_id_fkey(*),
-        channel:channels!inner(*)
+        channel:channels!inner(*),
+        pending_edit:post_edits(proposed_title, proposed_content)
       `)
       .in('channel_id', homeChannelIds)
       .eq('is_moderated', true)
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest) {
       comment_count: post.comment_count ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
+      pending_edit: Array.isArray((post as any).pending_edit) ? ((post as any).pending_edit[0] ?? null) : (post as any).pending_edit,
     }))
 
     return NextResponse.json({

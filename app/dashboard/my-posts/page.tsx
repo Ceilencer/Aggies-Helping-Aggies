@@ -33,7 +33,8 @@ export default async function MyPostsPage() {
     .select(`
       *,
       author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
+      channel:channels!inner(*),
+      pending_edit:post_edits(proposed_title, proposed_content)
     `)
     .eq('author_id', user.id)
     .order('created_at', { ascending: false })
@@ -70,6 +71,8 @@ export default async function MyPostsPage() {
       comment_count: post.comment_count ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
+      // Supabase returns the one-to-many join as an array; flatten to a single object or null
+      pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
     }))
   }
 

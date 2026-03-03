@@ -20,6 +20,7 @@ import UserAvatar from '@/components/UserAvatar'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
 import { useHomeFeedState } from '@/lib/hooks/useHomeFeedState'
 import { formatRelativeTime, getInitials } from '@/lib/utils'
+import { useToast } from '@/components/ui/toast'
 import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
 
 interface DashboardClientProps {
@@ -56,6 +57,8 @@ export default function DashboardClient({
   const [homeAnnouncement, setHomeAnnouncement] = useState<ChannelAnnouncement | null>(initialHomeAnnouncement)
   const [homeAnnouncementEditorOpen, setHomeAnnouncementEditorOpen] = useState(false)
   const [homeAnnouncementPopupOpen, setHomeAnnouncementPopupOpen] = useState(false)
+  const [previewEditPostId, setPreviewEditPostId] = useState<string | null>(null)
+  const { showToast, ToastContainer } = useToast()
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const agreementState = useFirstTimeAgreement(profile)
 
@@ -112,6 +115,9 @@ export default function DashboardClient({
   const onPostUpdated = (updatedPost: Post) => {
     handlePostUpdated(updatedPost)
     setEditingPostId(null)
+    if ((updatedPost as any)._pendingEdit) {
+      showToast({ message: '✏️ Edit submitted — awaiting admin review', type: 'info', duration: 5000 })
+    }
   }
 
   const dismissHomeAnnouncementPopup = () => {
@@ -231,8 +237,9 @@ export default function DashboardClient({
                     channels={allChannels}
                     currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
-                    onEditClick={() => setEditingPostId(post.id)}
+                    onEditClick={post.approval_status === 'pending_edit' && post.author_id === profile?.id ? undefined : () => setEditingPostId(post.id)}
                     onProfileClick={setSelectedUserId}
+                    onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === profile?.id && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
                   />
                 </CardHeader>
 
@@ -370,6 +377,47 @@ export default function DashboardClient({
         onPostDeleted={handlePostDeleted}
         onProfileClick={setSelectedUserId}
       />
+
+      {(() => {
+        const previewPost = postsState.find(p => p.id === previewEditPostId)
+        return (
+          <Modal
+            isOpen={!!previewEditPostId}
+            onClose={() => setPreviewEditPostId(null)}
+            title="Your Pending Edit"
+            size="md"
+          >
+            {previewPost?.pending_edit ? (
+              <div className="space-y-6 p-6">
+                <p className="text-sm text-muted-foreground">
+                  This edit is currently under admin review. The changes below will go live if approved.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Title</p>
+                    <p className="font-semibold text-card-header-text">{previewPost.pending_edit.proposed_title}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Content</p>
+                    <p className="text-sm text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {previewPost.pending_edit.proposed_content}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">Current post</span> remains visible to other users until this edit is approved.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-muted-foreground">No pending edit data available.</p>
+            )}
+          </Modal>
+        )
+      })()}
+
+      <ToastContainer />
     </>
   )
 }

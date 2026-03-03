@@ -9,6 +9,8 @@ import PostCardHeader from '@/components/PostCardHeader'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
+import Modal from '@/components/Modal'
+import { useToast } from '@/components/ui/toast'
 import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
 
 interface MyPostsClientProps {
@@ -26,6 +28,8 @@ export default function MyPostsClient({
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [previewEditPostId, setPreviewEditPostId] = useState<string | null>(null)
+  const { showToast, ToastContainer } = useToast()
 
   const handlePostCreated = (newPost: Post, channel: Channel | null) => {
     const resolvedChannel = channel || channels.find(c => c.id === newPost.channel_id) || undefined
@@ -62,6 +66,9 @@ export default function MyPostsClient({
       current.map(post => post.id === updatedPost.id ? hydratedPost : post)
     )
     setEditingPostId(null)
+    if ((updatedPost as any)._pendingEdit) {
+      showToast({ message: '✏️ Edit submitted — awaiting admin review', type: 'info', duration: 5000 })
+    }
   }
 
   const editingPost = postsState.find(post => post.id === editingPostId)
@@ -79,6 +86,13 @@ export default function MyPostsClient({
       return {
         label: '❌ Rejected',
         className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100',
+      }
+    }
+
+    if (approvalStatus === 'pending_edit') {
+      return {
+        label: '✏️ Edit Pending Review',
+        className: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
       }
     }
 
@@ -115,10 +129,15 @@ export default function MyPostsClient({
                   {(() => {
                     const badge = getApprovalBadge(post.approval_status)
                     return (
-                      <div className="mb-2">
+                      <div className="mb-2 space-y-1">
                         <span className={`inline-block px-2 py-1 text-xs font-semibold rounded ${badge.className}`}>
                           {badge.label}
                         </span>
+                        {post.approval_status === 'pending_edit' && (
+                          <p className="text-xs text-muted-foreground">
+                            Your edit is awaiting admin review. The original post remains visible until approved.
+                          </p>
+                        )}
                       </div>
                     )
                   })()}
@@ -128,7 +147,8 @@ export default function MyPostsClient({
                     channels={channels}
                     currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
-                    onEditClick={() => setEditingPostId(post.id)}
+                    onEditClick={post.approval_status === 'pending_edit' ? undefined : () => setEditingPostId(post.id)}
+                    onViewPendingEdit={post.approval_status === 'pending_edit' && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
                   />
                 </CardHeader>
 
@@ -157,17 +177,19 @@ export default function MyPostsClient({
                         userHasLiked={post.user_has_liked || false}
                         likeId={post.like_id || null}
                       />
-                      <CommentCountButton
-                        postId={post.id}
-                        commentCount={post.comment_count || 0}
-                        onOpenPost={() => setActivePostId(post.id)}
-                      />
-                      <span className="text-sm text-card-subtext">
-                      </span>
+                      {post.approval_status === 'approved' && (
+                        <CommentCountButton
+                          postId={post.id}
+                          commentCount={post.comment_count || 0}
+                          onOpenPost={() => setActivePostId(post.id)}
+                        />
+                      )}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
-                      View Full Post
-                    </Button>
+                    {post.approval_status === 'approved' && (
+                      <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
+                        View Full Post
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -209,6 +231,47 @@ export default function MyPostsClient({
         onClose={() => setActivePostId(null)}
         onPostDeleted={handlePostDeleted}
       />
+
+      {(() => {
+        const previewPost = postsState.find(p => p.id === previewEditPostId)
+        return (
+          <Modal
+            isOpen={!!previewEditPostId}
+            onClose={() => setPreviewEditPostId(null)}
+            title="Your Pending Edit"
+            size="md"
+          >
+            {previewPost?.pending_edit ? (
+              <div className="space-y-6 p-6">
+                <p className="text-sm text-muted-foreground">
+                  This edit is currently under admin review. The changes below will go live if approved.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Title</p>
+                    <p className="font-semibold text-card-header-text">{previewPost.pending_edit.proposed_title}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Content</p>
+                    <p className="text-sm text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {previewPost.pending_edit.proposed_content}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">Current post</span> remains visible to other users until this edit is approved.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-muted-foreground">No pending edit data available.</p>
+            )}
+          </Modal>
+        )
+      })()}
+
+      <ToastContainer />
     </>
   )
 }

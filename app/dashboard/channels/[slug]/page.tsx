@@ -18,6 +18,7 @@ import ChannelAnnouncementModal from '@/components/ChannelAnnouncementModal'
 import UserAvatar from '@/components/UserAvatar'
 import { useChannelFeedState } from '@/lib/hooks/useChannelFeedState'
 import { formatRelativeTime } from '@/lib/utils'
+import { useToast } from '@/components/ui/toast'
 import type { Profile, Post, Channel, ChannelAnnouncement } from '@/lib/types'
 
 function ChannelLoadingSkeleton() {
@@ -125,6 +126,8 @@ export default function ChannelPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false)
   const [announcementPopupOpen, setAnnouncementPopupOpen] = useState(false)
+  const [previewEditPostId, setPreviewEditPostId] = useState<string | null>(null)
+  const { showToast, ToastContainer } = useToast()
 
   const markAnnouncementSeen = (updatedAt: string) => {
     if (!channel?.id || typeof window === 'undefined') {
@@ -259,8 +262,9 @@ export default function ChannelPage() {
                     setPosts(current => current.filter(item => item.id !== postId))
                     setPostOffset(current => Math.max(current - 1, 0))
                   }}
-                  onEditClick={() => setEditingPostId(post.id)}
+                  onEditClick={post.approval_status === 'pending_edit' && post.author_id === currentUserId ? undefined : () => setEditingPostId(post.id)}
                   onProfileClick={setSelectedUserId}
+                  onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === currentUserId && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
                 />
               </CardHeader>
 
@@ -375,6 +379,9 @@ export default function ChannelPage() {
           onPostUpdated={(updatedPost) => {
             setPosts(current => current.map(item => item.id === updatedPost.id ? { ...item, ...updatedPost } : item))
             setEditingPostId(null)
+            if ((updatedPost as any)._pendingEdit) {
+              showToast({ message: '✏️ Edit submitted — awaiting admin review', type: 'info', duration: 5000 })
+            }
           }}
         />
       )}
@@ -426,6 +433,47 @@ export default function ChannelPage() {
         userId={selectedUserId}
         onClose={() => setSelectedUserId(null)}
       />
+
+      {(() => {
+        const previewPost = posts.find(p => p.id === previewEditPostId)
+        return (
+          <Modal
+            isOpen={!!previewEditPostId}
+            onClose={() => setPreviewEditPostId(null)}
+            title="Your Pending Edit"
+            size="md"
+          >
+            {previewPost?.pending_edit ? (
+              <div className="space-y-6 p-6">
+                <p className="text-sm text-muted-foreground">
+                  This edit is currently under admin review. The changes below will go live if approved.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Title</p>
+                    <p className="font-semibold text-card-header-text">{previewPost.pending_edit.proposed_title}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Content</p>
+                    <p className="text-sm text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {previewPost.pending_edit.proposed_content}
+                    </p>
+                  </div>
+                </div>
+                <div className="pt-2 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">Current post</span> remains visible to other users until this edit is approved.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="p-6 text-sm text-muted-foreground">No pending edit data available.</p>
+            )}
+          </Modal>
+        )
+      })()}
+
+      <ToastContainer />
     </div>
   )
 }

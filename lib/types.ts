@@ -2,7 +2,7 @@ export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
 export type FlairType = 'Student' | 'Former Student' | 'Parent' | 'Faculty' | 'BCS Local'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'aggie_ring'
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+export type ApprovalStatus = 'pending' | 'pending_edit' | 'approved' | 'rejected'
 /** User account lifecycle status stored on the profiles table. */
 export type AccountStatus = 'active' | 'pending_approval' | 'suspended'
 
@@ -112,6 +112,7 @@ export interface Post {
   comment_count?: number
   like_count?: number
   user_has_liked?: boolean
+  pending_edit?: { proposed_title: string; proposed_content: string } | null
 }
 
 // Extended Post type for feed displays with like information

@@ -12,6 +12,7 @@ type PostItem = {
   is_moderated?: boolean
   author?: { id: string; full_name?: string; avatar_url?: string }
   channel?: { id: string; name?: string }
+  pending_edit?: { proposed_title: string; proposed_content: string } | null
 }
 
 const POSTS_PER_PAGE = 15
@@ -175,47 +176,68 @@ export default function AdminDashboardPage() {
         ) : (
           <>
             <ul className="space-y-4">
-              {posts.map((post) => (
-                <li key={post.id} className="rounded-md border p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-medium">{post.title}</h3>
-                        {post.approval_status === 'pending' && (
-                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
-                            ⏳ Pending Approval
+              {posts.map((post) => {
+                const isEditReview = post.approval_status === 'pending_edit'
+                return (
+                  <li key={post.id} className="rounded-md border p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {isEditReview ? (
+                            <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                              ✏️ Edit Pending Review
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                              🆕 New Post
+                            </span>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {post.author?.full_name || 'Unknown'} · {post.channel?.name || 'Channel'} · {new Date(post.created_at).toLocaleString()}
                           </span>
-                        )}
-                        {!post.is_moderated && (
-                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
-                            ⚠️ Needs Review
-                          </span>
+                        </div>
+
+                        {isEditReview && post.pending_edit ? (
+                          <div className="space-y-3">
+                            <div className="rounded border border-muted bg-muted/30 p-3">
+                              <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Current</p>
+                              <p className="font-medium text-sm">{post.title}</p>
+                              <p className="text-sm text-card-subtext mt-1 line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
+                            </div>
+                            <div className="rounded border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 p-3">
+                              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Proposed</p>
+                              <p className="font-medium text-sm">{post.pending_edit.proposed_title}</p>
+                              <p className="text-sm text-card-subtext mt-1 line-clamp-3 break-words [overflow-wrap:anywhere]">{post.pending_edit.proposed_content}</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="text-base font-medium mb-1">{post.title}</h3>
+                            <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
+                          </>
                         )}
                       </div>
-                      <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {post.author?.full_name || 'Unknown'} · {post.channel?.name || 'Channel'} · {new Date(post.created_at).toLocaleString()}
-                      </p>
+
+                      <div className="flex-shrink-0 flex flex-col gap-2">
+                        <button
+                          className="rounded bg-green-600 px-3 py-1 text-white text-sm disabled:opacity-50 hover:bg-green-700"
+                          onClick={() => approve(post.id)}
+                          disabled={actioning === post.id}
+                        >
+                          {isEditReview ? 'Apply Edit' : 'Approve'}
+                        </button>
+                        <button
+                          className="rounded bg-red-600 px-3 py-1 text-white text-sm disabled:opacity-50 hover:bg-red-700"
+                          onClick={() => deny(post.id)}
+                          disabled={actioning === post.id}
+                        >
+                          {isEditReview ? 'Discard Edit' : 'Deny'}
+                        </button>
+                      </div>
                     </div>
-                    <div className="ml-4 flex-shrink-0 flex gap-2">
-                      <button
-                        className="rounded bg-green-600 px-3 py-1 text-white disabled:opacity-50 hover:bg-green-700"
-                        onClick={() => approve(post.id)}
-                        disabled={actioning === post.id}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        className="rounded bg-red-600 px-3 py-1 text-white disabled:opacity-50 hover:bg-red-700"
-                        onClick={() => deny(post.id)}
-                        disabled={actioning === post.id}
-                      >
-                        Deny
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                )
+              })}
             </ul>
             {hasMore && (
               <div className="mt-6 text-center">

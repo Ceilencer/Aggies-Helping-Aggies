@@ -180,8 +180,8 @@ export default function EditPostForm({
             <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-4">
               <h4 className="font-semibold text-blue-800 dark:text-white mb-2">Note on Edits</h4>
               <ul className="text-sm text-blue-700 dark:text-white/80 space-y-1">
-                <li>• Your edits will be visible immediately to you</li>
-                <li>• Non-admin edits require admin approval before other users can see them</li>
+                <li>• Your edit will be submitted for admin review before being published</li>
+                <li>• The original post remains visible to others until your edit is approved</li>
                 <li>• Please use this feature responsibly</li>
               </ul>
             </div>

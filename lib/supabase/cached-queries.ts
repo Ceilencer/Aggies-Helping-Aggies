@@ -112,7 +112,8 @@ export async function getCachedPostsByChannels(
     .select(`
       *,
       author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
+      channel:channels!inner(*),
+      pending_edit:post_edits(proposed_title, proposed_content)
     `)
     .in('channel_id', channelIds)
     .eq('is_moderated', true)
@@ -123,71 +124,54 @@ export async function getCachedPostsByChannels(
     console.error('Error fetching posts:', error)
     return []
   }
-  return data || []
+  return (data || []).map((post: any) => ({
+    ...post,
+    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
+  }))
 }
 
 /**
  * Get pending posts (for admin dashboard)
- * Next.js automatically deduplicates requests within the same render
+ * Includes both new posts awaiting first approval (approval_status='pending')
+ * and existing posts with a submitted edit awaiting review (approval_status='pending_edit')
  */
 export async function getCachedPendingPosts(
   offset: number,
   supabase: SupabaseClient,
   limit: number = 15
 ) {
-  const isMissingApprovalStatus = (error: { message?: string; code?: string } | null) => {
-    return !!error && (error.code === '42703' || error.message?.includes('approval_status'))
-  }
-
   const baseSelect = `
       *,
       author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*)
+      channel:channels!inner(*),
+      pending_edit:post_edits(proposed_title, proposed_content)
     `
 
   const countResult = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
-    .eq('approval_status', 'pending')
+    .in('approval_status', ['pending', 'pending_edit'])
 
   const dataResult = await supabase
     .from('posts')
     .select(baseSelect)
-    .eq('approval_status', 'pending')
+    .in('approval_status', ['pending', 'pending_edit'])
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  if (!dataResult.error && !countResult.error) {
-    return {
-      data: dataResult.data || [],
-      total: countResult.count || 0,
-    }
+  if (dataResult.error || countResult.error) {
+    console.error('Error fetching pending posts:', dataResult.error || countResult.error)
+    return { data: [], total: 0 }
   }
 
-  if (isMissingApprovalStatus(dataResult.error) || isMissingApprovalStatus(countResult.error)) {
-    const fallbackCount = await supabase
-      .from('posts')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_moderated', false)
+  // Supabase returns pending_edit as an array (one-to-many join); flatten to single object or null
+  const data = (dataResult.data || []).map((post: any) => ({
+    ...post,
+    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
+  }))
 
-    const fallbackData = await supabase
-      .from('posts')
-      .select(baseSelect)
-      .eq('is_moderated', false)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-
-    if (fallbackData.error) {
-      console.error('Error fetching pending posts (fallback):', fallbackData.error)
-      return { data: [], total: 0 }
-    }
-
-    return {
-      data: fallbackData.data || [],
-      total: fallbackCount.count || 0,
-    }
+  return {
+    data,
+    total: countResult.count || 0,
   }
-
-  console.error('Error fetching pending posts:', dataResult.error || countResult.error)
-  return { data: [], total: 0 }
 }
