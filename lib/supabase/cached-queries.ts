@@ -1,13 +1,13 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Get user profile
+ * Get user profile with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
 export async function getCachedUserProfile(userId: string, supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, full_name, avatar_url, role, account_status, rules_acknowledged_at')
     .eq('id', userId)
     .maybeSingle()
   
@@ -19,13 +19,13 @@ export async function getCachedUserProfile(userId: string, supabase: SupabaseCli
 }
 
 /**
- * Get all channels
+ * Get all channels with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
 export async function getCachedAllChannels(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('channels')
-    .select('*')
+    .select('id, name, slug, description')
     .order('name')
   
   if (error) {
@@ -71,7 +71,7 @@ export async function getCachedHomeChannels(supabase: SupabaseClient) {
 }
 
 /**
- * Get posts by channel ID
+ * Get posts by channel ID with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
 export async function getCachedPostsByChannel(
@@ -82,9 +82,9 @@ export async function getCachedPostsByChannel(
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels(*)
+      id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+      author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+      channel:channels(id, name, slug, description)
     `)
     .eq('channel_id', channelId)
     .eq('is_moderated', true)
@@ -99,7 +99,7 @@ export async function getCachedPostsByChannel(
 }
 
 /**
- * Get posts by multiple channel IDs (for home feed)
+ * Get posts by multiple channel IDs (for home feed) with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
 export async function getCachedPostsByChannels(
@@ -110,9 +110,9 @@ export async function getCachedPostsByChannels(
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*),
+      id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+      author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+      channel:channels!inner(id, name, slug, description),
       pending_edit:post_edits(proposed_title, proposed_content)
     `)
     .in('channel_id', channelIds)

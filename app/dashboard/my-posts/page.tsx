@@ -43,41 +43,34 @@ export default async function MyPostsPage() {
     console.error('Error loading posts:', postsError)
   }
 
-  // Fetch comment counts and user like status for each post
+  // Fetch comment counts and user like status for each post in parallel
   let postsWithCounts = postsData || []
   if (postsData && postsData.length > 0) {
     const postIds = postsData.map((post: any) => post.id)
-    let likedPostIds = new Set<string>()
-    let likeIdByPostId = new Map<string, string>()
 
-    const { data: userLikes, error: userLikesError } = await supabase
-      .from('post_likes')
-      .select('id, post_id')
-      .eq('user_id', user.id)
-      .in('post_id', postIds)
-
-    if (userLikesError) {
-      console.error('Error loading user likes:', userLikesError)
-    } else {
-      likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
-      likeIdByPostId = new Map(
-        (userLikes || []).map((like) => [like.post_id, like.id])
-      )
-    }
-
-    let commentCountMap = new Map<string, number>()
-    if (postIds.length > 0) {
-      const { data: commentCounts, error: commentError } = await supabase
+    // Fetch likes and comments in parallel instead of sequentially
+    const [likesResult, commentsResult] = await Promise.all([
+      supabase
+        .from('post_likes')
+        .select('id, post_id')
+        .eq('user_id', user.id)
+        .in('post_id', postIds),
+      supabase
         .from('comments')
         .select('post_id')
         .in('post_id', postIds)
+    ])
 
-      if (!commentError && commentCounts) {
-        commentCounts.forEach((comment) => {
-          commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
-        })
-      }
-    }
+    const userLikes = likesResult.data || []
+    const commentCounts = commentsResult.data || []
+    
+    const likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
+    const likeIdByPostId = new Map((userLikes || []).map((like) => [like.post_id, like.id]))
+
+    let commentCountMap = new Map<string, number>()
+    commentCounts?.forEach((comment) => {
+      commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
+    })
 
     postsWithCounts = postsData.map((post: any) => ({
       ...post,

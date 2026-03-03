@@ -32,9 +32,9 @@ export async function GET(request: NextRequest) {
     const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select(`
-        *,
-        author:profiles!posts_author_id_fkey(*),
-        channel:channels!inner(*),
+        id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+        author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+        channel:channels!inner(id, name, slug, description),
         pending_edit:post_edits(proposed_title, proposed_content)
       `)
       .in('channel_id', homeChannelIds)

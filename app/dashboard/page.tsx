@@ -45,66 +45,74 @@ export default async function DashboardPage() {
 
   // --- WAVE 3: Fetch Content in Parallel ---
   const postsData = homeChannelIds.length > 0
-    ? await getCachedPostsByChannels(homeChannelIds, supabase, 5)
+    ? await getCachedPostsByChannels(homeChannelIds, supabase, 10)
     : []
 
-  // --- WAVE 4: Optimize Likes for Posts (Batch Processing) ---
+  // --- WAVE 4: Optimize Likes and Comments for Posts + Home Announcement (parallel) ---
   const allPostIds = postsData.map((post: any) => post.id)
 
   let posts = postsData
-
-  const homeChannel = allChannels.find((channel: any) => channel.slug === 'home')
   let initialHomeAnnouncement: ChannelAnnouncement | null = null
 
-  if (homeChannel?.id) {
-    const { data: announcementData } = await supabase
-      .from('channel_announcements')
-      .select(`
-        id,
-        channel_id,
-        title,
-        content,
-        updated_by,
-        created_at,
-        updated_at,
-        updated_by_profile:profiles!channel_announcements_updated_by_fkey(id, full_name, avatar_url, role)
-      `)
-      .eq('channel_id', homeChannel.id)
-      .maybeSingle()
+  const homeChannel = allChannels.find((channel: any) => channel.slug === 'home')
 
-    if (announcementData) {
-      initialHomeAnnouncement = {
-        ...announcementData,
-        updated_by_profile: Array.isArray((announcementData as any).updated_by_profile)
-          ? (announcementData as any).updated_by_profile[0] || null
-          : (announcementData as any).updated_by_profile || null,
-      }
+  // Fetch home announcement, likes, and comments in parallel to maximize throughput
+  const announcementPromise = homeChannel?.id
+    ? supabase
+        .from('channel_announcements')
+        .select(`
+          id,
+          channel_id,
+          title,
+          content,
+          updated_by,
+          created_at,
+          updated_at,
+          updated_by_profile:profiles!channel_announcements_updated_by_fkey(id, full_name, avatar_url, role)
+        `)
+        .eq('channel_id', homeChannel.id)
+        .maybeSingle()
+    : Promise.resolve({ data: null, error: null })
+
+  const likesAndCommentsPromises = allPostIds.length > 0
+    ? [
+        supabase
+          .from('post_likes')
+          .select('id, post_id')
+          .eq('user_id', user.id)
+          .in('post_id', allPostIds),
+        supabase
+          .from('comments')
+          .select('post_id')
+          .in('post_id', allPostIds)
+      ]
+    : [Promise.resolve({ data: [], error: null }), Promise.resolve({ data: [], error: null })]
+
+  const [announcementResult, likesResult, commentsResult] = await Promise.all([
+    announcementPromise,
+    ...likesAndCommentsPromises
+  ])
+
+  if (announcementResult.data) {
+    initialHomeAnnouncement = {
+      ...announcementResult.data,
+      updated_by_profile: Array.isArray((announcementResult.data as any).updated_by_profile)
+        ? (announcementResult.data as any).updated_by_profile[0] || null
+        : (announcementResult.data as any).updated_by_profile || null,
     }
   }
 
   if (allPostIds.length > 0) {
-    const { data: userLikes } = await supabase
-      .from('post_likes')
-      .select('id, post_id')
-      .eq('user_id', user.id)
-      .in('post_id', allPostIds)
+    const userLikes = likesResult.data || []
+    const commentCounts = commentsResult.data || []
 
     const likedPostIds = new Set((userLikes || []).map((like) => like.post_id))
     const likeIdByPostId = new Map((userLikes || []).map((like) => [like.post_id, like.id]))
 
     let commentCountMap = new Map<string, number>()
-    if (allPostIds.length > 0) {
-      const { data: commentCounts, error: commentError } = await supabase
-        .from('comments')
-        .select('post_id')
-        .in('post_id', allPostIds)
-
-      if (!commentError && commentCounts) {
-        commentCounts.forEach((comment) => {
-          commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
-        })
-      }
-    }
+    commentCounts?.forEach((comment) => {
+      commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
+    })
 
     posts = postsData.map((post: any) => ({
       ...post,

@@ -88,7 +88,7 @@ export default function DashboardClient({
           void loadMorePosts()
         }
       },
-      { root: null, rootMargin: '180px 0px', threshold: 0.1 }
+      { root: null, rootMargin: '750px 0px', threshold: 0.1 }
     )
 
     observer.observe(trigger)

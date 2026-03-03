@@ -1,7 +1,7 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
 
-const HOME_FEED_PAGE_SIZE = 5
+const HOME_FEED_PAGE_SIZE = 10
 
 type UseHomeFeedStateArgs = {
   profile: Profile | null
@@ -16,8 +16,59 @@ export function useHomeFeedState({
 }: UseHomeFeedStateArgs) {
   const [postsState, setPostsState] = useState<FeedPost[]>(posts)
   const [postsOffset, setPostsOffset] = useState(posts.length)
-  const [hasMorePosts, setHasMorePosts] = useState(posts.length > 0)
+  const [hasMorePosts, setHasMorePosts] = useState(posts.length === HOME_FEED_PAGE_SIZE)
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false)
+  const prefetchedPageRef = useRef<{
+    offset: number
+    posts: FeedPost[]
+    nextOffset: number
+    hasMore: boolean
+  } | null>(null)
+  const prefetchInFlightRef = useRef(false)
+
+  const fetchFeedPage = useCallback(async (offset: number) => {
+    const response = await fetch(`/api/posts/feed?offset=${offset}&limit=${HOME_FEED_PAGE_SIZE}`, {
+      credentials: 'include',
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to load more posts: ${response.status}`)
+    }
+
+    const data = await response.json() as {
+      posts?: FeedPost[]
+      nextOffset?: number
+      hasMore?: boolean
+    }
+
+    const incomingPosts = data.posts || []
+    return {
+      posts: incomingPosts,
+      nextOffset: typeof data.nextOffset === 'number' ? data.nextOffset : offset + incomingPosts.length,
+      hasMore: data.hasMore === true,
+    }
+  }, [])
+
+  const prefetchNextPage = useCallback(async (offset: number) => {
+    if (prefetchInFlightRef.current || prefetchedPageRef.current?.offset === offset) {
+      return
+    }
+
+    prefetchInFlightRef.current = true
+    try {
+      const page = await fetchFeedPage(offset)
+      prefetchedPageRef.current = {
+        offset,
+        posts: page.posts,
+        nextOffset: page.nextOffset,
+        hasMore: page.hasMore,
+      }
+    } catch {
+      prefetchedPageRef.current = null
+    } finally {
+      prefetchInFlightRef.current = false
+    }
+  }, [fetchFeedPage])
 
   const loadMorePosts = useCallback(async () => {
     if (isLoadingMorePosts || !hasMorePosts) {
@@ -26,21 +77,17 @@ export function useHomeFeedState({
 
     setIsLoadingMorePosts(true)
     try {
-      const response = await fetch(`/api/posts/feed?offset=${postsOffset}&limit=${HOME_FEED_PAGE_SIZE}`, {
-        credentials: 'include',
-      })
+      const prefetched = prefetchedPageRef.current
+      const page = prefetched && prefetched.offset === postsOffset
+        ? prefetched
+        : {
+            offset: postsOffset,
+            ...(await fetchFeedPage(postsOffset)),
+          }
 
-      if (!response.ok) {
-        throw new Error(`Failed to load more posts: ${response.status}`)
-      }
+      prefetchedPageRef.current = null
 
-      const data = await response.json() as {
-        posts?: FeedPost[]
-        nextOffset?: number
-        hasMore?: boolean
-      }
-
-      const incomingPosts = data.posts || []
+      const incomingPosts = page.posts || []
       if (incomingPosts.length > 0) {
         setPostsState((current) => {
           const existingIds = new Set(current.map(post => post.id))
@@ -49,15 +96,27 @@ export function useHomeFeedState({
         })
       }
 
-      setPostsOffset(typeof data.nextOffset === 'number' ? data.nextOffset : postsOffset + incomingPosts.length)
-      setHasMorePosts(data.hasMore === true)
+      setPostsOffset(page.nextOffset)
+      setHasMorePosts(page.hasMore)
+
+      if (page.hasMore) {
+        void prefetchNextPage(page.nextOffset)
+      }
     } catch (error) {
       console.error('Error loading more home feed posts:', error)
       setHasMorePosts(false)
     } finally {
       setIsLoadingMorePosts(false)
     }
-  }, [hasMorePosts, isLoadingMorePosts, postsOffset])
+  }, [fetchFeedPage, hasMorePosts, isLoadingMorePosts, postsOffset, prefetchNextPage])
+
+  useEffect(() => {
+    if (!hasMorePosts || postsOffset <= 0) {
+      return
+    }
+
+    void prefetchNextPage(postsOffset)
+  }, [hasMorePosts, postsOffset, prefetchNextPage])
 
   const handlePostCreated = useCallback((newPost: Post, channel: Channel | null) => {
     const isApproved = newPost.approval_status === 'approved' || newPost.is_moderated === true

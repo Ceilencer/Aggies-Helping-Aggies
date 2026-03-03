@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { ChannelAnnouncement, Profile } from '@/lib/types'
 
-const POSTS_PAGE_SIZE = 5
+const POSTS_PAGE_SIZE = 10
 
 type UseChannelFeedStateArgs = {
   rawSlug: string
@@ -28,6 +28,12 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
   const [likeIdByPostId, setLikeIdByPostId] = useState<Map<string, string>>(new Map())
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
+  const prefetchedPageRef = useRef<{
+    offset: number
+    formattedPosts: any[]
+    fetchedCount: number
+  } | null>(null)
+  const prefetchInFlightRef = useRef(false)
 
   const formatPostsWithCounts = useCallback((postsData: any[], likedIds: Set<string>, likeIdsByPost: Map<string, string>, commentCounts: Map<string, number>) => {
     return postsData.map((post) => ({
@@ -43,15 +49,14 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const fetchPostsPage = useCallback(async (
     channelId: string,
     offset: number,
-    likedIds: Set<string>,
-    likeIdsByPost: Map<string, string>
+    userId: string
   ) => {
     const { data, error } = await supabase
       .from('posts')
       .select(`
-        *,
-        author:profiles!posts_author_id_fkey(*),
-        channel:channels(*),
+        id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+        author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+        channel:channels(id, name, slug, description),
         pending_edit:post_edits(proposed_title, proposed_content)
       `)
       .eq('channel_id', channelId)
@@ -66,17 +71,32 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     const postsData = data || []
     const postIds = postsData.map(p => p.id)
     let commentCountMap = new Map<string, number>()
+    let likedIds = new Set<string>()
+    let likeIdsByPost = new Map<string, string>()
 
+    // Fetch comments and likes for these specific posts in parallel (not all user likes)
     if (postIds.length > 0) {
-      const { data: commentData, error: commentError } = await supabase
-        .from('comments')
-        .select('post_id')
-        .in('post_id', postIds)
+      const [{ data: commentData, error: commentError }, { data: likesData, error: likesError }] = await Promise.all([
+        supabase
+          .from('comments')
+          .select('post_id')
+          .in('post_id', postIds),
+        supabase
+          .from('post_likes')
+          .select('id, post_id')
+          .eq('user_id', userId)
+          .in('post_id', postIds)
+      ])
 
       if (!commentError && commentData) {
         commentData.forEach((comment) => {
           commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
         })
+      }
+
+      if (!likesError && likesData) {
+        likedIds = new Set(likesData.map(like => like.post_id))
+        likeIdsByPost = new Map(likesData.map(like => [like.post_id, like.id]))
       }
     }
 
@@ -120,6 +140,26 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     setChannelAnnouncement(normalizedAnnouncement)
   }, [supabase])
 
+  const prefetchNextPage = useCallback(async (channelId: string, userId: string, offset: number) => {
+    if (prefetchInFlightRef.current || prefetchedPageRef.current?.offset === offset) {
+      return
+    }
+
+    prefetchInFlightRef.current = true
+    try {
+      const page = await fetchPostsPage(channelId, offset, userId)
+      prefetchedPageRef.current = {
+        offset,
+        formattedPosts: page.formattedPosts,
+        fetchedCount: page.fetchedCount,
+      }
+    } catch {
+      prefetchedPageRef.current = null
+    } finally {
+      prefetchInFlightRef.current = false
+    }
+  }, [fetchPostsPage])
+
   const loadMorePosts = useCallback(async () => {
     if (!channel?.id || !currentUserId || isLoadingMore || !hasMorePosts) {
       return
@@ -127,23 +167,36 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
 
     setIsLoadingMore(true)
     try {
-      const { formattedPosts, fetchedCount } = await fetchPostsPage(
-        channel.id,
-        postOffset,
-        likedPostIds,
-        likeIdByPostId
-      )
+      const prefetched = prefetchedPageRef.current
+      const page = prefetched && prefetched.offset === postOffset
+        ? prefetched
+        : await fetchPostsPage(
+            channel.id,
+            postOffset,
+            currentUserId
+          )
+
+      prefetchedPageRef.current = null
+
+      const { formattedPosts, fetchedCount } = page
 
       setPosts(current => [...current, ...formattedPosts])
-      setPostOffset(current => current + fetchedCount)
-      setHasMorePosts(fetchedCount === POSTS_PAGE_SIZE)
+      const nextOffset = postOffset + fetchedCount
+      const nextHasMore = fetchedCount === POSTS_PAGE_SIZE
+
+      setPostOffset(nextOffset)
+      setHasMorePosts(nextHasMore)
+
+      if (nextHasMore) {
+        void prefetchNextPage(channel.id, currentUserId, nextOffset)
+      }
     } catch (error) {
       console.error('Error loading more posts:', error)
       setHasMorePosts(false)
     } finally {
       setIsLoadingMore(false)
     }
-  }, [channel?.id, currentUserId, fetchPostsPage, hasMorePosts, isLoadingMore, likeIdByPostId, likedPostIds, postOffset])
+  }, [channel?.id, currentUserId, fetchPostsPage, hasMorePosts, isLoadingMore, postOffset, prefetchNextPage])
 
   useEffect(() => {
     const loadChannelData = async () => {
@@ -164,20 +217,22 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
         setPostOffset(0)
         setHasMorePosts(true)
         setIsLoadingMore(false)
+        prefetchedPageRef.current = null
 
+        // Fetch profile, all channels, and target channel in parallel - select only needed columns
         const [profileResponse, allChannelsResponse, channelResponse] = await Promise.all([
           supabase
             .from('profiles')
-            .select('*')
+            .select('id, role, full_name, avatar_url')
             .eq('id', userId)
             .single(),
           supabase
             .from('channels')
-            .select('*')
+            .select('id, name, slug, description')
             .order('name'),
           supabase
             .from('channels')
-            .select('*')
+            .select('id, name, slug, description')
             .in('slug', [canonicalSlug, rawSlug])
             .maybeSingle(),
         ])
@@ -189,7 +244,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
 
         if (profileData) {
           setCurrentUserRole(profileData.role)
-          setCurrentUserProfile(profileData)
+          setCurrentUserProfile(profileData as any)
         }
 
         if (allChannelsData.length > 0) {
@@ -211,35 +266,22 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
 
         setChannel(channelData)
 
-        await fetchChannelAnnouncement(channelData.id)
-
-        const { data: allUserLikes, error: userLikesError } = await supabase
-          .from('post_likes')
-          .select('id, post_id')
-          .eq('user_id', userId)
-
-        if (userLikesError) {
-          console.error('Error loading user likes:', userLikesError)
-          setLikedPostIds(new Set())
-          setLikeIdByPostId(new Map())
-        }
-
-        const likesData = allUserLikes || []
-        const likedIds = new Set(likesData.map((like) => like.post_id))
-        const likeIdsByPost = new Map(likesData.map((like) => [like.post_id, like.id]))
-        setLikedPostIds(likedIds)
-        setLikeIdByPostId(likeIdsByPost)
-
+        // Load announcement and posts in parallel instead of sequentially
         try {
-          const { formattedPosts, fetchedCount } = await fetchPostsPage(
-            channelData.id,
-            0,
-            likedIds,
-            likeIdsByPost
-          )
+          const [announceResult, postsResult] = await Promise.all([
+            fetchChannelAnnouncement(channelData.id),
+            fetchPostsPage(channelData.id, 0, userId)
+          ])
+          
+          const { formattedPosts, fetchedCount } = postsResult as any
           setPosts(formattedPosts)
           setPostOffset(fetchedCount)
-          setHasMorePosts(fetchedCount === POSTS_PAGE_SIZE)
+          const initialHasMore = fetchedCount === POSTS_PAGE_SIZE
+          setHasMorePosts(initialHasMore)
+
+          if (initialHasMore) {
+            void prefetchNextPage(channelData.id, userId, fetchedCount)
+          }
         } catch (error) {
           console.error('Error loading posts:', error)
           setPosts([])
@@ -255,7 +297,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     }
 
     loadChannelData()
-  }, [canonicalSlug, rawSlug, router, supabase, fetchChannelAnnouncement, fetchPostsPage])
+  }, [canonicalSlug, rawSlug, router, supabase, fetchChannelAnnouncement, fetchPostsPage, prefetchNextPage])
 
   useEffect(() => {
     if (!channel?.id || loading || !hasMorePosts) {
@@ -273,7 +315,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
           void loadMorePosts()
         }
       },
-      { root: null, rootMargin: '180px 0px', threshold: 0.1 }
+      { root: null, rootMargin: '750px 0px', threshold: 0.1 }
     )
 
     observer.observe(trigger)
