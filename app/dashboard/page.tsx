@@ -74,23 +74,25 @@ export default async function DashboardPage() {
         .maybeSingle()
     : Promise.resolve({ data: null, error: null })
 
-  const likesAndCommentsPromises = allPostIds.length > 0
-    ? [
-        supabase
-          .from('post_likes')
-          .select('id, post_id')
-          .eq('user_id', user.id)
-          .in('post_id', allPostIds),
-        supabase
-          .from('comments')
-          .select('post_id')
-          .in('post_id', allPostIds)
-      ]
-    : [Promise.resolve({ data: [], error: null }), Promise.resolve({ data: [], error: null })]
+  const likesPromise = allPostIds.length > 0
+    ? supabase
+        .from('post_likes')
+        .select('id, post_id')
+        .eq('user_id', user.id)
+        .in('post_id', allPostIds)
+    : Promise.resolve({ data: [] as { id: string; post_id: string }[], error: null })
+
+  const commentsPromise = allPostIds.length > 0
+    ? supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', allPostIds)
+    : Promise.resolve({ data: [] as { post_id: string }[], error: null })
 
   const [announcementResult, likesResult, commentsResult] = await Promise.all([
     announcementPromise,
-    ...likesAndCommentsPromises
+    likesPromise,
+    commentsPromise,
   ])
 
   if (announcementResult.data) {

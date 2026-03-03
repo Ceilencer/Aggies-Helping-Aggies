@@ -7,7 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 export async function getCachedUserProfile(userId: string, supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, role, account_status, rules_acknowledged_at')
+    .select('*')
     .eq('id', userId)
     .maybeSingle()
   
@@ -25,7 +25,7 @@ export async function getCachedUserProfile(userId: string, supabase: SupabaseCli
 export async function getCachedAllChannels(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('channels')
-    .select('id, name, slug, description')
+    .select('*')
     .order('name')
   
   if (error) {
