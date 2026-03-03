@@ -29,7 +29,9 @@ export default function CreatePostModal({
           onCancel={onClose}
           onPostCreated={(post, channel) => {
             showToast({
-              message: 'Post submitted. Waiting for admin approval.',
+              message: post.approval_status === 'approved'
+                ? 'Post published successfully.'
+                : 'Post submitted. Waiting for admin approval.',
               type: 'info',
               positionClassName: 'top-24',
             })

@@ -210,21 +210,24 @@ export function useCreatePostForm({
         console.warn('Ban check endpoint unavailable, skipping ban check:', banCheckError)
       }
 
+      const isAdminUser = profile.role === 'Admin'
+
       const postData = {
         channel_id: formData.channel_id,
         author_id: user.id,
         title: formData.title.trim(),
         content: formData.content.trim(),
-        is_moderated: false,
+        is_moderated: isAdminUser,
         moderation_reason: null,
       }
+      const approvalStatus = isAdminUser ? 'approved' : 'pending'
 
       let newPost: any = null
       let insertError: any = null
 
       const primaryInsert = await supabase
         .from('posts')
-        .insert({ ...postData, approval_status: 'pending' })
+        .insert({ ...postData, approval_status: approvalStatus })
         .select()
         .single()
 
@@ -297,7 +300,9 @@ export function useCreatePostForm({
 
       if (!onPostCreated) {
         showToast({
-          message: 'Post submitted. Waiting for admin approval.',
+          message: finalPost.approval_status === 'approved'
+            ? 'Post published successfully.'
+            : 'Post submitted. Waiting for admin approval.',
           type: 'info',
           positionClassName: 'top-24',
         })
