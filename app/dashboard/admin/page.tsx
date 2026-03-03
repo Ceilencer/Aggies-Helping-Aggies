@@ -2,18 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import type { AdminPendingPostDTO } from '@/lib/types'
 
-type PostItem = {
-  id: string
-  title: string
-  content: string
-  created_at: string
-  approval_status?: string
-  is_moderated?: boolean
-  author?: { id: string; full_name?: string; avatar_url?: string }
-  channel?: { id: string; name?: string }
-  pending_edit?: { proposed_title: string; proposed_content: string } | null
-}
+type PostItem = AdminPendingPostDTO
 
 const POSTS_PER_PAGE = 15
 

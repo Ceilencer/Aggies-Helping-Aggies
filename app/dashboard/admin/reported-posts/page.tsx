@@ -3,19 +3,9 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import type { AdminReportedItemDTO } from '@/lib/types'
 
-type ReportItem = {
-  id: string
-  report_type: 'post' | 'comment'
-  reason: string
-  description?: string
-  is_resolved: boolean
-  resolution_action?: string
-  created_at: string
-  reports?: { id: string; full_name?: string }
-  posts?: { id: string; title?: string; content?: string; author_id: string; channel_id: string; profiles?: { full_name?: string } }
-  comments?: { id: string; content?: string; post_id: string; author_id: string; profiles?: { full_name?: string } }
-}
+type ReportItem = AdminReportedItemDTO
 
 const REPORTS_PER_PAGE = 15
 

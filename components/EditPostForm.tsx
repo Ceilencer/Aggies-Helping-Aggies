@@ -10,11 +10,13 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { validatePost } from '@/lib/profanity-filter'
-import type { Post, Channel } from '@/lib/types'
+import type { Post, Channel, ChannelListDTO } from '@/lib/types'
+
+type EditablePost = Pick<Post, 'id' | 'title' | 'content'>
 
 interface EditPostFormProps {
-  post: Post
-  channel?: Channel
+  post: EditablePost
+  channel?: Channel | ChannelListDTO
   onCancel?: () => void
   onPostUpdated?: (post: Post) => void
 }

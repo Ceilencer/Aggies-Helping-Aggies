@@ -2,13 +2,15 @@
 
 import Modal from '@/components/Modal'
 import EditPostForm from '@/components/EditPostForm'
-import type { Channel, Post } from '@/lib/types'
+import type { Channel, ChannelListDTO, Post } from '@/lib/types'
+
+type EditablePost = Pick<Post, 'id' | 'title' | 'content'>
 
 interface EditPostModalProps {
   isOpen: boolean
   onClose: () => void
-  post: Post
-  channel?: Channel
+  post: EditablePost
+  channel?: Channel | ChannelListDTO
   onPostUpdated?: (post: Post) => void
 }
 

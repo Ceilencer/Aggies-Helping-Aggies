@@ -7,7 +7,7 @@ import {
   getCachedAllChannels,
   getCachedPostsByChannels,
 } from '@/lib/supabase/cached-queries'
-import type { ChannelAnnouncement } from '@/lib/types'
+import type { ChannelAnnouncement, FeedPost } from '@/lib/types'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -49,12 +49,12 @@ export default async function DashboardPage() {
     : []
 
   // --- WAVE 4: Optimize Likes and Comments for Posts + Home Announcement (parallel) ---
-  const allPostIds = postsData.map((post: any) => post.id)
+  const allPostIds = postsData.map((post) => post.id)
 
-  let posts = postsData
+  let posts: FeedPost[] = postsData
   let initialHomeAnnouncement: ChannelAnnouncement | null = null
 
-  const homeChannel = allChannels.find((channel: any) => channel.slug === 'home')
+  const homeChannel = allChannels.find((channel) => channel.slug === 'home')
 
   // Fetch home announcement, likes, and comments in parallel to maximize throughput
   const announcementPromise = homeChannel?.id
@@ -98,9 +98,9 @@ export default async function DashboardPage() {
   if (announcementResult.data) {
     initialHomeAnnouncement = {
       ...announcementResult.data,
-      updated_by_profile: Array.isArray((announcementResult.data as any).updated_by_profile)
-        ? (announcementResult.data as any).updated_by_profile[0] || null
-        : (announcementResult.data as any).updated_by_profile || null,
+      updated_by_profile: Array.isArray((announcementResult.data as { updated_by_profile?: unknown }).updated_by_profile)
+        ? ((announcementResult.data as { updated_by_profile?: any[] }).updated_by_profile?.[0] || null)
+        : ((announcementResult.data as { updated_by_profile?: any }).updated_by_profile || null),
     }
   }
 
@@ -116,9 +116,9 @@ export default async function DashboardPage() {
       commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
     })
 
-    posts = postsData.map((post: any) => ({
+    posts = postsData.map((post) => ({
       ...post,
-      like_count: post.likes_count ?? 0,
+      like_count: post.like_count ?? 0,
       comment_count: commentCountMap.get(post.id) ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,

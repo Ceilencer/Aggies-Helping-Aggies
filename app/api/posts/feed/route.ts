@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import type { FeedPost, FeedPostQueryRowDTO } from '@/lib/types'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,9 +33,9 @@ export async function GET(request: NextRequest) {
     const { data: postsData, error: postsError } = await supabase
       .from('posts')
       .select(`
-        id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+        id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-        channel:channels!inner(id, name, slug, description),
+        channel:channels!inner(id, name, slug, description, icon),
         pending_edit:post_edits(proposed_title, proposed_content)
       `)
       .in('channel_id', homeChannelIds)
@@ -47,7 +48,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to load posts' }, { status: 500 })
     }
 
-    const postIds = (postsData || []).map((post) => post.id)
+    const rows = (postsData || []) as FeedPostQueryRowDTO[]
+    const postIds = rows.map((post) => post.id)
 
     let userLikes: { id: string; post_id: string }[] = []
     let commentCountMap = new Map<string, number>()
@@ -83,14 +85,27 @@ export async function GET(request: NextRequest) {
     const likedPostIds = new Set(userLikes.map((like) => like.post_id))
     const likeIdByPostId = new Map(userLikes.map((like) => [like.post_id, like.id]))
 
-    const posts = (postsData || []).map((post) => ({
-      ...post,
+    const posts = rows.map((post) => ({
+      id: post.id,
+      channel_id: post.channel_id,
+      author_id: post.author_id,
+      title: post.title,
+      content: post.content,
+      images: post.images,
+      is_pinned: post.is_pinned,
+      is_moderated: post.is_moderated,
+      moderation_reason: post.moderation_reason,
+      approval_status: post.approval_status,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
+      channel: Array.isArray(post.channel) ? (post.channel[0] ?? null) : (post.channel ?? null),
       like_count: post.likes_count ?? 0,
       comment_count: commentCountMap.get(post.id) ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
-      pending_edit: Array.isArray((post as any).pending_edit) ? ((post as any).pending_edit[0] ?? null) : (post as any).pending_edit,
-    }))
+      pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
+    })) satisfies FeedPost[]
 
     return NextResponse.json({
       posts,

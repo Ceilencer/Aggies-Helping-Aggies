@@ -116,9 +116,108 @@ export interface Post {
   pending_edit?: { proposed_title: string; proposed_content: string } | null
 }
 
-// Extended Post type for feed displays with like information
-export interface FeedPost extends Post {
+export type FeedAuthorDTO = Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'>
+export type FeedChannelDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description' | 'icon'>
+export type ChannelListDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description' | 'icon' | 'is_read_only'>
+
+export interface FeedPendingEditDTO {
+  proposed_title: string
+  proposed_content: string
+}
+
+// Admin-specific DTOs for admin dashboard
+export interface AdminPendingPostDTO {
+  id: string
+  title: string
+  content: string
+  created_at: string
+  approval_status: ApprovalStatus
+  author: FeedAuthorDTO | null
+  channel: FeedChannelDTO | null
+  pending_edit: FeedPendingEditDTO | null
+}
+
+export interface AdminPendingPostQueryRowDTO {
+  id: string
+  title: string
+  content: string
+  created_at: string
+  approval_status: ApprovalStatus
+  author?: FeedAuthorDTO[] | FeedAuthorDTO | null
+  channel?: FeedChannelDTO[] | FeedChannelDTO | null
+  pending_edit?: FeedPendingEditDTO[] | FeedPendingEditDTO | null
+}
+
+export interface AdminUserVerificationDTO {
+  id: string
+  email: string
+  full_name: string
+  created_at: string
+  verification_request?: {
+    graduation_year: number | null
+    major: string | null
+    memorable_tradition: string
+    connection_to_tamu: string
+    status?: string
+  } | null
+}
+
+export interface AdminReportedItemDTO {
+  id: string
+  report_type: 'post' | 'comment'
+  reason: string
+  description?: string
+  is_resolved: boolean
+  resolution_action?: string
+  created_at: string
+  reported_by: string
+  post_id?: string | null
+  comment_id?: string | null
+  profiles?: { id: string; full_name?: string } | null
+  posts?: { id: string; title?: string; content?: string; author_id: string; channel_id: string; profiles?: { id: string; full_name?: string } | null } | null
+  comments?: { id: string; content?: string; post_id: string; author_id: string; profiles?: { id: string; full_name?: string } | null } | null
+}
+
+export interface FeedPostQueryRowDTO {
+  id: string
+  channel_id: string
+  author_id: string
+  title: string
+  content: string
+  images?: string[]
+  is_pinned?: boolean
+  is_moderated: boolean
+  moderation_reason?: string | null
+  approval_status: ApprovalStatus
+  created_at: string
+  updated_at?: string
+  likes_count?: number | null
+  author?: FeedAuthorDTO[] | FeedAuthorDTO | null
+  channel?: FeedChannelDTO[] | FeedChannelDTO | null
+  pending_edit?: FeedPendingEditDTO[] | FeedPendingEditDTO | null
+}
+
+// Lightweight DTO used by feed/list UIs
+export interface FeedPost {
+  id: string
+  channel_id: string
+  author_id: string
+  title: string
+  content: string
+  images?: string[]
+  is_pinned?: boolean
+  is_moderated: boolean
+  moderation_reason?: string | null
+  approval_status: ApprovalStatus
+  created_at: string
+  updated_at?: string
+  author?: FeedAuthorDTO | null
+  channel?: FeedChannelDTO | null
+  comment_count?: number
+  like_count?: number
+  user_has_liked?: boolean
   like_id?: string | null
+  pending_edit?: FeedPendingEditDTO | null
 }
 
 export interface Comment {

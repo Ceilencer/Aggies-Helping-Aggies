@@ -12,20 +12,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import Modal from '@/components/Modal'
+import type { AdminUserVerificationDTO } from '@/lib/types'
 
-type PendingUser = {
-  id: string
-  email: string
-  full_name: string
-  created_at: string
-  verification_request?: {
-    graduation_year: number | null
-    major: string | null
-    memorable_tradition: string
-    connection_to_tamu: string
-    affiliation?: string
-  }
-}
+type PendingUser = AdminUserVerificationDTO
 
 export default function PendingVerificationsPage() {
   const supabase = createClient()
@@ -53,7 +42,7 @@ export default function PendingVerificationsPage() {
 
       if (profile?.role !== 'Admin') { setAccessDenied(true); return }
 
-      // Fetch pending profiles with their verification requests
+      // Fetch pending profiles with their verification requests (selective DTO columns)
       const { data, error: fetchError } = await supabase
         .from('profiles')
         .select(`

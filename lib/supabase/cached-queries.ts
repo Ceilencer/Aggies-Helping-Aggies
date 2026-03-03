@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
+import type { FeedPost, FeedPostQueryRowDTO, AdminPendingPostDTO, AdminPendingPostQueryRowDTO } from '@/lib/types'
 
 /**
  * Get user profile with only essential columns
@@ -82,9 +83,9 @@ export async function getCachedPostsByChannel(
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+      id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
       author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-      channel:channels(id, name, slug, description)
+      channel:channels(id, name, slug, description, icon)
     `)
     .eq('channel_id', channelId)
     .eq('is_moderated', true)
@@ -95,7 +96,25 @@ export async function getCachedPostsByChannel(
     console.error('Error fetching posts:', error)
     return []
   }
-  return data || []
+  const rows = (data || []) as FeedPostQueryRowDTO[]
+  return rows.map((post) => ({
+    id: post.id,
+    channel_id: post.channel_id,
+    author_id: post.author_id,
+    title: post.title,
+    content: post.content,
+    images: post.images,
+    is_pinned: post.is_pinned,
+    is_moderated: post.is_moderated,
+    moderation_reason: post.moderation_reason,
+    approval_status: post.approval_status,
+    created_at: post.created_at,
+    updated_at: post.updated_at,
+    author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
+    channel: Array.isArray(post.channel) ? (post.channel[0] ?? null) : (post.channel ?? null),
+    like_count: post.likes_count ?? 0,
+    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
+  })) satisfies FeedPost[]
 }
 
 /**
@@ -110,9 +129,9 @@ export async function getCachedPostsByChannels(
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+      id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
       author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-      channel:channels!inner(id, name, slug, description),
+      channel:channels!inner(id, name, slug, description, icon),
       pending_edit:post_edits(proposed_title, proposed_content)
     `)
     .in('channel_id', channelIds)
@@ -124,10 +143,25 @@ export async function getCachedPostsByChannels(
     console.error('Error fetching posts:', error)
     return []
   }
-  return (data || []).map((post: any) => ({
-    ...post,
-    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
-  }))
+  const rows = (data || []) as FeedPostQueryRowDTO[]
+  return rows.map((post) => ({
+    id: post.id,
+    channel_id: post.channel_id,
+    author_id: post.author_id,
+    title: post.title,
+    content: post.content,
+    images: post.images,
+    is_pinned: post.is_pinned,
+    is_moderated: post.is_moderated,
+    moderation_reason: post.moderation_reason,
+    approval_status: post.approval_status,
+    created_at: post.created_at,
+    updated_at: post.updated_at,
+    author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
+    channel: Array.isArray(post.channel) ? (post.channel[0] ?? null) : (post.channel ?? null),
+    like_count: post.likes_count ?? 0,
+    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
+  })) satisfies FeedPost[]
 }
 
 /**
@@ -140,34 +174,44 @@ export async function getCachedPendingPosts(
   supabase: SupabaseClient,
   limit: number = 15
 ) {
-  const baseSelect = `
-      *,
-      author:profiles!posts_author_id_fkey(*),
-      channel:channels!inner(*),
-      pending_edit:post_edits(proposed_title, proposed_content)
-    `
-
-  const countResult = await supabase
-    .from('posts')
-    .select('id', { count: 'exact', head: true })
-    .in('approval_status', ['pending', 'pending_edit'])
-
-  const dataResult = await supabase
-    .from('posts')
-    .select(baseSelect)
-    .in('approval_status', ['pending', 'pending_edit'])
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+  // Parallel fetch: count + data with selective DTO columns
+  const [countResult, dataResult] = await Promise.all([
+    supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .in('approval_status', ['pending', 'pending_edit']),
+    supabase
+      .from('posts')
+      .select(`
+        id,
+        title,
+        content,
+        created_at,
+        approval_status,
+        author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+        channel:channels!inner(id, name, slug),
+        pending_edit:post_edits(proposed_title, proposed_content)
+      `)
+      .in('approval_status', ['pending', 'pending_edit'])
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+  ])
 
   if (dataResult.error || countResult.error) {
     console.error('Error fetching pending posts:', dataResult.error || countResult.error)
     return { data: [], total: 0 }
   }
 
-  // Supabase returns pending_edit as an array (one-to-many join); flatten to single object or null
-  const data = (dataResult.data || []).map((post: any) => ({
-    ...post,
-    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
+  const rows = (dataResult.data || []) as AdminPendingPostQueryRowDTO[]
+  const data: AdminPendingPostDTO[] = rows.map((post) => ({
+    id: post.id,
+    title: post.title,
+    content: post.content,
+    created_at: post.created_at,
+    approval_status: post.approval_status,
+    author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
+    channel: Array.isArray(post.channel) ? (post.channel[0] ?? null) : (post.channel ?? null),
+    pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
   }))
 
   return {

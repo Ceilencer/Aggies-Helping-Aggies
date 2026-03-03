@@ -7,12 +7,12 @@ import PostAdminMenu from '@/components/PostAdminMenu'
 import { getRoleBadgeColor } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Edit2 } from 'lucide-react'
-import type { Channel } from '@/lib/types'
+import type { ChannelListDTO } from '@/lib/types'
 
 interface PostCardHeaderProps {
   post: any
   isAdmin: boolean
-  channels: Channel[]
+  channels: ChannelListDTO[]
   currentUserId?: string
   onPostDeleted?: (postId: string) => void
   onEditClick?: () => void

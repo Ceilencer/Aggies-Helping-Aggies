@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const filter = searchParams.get('filter') || 'unresolved' // 'unresolved', 'resolved', 'all'
     const type = searchParams.get('type') || '' // 'post', 'comment', or empty for both
 
-    // Build query
+    // Build query with selective DTO columns
     let query = supabase
       .from('reports')
       .select(
@@ -33,11 +33,9 @@ export async function GET(request: NextRequest) {
         reported_by,
         post_id,
         comment_id,
-        resolved_by,
-        resolved_at,
-        profiles!reported_by(id, full_name, avatar_url),
-        posts(id, title, content, author_id, channel_id, profiles!posts_author_id_fkey(id, full_name, avatar_url)),
-        comments(id, content, post_id, author_id, profiles!comments_author_id_fkey(id, full_name, avatar_url))
+        profiles!reported_by(id, full_name),
+        posts(id, title, content, author_id, channel_id, profiles!posts_author_id_fkey(id, full_name)),
+        comments(id, content, post_id, author_id, profiles!comments_author_id_fkey(id, full_name))
         `,
         { count: 'exact' }
       )

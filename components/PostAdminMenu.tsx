@@ -4,13 +4,13 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MoreVertical, Flag } from 'lucide-react'
 import ReportModal from '@/components/ReportModal'
-import type { Channel } from '@/lib/types'
+import type { ChannelListDTO } from '@/lib/types'
 
 interface PostAdminMenuProps {
   postId: string
   postChannelId: string
   isAdmin: boolean
-  channels: Channel[]
+  channels: ChannelListDTO[]
   onPostDeleted?: (postId: string) => void
   onChannelUpdated?: (channelId: string) => void
   onReported?: () => void

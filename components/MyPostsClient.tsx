@@ -11,12 +11,12 @@ import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import Modal from '@/components/Modal'
 import { useToast } from '@/components/ui/toast'
-import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
+import type { ChannelListDTO, FeedPost, Post, Profile } from '@/lib/types'
 
 interface MyPostsClientProps {
   profile: Profile
   posts: FeedPost[]
-  channels: Channel[]
+  channels: ChannelListDTO[]
 }
 
 export default function MyPostsClient({
@@ -31,7 +31,7 @@ export default function MyPostsClient({
   const [previewEditPostId, setPreviewEditPostId] = useState<string | null>(null)
   const { showToast, ToastContainer } = useToast()
 
-  const handlePostCreated = (newPost: Post, channel: Channel | null) => {
+  const handlePostCreated = (newPost: Post, channel: ChannelListDTO | null) => {
     const resolvedChannel = channel || channels.find(c => c.id === newPost.channel_id) || undefined
     const hydratedPost: FeedPost = {
       ...newPost,
@@ -41,7 +41,6 @@ export default function MyPostsClient({
       comment_count: 0,
       user_has_liked: false,
       like_id: null,
-      // view_count removed
     }
 
     setPostsState(current => [hydratedPost, ...current])

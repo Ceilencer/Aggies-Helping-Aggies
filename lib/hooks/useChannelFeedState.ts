@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { ChannelAnnouncement, Profile } from '@/lib/types'
+import type { ChannelAnnouncement, ChannelListDTO, FeedAuthorDTO, FeedPost, FeedPostQueryRowDTO, UserRole } from '@/lib/types'
 
 const POSTS_PAGE_SIZE = 10
 
@@ -14,14 +14,14 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
-  const [channel, setChannel] = useState<any>(null)
+  const [channel, setChannel] = useState<ChannelListDTO | null>(null)
   const [channelAnnouncement, setChannelAnnouncement] = useState<ChannelAnnouncement | null>(null)
-  const [posts, setPosts] = useState<any[]>([])
-  const [channels, setChannels] = useState<any[]>([])
+  const [posts, setPosts] = useState<FeedPost[]>([])
+  const [channels, setChannels] = useState<ChannelListDTO[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentUserRole, setCurrentUserRole] = useState<string>('')
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | ''>('')
   const [currentUserId, setCurrentUserId] = useState<string>('')
-  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null)
+  const [currentUserProfile, setCurrentUserProfile] = useState<FeedAuthorDTO | null>(null)
   const [postOffset, setPostOffset] = useState(0)
   const [hasMorePosts, setHasMorePosts] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -30,19 +30,32 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const prefetchedPageRef = useRef<{
     offset: number
-    formattedPosts: any[]
+    formattedPosts: FeedPost[]
     fetchedCount: number
   } | null>(null)
   const prefetchInFlightRef = useRef(false)
 
-  const formatPostsWithCounts = useCallback((postsData: any[], likedIds: Set<string>, likeIdsByPost: Map<string, string>, commentCounts: Map<string, number>) => {
+  const formatPostsWithCounts = useCallback((postsData: FeedPostQueryRowDTO[], likedIds: Set<string>, likeIdsByPost: Map<string, string>, commentCounts: Map<string, number>): FeedPost[] => {
     return postsData.map((post) => ({
-      ...post,
+      id: post.id,
+      channel_id: post.channel_id,
+      author_id: post.author_id,
+      title: post.title,
+      content: post.content,
+      images: post.images,
+      is_pinned: post.is_pinned,
+      is_moderated: post.is_moderated,
+      moderation_reason: post.moderation_reason,
+      approval_status: post.approval_status,
+      created_at: post.created_at,
+      updated_at: post.updated_at,
+      author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
+      channel: Array.isArray(post.channel) ? (post.channel[0] ?? null) : (post.channel ?? null),
       like_count: post.likes_count ?? 0,
       comment_count: commentCounts.get(post.id) ?? 0,
       user_has_liked: likedIds.has(post.id),
       like_id: likeIdsByPost.get(post.id) ?? null,
-      pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
+      pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
     }))
   }, [])
 
@@ -54,9 +67,9 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     const { data, error } = await supabase
       .from('posts')
       .select(`
-        id, title, content, created_at, author_id, channel_id, approval_status, is_moderated, likes_count,
+        id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-        channel:channels(id, name, slug, description),
+        channel:channels(id, name, slug, description, icon),
         pending_edit:post_edits(proposed_title, proposed_content)
       `)
       .eq('channel_id', channelId)
@@ -68,7 +81,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
       throw error
     }
 
-    const postsData = data || []
+    const postsData = (data || []) as FeedPostQueryRowDTO[]
     const postIds = postsData.map(p => p.id)
     let commentCountMap = new Map<string, number>()
     let likedIds = new Set<string>()
@@ -228,23 +241,28 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
             .single(),
           supabase
             .from('channels')
-            .select('id, name, slug, description')
+            .select('id, name, slug, description, icon, is_read_only')
             .order('name'),
           supabase
             .from('channels')
-            .select('id, name, slug, description')
+            .select('id, name, slug, description, icon, is_read_only')
             .in('slug', [canonicalSlug, rawSlug])
             .maybeSingle(),
         ])
 
-        const profileData = profileResponse.data
-        const allChannelsData = allChannelsResponse.data || []
-        const channelData = channelResponse.data
+        const profileData = profileResponse.data as { id: string; role: UserRole; full_name: string; avatar_url?: string } | null
+        const allChannelsData = (allChannelsResponse.data || []) as ChannelListDTO[]
+        const channelData = channelResponse.data as ChannelListDTO | null
         const channelError = channelResponse.error
 
         if (profileData) {
           setCurrentUserRole(profileData.role)
-          setCurrentUserProfile(profileData as any)
+          setCurrentUserProfile({
+            id: profileData.id,
+            full_name: profileData.full_name,
+            avatar_url: profileData.avatar_url,
+            role: profileData.role,
+          })
         }
 
         if (allChannelsData.length > 0) {
@@ -272,8 +290,8 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
             fetchChannelAnnouncement(channelData.id),
             fetchPostsPage(channelData.id, 0, userId)
           ])
-          
-          const { formattedPosts, fetchedCount } = postsResult as any
+
+          const { formattedPosts, fetchedCount } = postsResult
           setPosts(formattedPosts)
           setPostOffset(fetchedCount)
           const initialHasMore = fetchedCount === POSTS_PAGE_SIZE
