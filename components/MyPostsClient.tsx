@@ -230,14 +230,13 @@ export default function MyPostsClient({
         postId={activePostId}
         onClose={() => setActivePostId(null)}
         onPostDeleted={handlePostDeleted}
-        onPostLikeChange={(postId, likeCount, userHasLiked) => {
+        onPostCommentChange={(postId, commentCount) => {
           setPostsState(current =>
             current.map(post =>
               post.id === postId
                 ? {
                     ...post,
-                    like_count: likeCount,
-                    user_has_liked: userHasLiked,
+                    comment_count: commentCount,
                   }
                 : post
             )

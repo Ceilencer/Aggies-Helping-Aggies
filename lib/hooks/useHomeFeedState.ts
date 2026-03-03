@@ -121,6 +121,19 @@ export function useHomeFeedState({
     )
   }, [profile])
 
+  const handlePostCommentChange = useCallback((postId: string, commentCount: number) => {
+    setPostsState(current =>
+      current.map(post =>
+        post.id === postId
+          ? {
+              ...post,
+              comment_count: commentCount,
+            }
+          : post
+      )
+    )
+  }, [])
+
   return {
     postsState,
     hasMorePosts,
@@ -130,5 +143,6 @@ export function useHomeFeedState({
     handlePostDeleted,
     handlePostLikeChange,
     handlePostUpdated,
+    handlePostCommentChange,
   }
 }

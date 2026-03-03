@@ -45,6 +45,7 @@ export default function DashboardClient({
     handlePostDeleted,
     handlePostLikeChange,
     handlePostUpdated,
+    handlePostCommentChange,
   } = useHomeFeedState({
     profile,
     posts,
@@ -378,6 +379,7 @@ export default function DashboardClient({
         onPostDeleted={handlePostDeleted}
         onProfileClick={setSelectedUserId}
         onPostLikeChange={handlePostLikeChange}
+        onPostCommentChange={handlePostCommentChange}
       />
 
       {(() => {

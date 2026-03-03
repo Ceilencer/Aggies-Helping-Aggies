@@ -23,6 +23,7 @@ interface PostDetailPanelProps {
   onPostDeleted?: (postId: string) => void
   onProfileClick?: (userId: string) => void
   onPostLikeChange?: (postId: string, likeCount: number, userHasLiked: boolean) => void
+  onPostCommentChange?: (postId: string, commentCount: number) => void
 }
 
 export default function PostDetailPanel({
@@ -32,6 +33,7 @@ export default function PostDetailPanel({
   onPostDeleted,
   onProfileClick,
   onPostLikeChange,
+  onPostCommentChange,
 }: PostDetailPanelProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -95,6 +97,11 @@ export default function PostDetailPanel({
           .select('*', { count: 'exact', head: true })
           .eq('post_id', postId)
 
+        const { count: comment_count } = await supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', postId)
+
         let user_has_liked = false
         let like_id: string | null = null
         if (user) {
@@ -111,6 +118,7 @@ export default function PostDetailPanel({
         setPost({
           ...postData,
           like_count: like_count || 0,
+          comment_count: comment_count || 0,
           user_has_liked,
           like_id,
         })
@@ -298,7 +306,22 @@ export default function PostDetailPanel({
         </CardContent>
       </Card>
 
-      <CommentsSection postId={post.id} currentUserId={currentUserId} currentUserRole={currentUserRole} onProfileClick={onProfileClick} />
+      <CommentsSection 
+        postId={post.id} 
+        currentUserId={currentUserId} 
+        currentUserRole={currentUserRole} 
+        onProfileClick={onProfileClick}
+        onCommentCountChange={(newCount) => {
+          setPost((currentPost) => {
+            if (!currentPost) return currentPost
+            return {
+              ...currentPost,
+              comment_count: newCount,
+            }
+          })
+          onPostCommentChange?.(post.id, newCount)
+        }}
+      />
 
       {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
         <Card>

@@ -10,6 +10,7 @@ interface PostDetailModalProps {
   onPostDeleted?: (postId: string) => void
   onProfileClick?: (userId: string) => void
   onPostLikeChange?: (postId: string, likeCount: number, userHasLiked: boolean) => void
+  onPostCommentChange?: (postId: string, commentCount: number) => void
 }
 
 export default function PostDetailModal({
@@ -19,6 +20,7 @@ export default function PostDetailModal({
   onPostDeleted,
   onProfileClick,
   onPostLikeChange,
+  onPostCommentChange,
 }: PostDetailModalProps) {
   if (!postId) return null
 
@@ -30,6 +32,7 @@ export default function PostDetailModal({
         onPostDeleted={onPostDeleted}
         onProfileClick={onProfileClick}
         onPostLikeChange={onPostLikeChange}
+        onPostCommentChange={onPostCommentChange}
       />
     </Modal>
   )

@@ -65,10 +65,24 @@ export default async function MyPostsPage() {
       )
     }
 
+    let commentCountMap = new Map<string, number>()
+    if (postIds.length > 0) {
+      const { data: commentCounts, error: commentError } = await supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', postIds)
+
+      if (!commentError && commentCounts) {
+        commentCounts.forEach((comment) => {
+          commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
+        })
+      }
+    }
+
     postsWithCounts = postsData.map((post: any) => ({
       ...post,
       like_count: post.likes_count ?? 0,
-      comment_count: post.comment_count ?? 0,
+      comment_count: commentCountMap.get(post.id) ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
       // Supabase returns the one-to-many join as an array; flatten to a single object or null

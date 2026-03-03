@@ -29,11 +29,11 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const [likeIdByPostId, setLikeIdByPostId] = useState<Map<string, string>>(new Map())
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
 
-  const formatPosts = useCallback((postsData: any[], likedIds: Set<string>, likeIdsByPost: Map<string, string>) => {
+  const formatPostsWithCounts = useCallback((postsData: any[], likedIds: Set<string>, likeIdsByPost: Map<string, string>, commentCounts: Map<string, number>) => {
     return postsData.map((post) => ({
       ...post,
       like_count: post.likes_count ?? 0,
-      comment_count: post.comment_count ?? 0,
+      comment_count: commentCounts.get(post.id) ?? 0,
       user_has_liked: likedIds.has(post.id),
       like_id: likeIdsByPost.get(post.id) ?? null,
       pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : post.pending_edit,
@@ -64,11 +64,27 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     }
 
     const postsData = data || []
+    const postIds = postsData.map(p => p.id)
+    let commentCountMap = new Map<string, number>()
+
+    if (postIds.length > 0) {
+      const { data: commentData, error: commentError } = await supabase
+        .from('comments')
+        .select('post_id')
+        .in('post_id', postIds)
+
+      if (!commentError && commentData) {
+        commentData.forEach((comment) => {
+          commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
+        })
+      }
+    }
+
     return {
-      formattedPosts: formatPosts(postsData, likedIds, likeIdsByPost),
+      formattedPosts: formatPostsWithCounts(postsData, likedIds, likeIdsByPost, commentCountMap),
       fetchedCount: postsData.length,
     }
-  }, [formatPosts, supabase])
+  }, [formatPostsWithCounts, supabase])
 
   const fetchChannelAnnouncement = useCallback(async (channelId: string) => {
     const { data, error } = await supabase

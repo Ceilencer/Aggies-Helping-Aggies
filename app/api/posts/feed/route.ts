@@ -50,17 +50,33 @@ export async function GET(request: NextRequest) {
     const postIds = (postsData || []).map((post) => post.id)
 
     let userLikes: { id: string; post_id: string }[] = []
+    let commentCountMap = new Map<string, number>()
+    
     if (postIds.length > 0) {
-      const { data: likesData, error: likesError } = await supabase
-        .from('post_likes')
-        .select('id, post_id')
-        .eq('user_id', user.id)
-        .in('post_id', postIds)
+      const [{ data: likesData, error: likesError }, { data: commentCounts, error: commentError }] = await Promise.all([
+        supabase
+          .from('post_likes')
+          .select('id, post_id')
+          .eq('user_id', user.id)
+          .in('post_id', postIds),
+        supabase
+          .from('comments')
+          .select('post_id')
+          .in('post_id', postIds)
+      ])
 
       if (likesError) {
         console.error('Error fetching user likes:', likesError)
       } else {
         userLikes = likesData || []
+      }
+
+      if (commentError) {
+        console.error('Error fetching comment counts:', commentError)
+      } else {
+        commentCounts?.forEach((comment) => {
+          commentCountMap.set(comment.post_id, (commentCountMap.get(comment.post_id) || 0) + 1)
+        })
       }
     }
 
@@ -70,7 +86,7 @@ export async function GET(request: NextRequest) {
     const posts = (postsData || []).map((post) => ({
       ...post,
       like_count: post.likes_count ?? 0,
-      comment_count: post.comment_count ?? 0,
+      comment_count: commentCountMap.get(post.id) ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
       pending_edit: Array.isArray((post as any).pending_edit) ? ((post as any).pending_edit[0] ?? null) : (post as any).pending_edit,

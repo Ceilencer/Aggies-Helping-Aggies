@@ -11,6 +11,7 @@ interface CommentsSectionProps {
   currentUserId?: string
   currentUserRole?: string
   onProfileClick?: (userId: string) => void
+  onCommentCountChange?: (newCount: number) => void
 }
 
 export default function CommentsSection({
@@ -18,6 +19,7 @@ export default function CommentsSection({
   currentUserId,
   currentUserRole,
   onProfileClick,
+  onCommentCountChange,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,6 +44,7 @@ export default function CommentsSection({
 
       const data = await response.json()
       setComments(data)
+      onCommentCountChange?.(data.length)
     } catch (err: any) {
       console.error('Error loading comments:', err)
       setError(err.message || 'Failed to load comments')
@@ -51,15 +54,21 @@ export default function CommentsSection({
   }
 
   const handleCommentCreated = (newComment: Comment) => {
-    setComments([newComment, ...comments])
+    const newComments = [newComment, ...comments]
+    setComments(newComments)
+    onCommentCountChange?.(newComments.length)
   }
 
   const handleCommentDeleted = (commentId: string) => {
-    setComments(comments.filter(c => c.id !== commentId))
+    const newComments = comments.filter(c => c.id !== commentId)
+    setComments(newComments)
+    onCommentCountChange?.(newComments.length)
   }
 
   const handleReplyCreated = (reply: Comment) => {
-    setComments([reply, ...comments])
+    const newComments = [reply, ...comments]
+    setComments(newComments)
+    onCommentCountChange?.(newComments.length)
   }
 
   // Organize comments and replies

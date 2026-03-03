@@ -381,6 +381,18 @@ export default function ChannelPage() {
             )
           )
         }}
+        onPostCommentChange={(postId, commentCount) => {
+          setPosts(current =>
+            current.map(item =>
+              item.id === postId
+                ? {
+                    ...item,
+                    comment_count: commentCount,
+                  }
+                : item
+            )
+          )
+        }}
       />
 
       {editingPostId && (
