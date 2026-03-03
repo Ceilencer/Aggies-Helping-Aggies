@@ -34,10 +34,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existingLike) {
-      return NextResponse.json(
-        { error: 'Already liked this post' },
-        { status: 400 }
-      )
+      return NextResponse.json(existingLike, { status: 200 })
     }
 
     // Create like
@@ -59,6 +56,68 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(like, { status: 201 })
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const postId = request.nextUrl.searchParams.get('post_id')
+
+    if (!postId) {
+      return NextResponse.json(
+        { error: 'Post ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { data: like, error: fetchError } = await supabase
+      .from('post_likes')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (fetchError) {
+      console.error('Error fetching like to delete:', fetchError)
+      return NextResponse.json(
+        { error: 'Failed to unlike post' },
+        { status: 500 }
+      )
+    }
+
+    if (!like) {
+      return NextResponse.json({ success: true }, { status: 200 })
+    }
+
+    const { error: deleteError } = await supabase
+      .from('post_likes')
+      .delete()
+      .eq('id', like.id)
+
+    if (deleteError) {
+      console.error('Error deleting like:', deleteError)
+      return NextResponse.json(
+        { error: 'Failed to unlike post' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ success: true }, { status: 200 })
   } catch (error) {
     console.error('Unexpected error:', error)
     return NextResponse.json(

@@ -22,6 +22,7 @@ interface PostDetailPanelProps {
   onClose?: () => void
   onPostDeleted?: (postId: string) => void
   onProfileClick?: (userId: string) => void
+  onPostLikeChange?: (postId: string, likeCount: number, userHasLiked: boolean) => void
 }
 
 export default function PostDetailPanel({
@@ -30,6 +31,7 @@ export default function PostDetailPanel({
   onClose,
   onPostDeleted,
   onProfileClick,
+  onPostLikeChange,
 }: PostDetailPanelProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -94,6 +96,7 @@ export default function PostDetailPanel({
           .eq('post_id', postId)
 
         let user_has_liked = false
+        let like_id: string | null = null
         if (user) {
           const { data: userLike } = await supabase
             .from('post_likes')
@@ -102,12 +105,14 @@ export default function PostDetailPanel({
             .eq('user_id', user.id)
             .maybeSingle()
           user_has_liked = !!userLike
+          like_id = userLike?.id ?? null
         }
 
         setPost({
           ...postData,
           like_count: like_count || 0,
           user_has_liked,
+          like_id,
         })
       } catch (error) {
         console.error('Error:', error)
@@ -273,6 +278,18 @@ export default function PostDetailPanel({
               postId={post.id}
               likeCount={post.like_count || 0}
               userHasLiked={post.user_has_liked || false}
+              likeId={post.like_id || null}
+              onLikeChange={(newCount, newLikeStatus) => {
+                setPost((currentPost) => {
+                  if (!currentPost) return currentPost
+                  return {
+                    ...currentPost,
+                    like_count: newCount,
+                    user_has_liked: newLikeStatus,
+                  }
+                })
+                onPostLikeChange?.(post.id, newCount, newLikeStatus)
+              }}
             />
             <span className="text-sm text-card-subtext">
               {/* view_count removed */}

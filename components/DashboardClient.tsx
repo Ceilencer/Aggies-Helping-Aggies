@@ -43,6 +43,7 @@ export default function DashboardClient({
     loadMorePosts,
     handlePostCreated,
     handlePostDeleted,
+    handlePostLikeChange,
     handlePostUpdated,
   } = useHomeFeedState({
     profile,
@@ -376,6 +377,7 @@ export default function DashboardClient({
         onClose={() => setActivePostId(null)}
         onPostDeleted={handlePostDeleted}
         onProfileClick={setSelectedUserId}
+        onPostLikeChange={handlePostLikeChange}
       />
 
       {(() => {

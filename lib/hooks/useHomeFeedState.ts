@@ -91,6 +91,20 @@ export function useHomeFeedState({
     })
   }, [])
 
+  const handlePostLikeChange = useCallback((postId: string, likeCount: number, userHasLiked: boolean) => {
+    setPostsState(current =>
+      current.map(post =>
+        post.id === postId
+          ? {
+              ...post,
+              like_count: likeCount,
+              user_has_liked: userHasLiked,
+            }
+          : post
+      )
+    )
+  }, [])
+
   const handlePostUpdated = useCallback((updatedPost: Post) => {
     const hydratedPost: FeedPost = {
       ...updatedPost,
@@ -114,6 +128,7 @@ export function useHomeFeedState({
     loadMorePosts,
     handlePostCreated,
     handlePostDeleted,
+    handlePostLikeChange,
     handlePostUpdated,
   }
 }

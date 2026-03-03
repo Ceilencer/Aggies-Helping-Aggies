@@ -368,6 +368,19 @@ export default function ChannelPage() {
           setPosts(current => current.filter(item => item.id !== postId))
           setPostOffset(current => Math.max(current - 1, 0))
         }}
+        onPostLikeChange={(postId, likeCount, userHasLiked) => {
+          setPosts(current =>
+            current.map(item =>
+              item.id === postId
+                ? {
+                    ...item,
+                    like_count: likeCount,
+                    user_has_liked: userHasLiked,
+                  }
+                : item
+            )
+          )
+        }}
       />
 
       {editingPostId && (

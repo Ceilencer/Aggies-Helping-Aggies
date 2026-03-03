@@ -112,6 +112,7 @@ export interface Post {
   comment_count?: number
   like_count?: number
   user_has_liked?: boolean
+  like_id?: string | null
   pending_edit?: { proposed_title: string; proposed_content: string } | null
 }
 
