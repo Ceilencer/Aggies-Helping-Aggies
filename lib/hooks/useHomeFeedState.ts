@@ -169,18 +169,20 @@ export function useHomeFeedState({
   }, [])
 
   const handlePostUpdated = useCallback((updatedPost: Post) => {
-    const hydratedPost: FeedPost = {
-      ...updatedPost,
-      author: updatedPost.author || profile || undefined,
-      channel: updatedPost.channel,
-      like_count: updatedPost.like_count,
-      comment_count: updatedPost.comment_count,
-      user_has_liked: false,
-      like_id: null,
-    }
-
     setPostsState(current =>
-      current.map(post => post.id === updatedPost.id ? hydratedPost : post)
+      current.map(post => {
+        if (post.id !== updatedPost.id) return post
+        return {
+          ...updatedPost,
+          author: updatedPost.author || profile || undefined,
+          channel: updatedPost.channel,
+          like_count: updatedPost.like_count,
+          comment_count: updatedPost.comment_count,
+          // Preserve like state — the edit API does not touch likes
+          user_has_liked: post.user_has_liked,
+          like_id: post.like_id,
+        }
+      })
     )
   }, [profile])
 

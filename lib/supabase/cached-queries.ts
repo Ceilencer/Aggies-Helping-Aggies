@@ -8,7 +8,7 @@ import type { FeedPost, FeedPostQueryRowDTO, AdminPendingPostDTO, AdminPendingPo
 export async function getCachedUserProfile(userId: string, supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, full_name, avatar_url, role, account_status, is_verified')
     .eq('id', userId)
     .maybeSingle()
   

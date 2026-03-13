@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       .eq('id', userId)
       .select('id')
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: 'Failed to approve user' }, { status: 500 })
     if (!updated || updated.length === 0) return NextResponse.json({ error: 'User not found or update blocked' }, { status: 403 })
 
     // 2. Delete the verification request — ownership moves to profiles

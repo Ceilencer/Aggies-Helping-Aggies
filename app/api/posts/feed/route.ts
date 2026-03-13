@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ posts: [], nextOffset: offset, hasMore: false })
     }
 
-    const { data: postsData, error: postsError } = await supabase
+    const { data: postsData, error: postsError, count: totalCount } = await supabase
       .from('posts')
       .select(`
         id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         channel:channels!inner(id, name, slug, description, icon),
         pending_edit:post_edits(proposed_title, proposed_content),
         comments(count)
-      `)
+      `, { count: 'exact' })
       .in('channel_id', homeChannelIds)
       .eq('is_moderated', true)
       .order('created_at', { ascending: false })
@@ -96,10 +96,11 @@ export async function GET(request: NextRequest) {
         : null,
     })) satisfies FeedPost[]
 
+    const nextOffset = offset + posts.length
     return NextResponse.json({
       posts,
-      nextOffset: offset + posts.length,
-      hasMore: posts.length === limit,
+      nextOffset,
+      hasMore: totalCount !== null ? nextOffset < totalCount : posts.length === limit,
     })
   } catch (error) {
     console.error('Unexpected error in GET /api/posts/feed:', error)

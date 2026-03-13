@@ -190,7 +190,7 @@ export const rollingAdminNoteUpsertSchema = z
   })
 
 export const adminPostReviewSchema = z.object({
-  approve: z.boolean().optional(),
+  approve: z.boolean(),
   reason: z.string().optional(),
 })
 
