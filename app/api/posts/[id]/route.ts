@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
+import { requireAuthenticatedUser, requireAdminUser } from '@/lib/utils/api-auth'
 import { channelPatchRequestSchema } from '@/lib/validations'
 
 export async function DELETE(
