@@ -27,6 +27,31 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Verify the account is active and verified before allowing comments
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_verified, account_status')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+    }
+
+    if (profile.account_status !== 'active') {
+      return NextResponse.json(
+        { error: 'Your account is not active.' },
+        { status: 403 }
+      )
+    }
+
+    if (!profile.is_verified) {
+      return NextResponse.json(
+        { error: 'Your account must be verified before you can comment.' },
+        { status: 403 }
+      )
+    }
+
     // Create comment
     const { data: comment, error } = await supabase
       .from('comments')
