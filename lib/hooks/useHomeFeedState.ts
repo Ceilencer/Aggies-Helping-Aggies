@@ -18,6 +18,7 @@ export function useHomeFeedState({
   const [postsOffset, setPostsOffset] = useState(posts.length)
   const [hasMorePosts, setHasMorePosts] = useState(posts.length === HOME_FEED_PAGE_SIZE)
   const [isLoadingMorePosts, setIsLoadingMorePosts] = useState(false)
+  const [feedLoadError, setFeedLoadError] = useState<string | null>(null)
   const prefetchedPageRef = useRef<{
     offset: number
     posts: FeedPost[]
@@ -76,6 +77,7 @@ export function useHomeFeedState({
     }
 
     setIsLoadingMorePosts(true)
+    setFeedLoadError(null)
     try {
       const prefetched = prefetchedPageRef.current
       const page = prefetched && prefetched.offset === postsOffset
@@ -104,7 +106,9 @@ export function useHomeFeedState({
       }
     } catch (error) {
       console.error('Error loading more home feed posts:', error)
-      setHasMorePosts(false)
+      setFeedLoadError('Failed to load more posts. Please try again.')
+      // hasMorePosts intentionally left unchanged — a transient error doesn't mean
+      // there are no more posts, and the IntersectionObserver will retry on next scroll.
     } finally {
       setIsLoadingMorePosts(false)
     }
@@ -197,6 +201,7 @@ export function useHomeFeedState({
     postsState,
     hasMorePosts,
     isLoadingMorePosts,
+    feedLoadError,
     loadMorePosts,
     handlePostCreated,
     handlePostDeleted,

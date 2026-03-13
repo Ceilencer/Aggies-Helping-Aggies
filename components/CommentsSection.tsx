@@ -32,11 +32,7 @@ export default function CommentsSection({
   const loadComments = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/posts/${postId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ post_id: postId }),
-      })
+      const response = await fetch(`/api/posts/${postId}/comments`)
 
       if (!response.ok) {
         throw new Error('Failed to load comments')

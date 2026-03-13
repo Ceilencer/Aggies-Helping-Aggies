@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
 
     // Get pagination parameters
     const searchParams = request.nextUrl.searchParams
-    const offset = parseInt(searchParams.get('offset') || '0', 10)
-    const limit = parseInt(searchParams.get('limit') || '15', 10)
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0)
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '15', 10), 1), 100)
 
     // Fetch pending posts with caching
     const result = await getCachedPendingPosts(offset, supabase, limit)

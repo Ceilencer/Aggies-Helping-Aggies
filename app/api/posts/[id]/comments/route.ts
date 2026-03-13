@@ -1,22 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { postIdRequestSchema } from '@/lib/validations'
 
-export async function POST(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    const { id: post_id } = await params
     const supabase = await createClient()
-    const body = await request.json()
-    const validation = postIdRequestSchema.safeParse(body)
 
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: validation.error.errors[0]?.message || 'Post ID is required' },
-        { status: 400 }
-      )
-    }
-    const { post_id } = validation.data
-
-    // Get current user for like status
+    // Get current user for like status (optional — unauthenticated users still see comments)
     const { data: { user } } = await supabase.auth.getUser()
 
     // Fetch comments - likes_count is maintained by DB trigger on comment_likes

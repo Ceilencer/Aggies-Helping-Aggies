@@ -40,6 +40,7 @@ export default function DashboardClient({
     postsState,
     hasMorePosts,
     isLoadingMorePosts,
+    feedLoadError,
     loadMorePosts,
     handlePostCreated,
     handlePostDeleted,
@@ -301,7 +302,18 @@ export default function DashboardClient({
               {isLoadingMorePosts && (
                 <p className="text-sm text-muted-foreground">Loading more posts...</p>
               )}
-              {!hasMorePosts && (
+              {!isLoadingMorePosts && feedLoadError && (
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-sm text-muted-foreground">{feedLoadError}</p>
+                  <button
+                    onClick={() => void loadMorePosts()}
+                    className="text-sm font-medium text-primary underline underline-offset-4"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+              {!hasMorePosts && !feedLoadError && (
                 <p className="text-sm text-muted-foreground">You&apos;ve reached the end of your home feed.</p>
               )}
             </div>

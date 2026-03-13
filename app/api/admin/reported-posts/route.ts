@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
 
     // Get pagination parameters
     const searchParams = request.nextUrl.searchParams
-    const offset = parseInt(searchParams.get('offset') || '0', 10)
-    const limit = parseInt(searchParams.get('limit') || '15', 10)
+    const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0)
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '15', 10), 1), 100)
     const filter = searchParams.get('filter') || 'unresolved' // 'unresolved', 'resolved', 'all'
     const type = searchParams.get('type') || '' // 'post', 'comment', or empty for both
 
