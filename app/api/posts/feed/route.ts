@@ -90,7 +90,10 @@ export async function GET(request: NextRequest) {
       comment_count: post.comments?.[0]?.count ?? 0,
       user_has_liked: likedPostIds.has(post.id),
       like_id: likeIdByPostId.get(post.id) ?? null,
-      pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
+      // Only expose pending edit content to the post author — other users have no need to see draft changes
+      pending_edit: post.author_id === user.id
+        ? (Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null))
+        : null,
     })) satisfies FeedPost[]
 
     return NextResponse.json({

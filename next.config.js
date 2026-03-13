@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const isDev = process.env.NODE_ENV === 'development'
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -21,7 +23,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self' 'unsafe-eval' 'unsafe-inline' https://accounts.google.com https://*.supabase.co;
+              script-src 'self' ${isDev ? "'unsafe-eval' " : ''}'unsafe-inline' https://accounts.google.com https://*.supabase.co;
               style-src 'self' 'unsafe-inline';
               img-src 'self' blob: data: https://*.googleusercontent.com https://*.supabase.co;
               font-src 'self';

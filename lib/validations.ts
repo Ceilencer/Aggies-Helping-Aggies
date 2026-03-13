@@ -130,19 +130,19 @@ export const verificationReviewSchema = z.object({
 })
 
 export const postIdRequestSchema = z.object({
-  post_id: z.string().min(1, 'Post ID is required'),
+  post_id: z.string().uuid('Invalid post ID'),
 })
 
 export const commentIdRequestSchema = z.object({
-  comment_id: z.string().min(1, 'Comment ID is required'),
+  comment_id: z.string().uuid('Invalid comment ID'),
 })
 
 export const channelChangeRequestSchema = z.object({
-  channel_id: z.string().min(1, 'Channel ID is required'),
+  channel_id: z.string().uuid('Invalid channel ID'),
 })
 
 export const channelPatchRequestSchema = z.object({
-  channel_id: z.string().min(1, 'channel_id is required'),
+  channel_id: z.string().uuid('Invalid channel ID'),
 })
 
 export const createCommentRequestSchema = z
