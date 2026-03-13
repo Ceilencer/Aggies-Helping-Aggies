@@ -195,6 +195,7 @@ export interface FeedPostQueryRowDTO {
   author?: FeedAuthorDTO[] | FeedAuthorDTO | null
   channel?: FeedChannelDTO[] | FeedChannelDTO | null
   pending_edit?: FeedPendingEditDTO[] | FeedPendingEditDTO | null
+  comments?: { count: number }[]
 }
 
 // Lightweight DTO used by feed/list UIs

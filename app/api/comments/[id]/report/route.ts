@@ -34,6 +34,18 @@ export async function POST(
       )
     }
 
+    if (description !== undefined && description !== null) {
+      if (typeof description !== 'string') {
+        return NextResponse.json({ error: 'Description must be a string' }, { status: 400 })
+      }
+      if (description.length > 500) {
+        return NextResponse.json(
+          { error: 'Description must be 500 characters or fewer' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Check if comment exists
     const { data: comment, error: commentError } = await supabase
       .from('comments')
