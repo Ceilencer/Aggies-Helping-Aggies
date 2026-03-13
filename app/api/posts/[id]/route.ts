@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdminUser } from '@/lib/utils/api-auth'
+import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 import { channelPatchRequestSchema } from '@/lib/validations'
 
 export async function DELETE(
@@ -11,16 +11,34 @@ export async function DELETE(
     const { id: postId } = await params
     const supabase = await createClient()
 
-    const admin = await requireAdminUser(supabase, {
-      forbiddenMessage: 'Only admins can delete posts',
-      profileNotFoundMessage: 'Only admins can delete posts',
-      profileNotFoundStatus: 403,
-    })
-    if ('error' in admin) {
-      return admin.error
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) return auth.error
+    const { user } = auth
+
+    // Fetch the post to verify ownership
+    const { data: post, error: fetchError } = await supabase
+      .from('posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single()
+
+    if (fetchError || !post) {
+      return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    // Delete post
+    // Allow the post owner; fall back to admin check for everyone else
+    if (post.author_id !== user.id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.role !== 'Admin') {
+        return NextResponse.json({ error: 'You can only delete your own posts' }, { status: 403 })
+      }
+    }
+
     const { error } = await supabase
       .from('posts')
       .delete()
@@ -28,19 +46,13 @@ export async function DELETE(
 
     if (error) {
       console.error('Error deleting post:', error)
-      return NextResponse.json(
-        { error: 'Failed to delete post' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to delete post' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in DELETE /api/posts/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 

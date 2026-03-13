@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { verifyUserSchema } from '@/lib/validations'
 
 // POST /api/admin/verify-user
 // Body: { userId: string, action: 'approve' | 'reject', rejectionReason?: string }
@@ -20,18 +21,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Parse body
-  const body = await request.json() as {
-    userId: string
-    action: 'approve' | 'reject'
-    rejectionReason?: string
+  // Parse and validate body
+  const parsed = verifyUserSchema.safeParse(await request.json())
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.errors[0]?.message || 'Invalid request body' },
+      { status: 400 }
+    )
   }
 
-  const { userId, action, rejectionReason } = body
-
-  if (!userId || !['approve', 'reject'].includes(action)) {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
+  const { userId, action, rejectionReason } = parsed.data
 
   const now = new Date().toISOString()
 

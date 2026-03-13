@@ -150,13 +150,11 @@ export default function PostDetailPanel({
 
     setDeleting(true)
     try {
-      const { error } = await supabase
-        .from('posts')
-        .delete()
-        .eq('id', postId)
+      const response = await fetch(`/api/posts/${postId}`, { method: 'DELETE' })
 
-      if (error) {
-        throw error
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to delete post')
       }
 
       handlePostDeleted(postId)

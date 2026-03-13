@@ -94,64 +94,45 @@ export function useImageUpload() {
       return { success: true, urls: [] }
     }
 
-    try {
-      const uploadedUrls: string[] = []
-      
-      for (let i = 0; i < uploadedImages.length; i++) {
-        const image = uploadedImages[i]
-        const uniqueId = crypto.randomUUID()
-        const fileExt = image.file.name.split('.').pop()
-        const fileName = `${postId}/${uniqueId}.${fileExt}`
+    // Assign stable file paths before any uploads start
+    const tasks = uploadedImages.map((image) => {
+      const uniqueId = crypto.randomUUID()
+      const fileExt = image.file.name.split('.').pop()
+      return { image, fileName: `${postId}/${uniqueId}.${fileExt}` }
+    })
 
-        try {
-          const { data, error: uploadError } = await supabase.storage
+    try {
+      // Upload all images in parallel
+      const urls = await Promise.all(
+        tasks.map(async ({ image, fileName }) => {
+          const { error: uploadError } = await supabase.storage
             .from('post-images')
-            .upload(fileName, image.file, {
-              cacheControl: '3600',
-              upsert: false
-            })
+            .upload(fileName, image.file, { cacheControl: '3600', upsert: false })
 
           if (uploadError) {
             throw new Error(`Upload failed for ${image.file.name}: ${uploadError.message}`)
           }
 
-          if (data) {
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-              .from('post-images')
-              .getPublicUrl(fileName)
+          const { data: { publicUrl } } = supabase.storage
+            .from('post-images')
+            .getPublicUrl(fileName)
 
-            uploadedUrls.push(publicUrl)
-          }
-        } catch (err: any) {
-          // Clean up on first error - delete already uploaded files
-          for (const url of uploadedUrls) {
-            try {
-              const fileName = url.split('/').pop()
-              if (fileName) {
-                await supabase.storage
-                  .from('post-images')
-                  .remove([`${postId}/${fileName}`])
-              }
-            } catch (cleanupErr) {
-              console.error('Cleanup error:', cleanupErr)
-            }
-          }
-          return {
-            success: false,
-            urls: [],
-            error: err.message || 'Failed to upload images'
-          }
-        }
-      }
+          return publicUrl
+        })
+      )
 
-      return { success: true, urls: uploadedUrls }
+      return { success: true, urls }
     } catch (err: any) {
-      return {
-        success: false,
-        urls: [],
-        error: err.message || 'Image upload failed'
+      // Clean up every file that was assigned a path (some may not have uploaded)
+      try {
+        await supabase.storage
+          .from('post-images')
+          .remove(tasks.map((t) => t.fileName))
+      } catch (cleanupErr) {
+        console.error('Cleanup error:', cleanupErr)
       }
+
+      return { success: false, urls: [], error: err.message || 'Failed to upload images' }
     }
   }, [uploadedImages, supabase])
 

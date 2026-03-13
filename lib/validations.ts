@@ -194,6 +194,12 @@ export const adminPostReviewSchema = z.object({
   reason: z.string().optional(),
 })
 
+export const verifyUserSchema = z.object({
+  userId: z.string().uuid('Invalid user ID'),
+  action: z.enum(['approve', 'reject']),
+  rejectionReason: z.string().max(500).optional(),
+})
+
 export const adminRoleUpdateSchema = z.object({
   role: z.enum(['Personal', 'Business', 'Charity', 'Admin'], {
     errorMap: () => ({ message: 'Invalid account type' }),
