@@ -15,7 +15,6 @@ export interface Profile {
   flair?: FlairType
   is_verified: boolean
   is_alumni: boolean
-  mfa_enabled: boolean
   rules_acknowledged_at?: string
   account_status: AccountStatus
   approved_by?: string | null
