@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -name .env* -o -name supabase.json)"
+    ]
+  }
+}

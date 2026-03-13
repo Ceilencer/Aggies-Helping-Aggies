@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -20,10 +20,8 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          response = NextResponse.next({
-            request,
-          })
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
@@ -32,19 +30,17 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // --- FIX START ---
-  // Only try to get the user if a session cookie actually exists.
-  // This prevents the "Refresh Token Not Found" error on initial loads/callbacks.
-  let user = null;
-  const cookieStore = request.cookies.getAll();
-  // Supabase cookies usually start with 'sb-' or contain the project ID. 
-  // A simple check is to see if ANY cookies exist, or specifically look for the auth token.
-  // But generally, we can just silence the error by checking result.error
-  const { data, error } = await supabase.auth.getUser()
-  if (!error) {
-    user = data.user
+  // Only call getUser() when a Supabase session cookie is actually present.
+  // Calling it without a session triggers a network round-trip that always
+  // fails with "Refresh Token Not Found" and logs an AuthApiError to the console.
+  const hasSbCookie = request.cookies.getAll().some((c) => c.name.startsWith('sb-'))
+  let user = null
+  if (hasSbCookie) {
+    const { data, error } = await supabase.auth.getUser()
+    if (!error) {
+      user = data.user
+    }
   }
-  // --- FIX END ---
 
   const pathname = request.nextUrl.pathname
 
@@ -56,14 +52,11 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // AUTH ROUTES LOGIC
-  if (pathname === '/login') {
-    if (user) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+  // Redirect logged-in users away from auth pages
+  if (pathname === '/login' && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // HOMEPAGE LOGIC - Redirect to dashboard if authenticated
   if (pathname === '/' && user) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
