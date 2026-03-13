@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import { Button } from './ui/button'
+import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
+import { PRIVACY_SECTIONS, PRIVACY_EFFECTIVE_DATE } from '@/lib/legal/privacy'
 
 interface UserAgreementModalProps {
   isOpen: boolean
@@ -10,91 +12,75 @@ interface UserAgreementModalProps {
   isLoading?: boolean
 }
 
+type Tab = 'terms' | 'privacy'
+
 export default function UserAgreementModal({
   isOpen,
   onAgree,
   isLoading = false,
 }: UserAgreementModalProps) {
   const [hasChecked, setHasChecked] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('terms')
 
-  const handleAgree = async () => {
-    await onAgree()
-  }
+  const sections = activeTab === 'terms' ? TERMS_SECTIONS : PRIVACY_SECTIONS
+  const effectiveDate = activeTab === 'terms' ? TERMS_EFFECTIVE_DATE : PRIVACY_EFFECTIVE_DATE
 
   return (
-    <Modal isOpen={isOpen} onClose={() => {}} title="Welcome to Aggies Helping Aggies!" size="md">
+    <Modal isOpen={isOpen} onClose={() => {}} title="Welcome to Aggies Helping Aggies!" size="lg">
       <div className="flex flex-col gap-4 p-6">
         {/* Header */}
         <div className="mb-2">
-          <h2 className="text-2xl font-bold text-foreground">Community Guidelines & Terms</h2>
+          <h2 className="text-2xl font-bold text-foreground">Terms & Privacy Policy</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Please review and accept our community guidelines before proceeding.
+            Please read and accept our Terms and Conditions and Privacy Policy before continuing.
           </p>
         </div>
 
-        {/* Scrollable Rules Section */}
+        {/* Tabs */}
+        <div className="flex border-b border-border">
+          <button
+            onClick={() => setActiveTab('terms')}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'terms'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Terms & Conditions
+          </button>
+          <button
+            onClick={() => setActiveTab('privacy')}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === 'privacy'
+                ? 'border-b-2 border-primary text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Privacy Policy
+          </button>
+        </div>
+
+        {/* Scrollable Legal Text */}
         <div className="max-h-96 overflow-y-auto rounded-lg border border-border bg-muted/50 p-4 text-sm">
-          <div className="space-y-4 text-foreground">
-            <div>
-              <h3 className="font-semibold">1. Respectful Communication</h3>
-              <p className="mt-1 text-muted-foreground">
-                Treat all community members with respect. Harassment, bullying, or discriminatory behavior is not tolerated.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">2. Authentic Identity</h3>
-              <p className="mt-1 text-muted-foreground">
-                Use your real name and authentic information. Impersonation or creating fake accounts is prohibited.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">3. Appropriate Content</h3>
-              <p className="mt-1 text-muted-foreground">
-                Do not post offensive, explicit, or inappropriate content. Keep discussions relevant to the channel topics.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">4. No Spam or Self-Promotion</h3>
-              <p className="mt-1 text-muted-foreground">
-                Avoid spam, excessive self-promotion, or commercial advertising without prior approval.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">5. Privacy and Safety</h3>
-              <p className="mt-1 text-muted-foreground">
-                Do not share others' personal information without consent. Respect privacy and maintain a safe community environment.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">6. Intellectual Property</h3>
-              <p className="mt-1 text-muted-foreground">
-                Only post content you own or have permission to share. Respect copyrights and intellectual property rights.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">7. Compliance with Laws</h3>
-              <p className="mt-1 text-muted-foreground">
-                Follow all applicable laws and regulations. Illegal activities are strictly prohibited.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold">8. Moderation and Enforcement</h3>
-              <p className="mt-1 text-muted-foreground">
-                We reserve the right to remove content and enforce these guidelines. Repeated violations may result in account suspension.
-              </p>
-            </div>
+          <p className="mb-4 text-xs text-muted-foreground">Effective date: {effectiveDate}</p>
+          <div className="space-y-5 text-foreground">
+            {sections.map((section) => (
+              <div key={section.heading}>
+                <h3 className="font-semibold">{section.heading}</h3>
+                <div className="mt-1 space-y-2 text-muted-foreground">
+                  {section.content.split('\n\n').map((paragraph, i) => (
+                    <p key={i} className="whitespace-pre-line">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Acknowledgment Checkbox */}
-        <label className="flex items-start gap-3 rounded border border-border p-3">
+        <label className="flex items-start gap-3 rounded border border-border p-3 cursor-pointer">
           <input
             type="checkbox"
             checked={hasChecked}
@@ -103,21 +89,19 @@ export default function UserAgreementModal({
             disabled={isLoading}
           />
           <span className="text-sm text-muted-foreground">
-            I have read and agree to the community guidelines and terms of service.
+            I have read and agree to the Terms and Conditions and Privacy Policy of Aggies Helping Aggies, Inc.
           </span>
         </label>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3">
-          <Button
-            onClick={handleAgree}
-            disabled={!hasChecked || isLoading}
-            className="flex-1"
-            size="lg"
-          >
-            {isLoading ? 'Accepting...' : 'Accept & Continue'}
-          </Button>
-        </div>
+        {/* Action Button */}
+        <Button
+          onClick={onAgree}
+          disabled={!hasChecked || isLoading}
+          className="w-full"
+          size="lg"
+        >
+          {isLoading ? 'Accepting...' : 'Accept & Continue'}
+        </Button>
 
         <p className="text-center text-xs text-muted-foreground">
           You must accept to continue using Aggies Helping Aggies
