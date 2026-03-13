@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { SupabaseClient } from '@supabase/supabase-js'
 import type { FeedPost, FeedPostQueryRowDTO, AdminPendingPostDTO, AdminPendingPostQueryRowDTO } from '@/lib/types'
 
@@ -5,77 +6,77 @@ import type { FeedPost, FeedPostQueryRowDTO, AdminPendingPostDTO, AdminPendingPo
  * Get user profile with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
-export async function getCachedUserProfile(userId: string, supabase: SupabaseClient) {
+export const getCachedUserProfile = cache(async function getCachedUserProfile(userId: string, supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('profiles')
     .select('id, email, full_name, avatar_url, role, flair, is_verified, is_alumni, mfa_enabled, rules_acknowledged_at, account_status, approved_by, approved_at, created_at, updated_at, graduation_year, major, last_login')
     .eq('id', userId)
     .maybeSingle()
-  
+
   if (error) {
     console.error('Error fetching profile:', error)
     return null
   }
   return data
-}
+})
 
 /**
  * Get all channels with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
-export async function getCachedAllChannels(supabase: SupabaseClient) {
+export const getCachedAllChannels = cache(async function getCachedAllChannels(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('channels')
     .select('*')
     .order('name')
-  
+
   if (error) {
     console.error('Error fetching channels:', error)
     return []
   }
   return data || []
-}
+})
 
 /**
  * Get specific channel by slug
  * Next.js automatically deduplicates requests within the same render
  */
-export async function getCachedChannelBySlug(slug: string, supabase: SupabaseClient) {
+export const getCachedChannelBySlug = cache(async function getCachedChannelBySlug(slug: string, supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('channels')
     .select('*')
     .eq('slug', slug)
     .single()
-  
+
   if (error) {
     console.error('Error fetching channel:', error)
     return null
   }
   return data
-}
+})
 
 /**
  * Get home channel IDs (general, promotions)
  * Next.js automatically deduplicates requests within the same render
  */
-export async function getCachedHomeChannels(supabase: SupabaseClient) {
+export const getCachedHomeChannels = cache(async function getCachedHomeChannels(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from('channels')
     .select('id, slug')
     .in('slug', ['general', 'promotions'])
-  
+
   if (error) {
     console.error('Error fetching home channels:', error)
     return []
   }
   return data || []
-}
+})
 
 /**
  * Get posts by channel ID with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
-export async function getCachedPostsByChannel(
+export const getCachedPostsByChannel = cache(async function getCachedPostsByChannel(
   channelId: string,
   supabase: SupabaseClient,
   limit: number = 50
@@ -91,7 +92,7 @@ export async function getCachedPostsByChannel(
     .eq('is_moderated', true)
     .order('created_at', { ascending: false })
     .limit(limit)
-  
+
   if (error) {
     console.error('Error fetching posts:', error)
     return []
@@ -115,13 +116,13 @@ export async function getCachedPostsByChannel(
     like_count: post.likes_count ?? 0,
     pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
   })) satisfies FeedPost[]
-}
+})
 
 /**
  * Get posts by multiple channel IDs (for home feed) with only essential columns
  * Next.js automatically deduplicates requests within the same render
  */
-export async function getCachedPostsByChannels(
+export const getCachedPostsByChannels = cache(async function getCachedPostsByChannels(
   channelIds: string[],
   supabase: SupabaseClient,
   limit: number = 20
@@ -138,7 +139,7 @@ export async function getCachedPostsByChannels(
     .eq('is_moderated', true)
     .order('created_at', { ascending: false })
     .limit(limit)
-  
+
   if (error) {
     console.error('Error fetching posts:', error)
     return []
@@ -162,14 +163,14 @@ export async function getCachedPostsByChannels(
     like_count: post.likes_count ?? 0,
     pending_edit: Array.isArray(post.pending_edit) ? (post.pending_edit[0] ?? null) : (post.pending_edit ?? null),
   })) satisfies FeedPost[]
-}
+})
 
 /**
  * Get pending posts (for admin dashboard)
  * Includes both new posts awaiting first approval (approval_status='pending')
  * and existing posts with a submitted edit awaiting review (approval_status='pending_edit')
  */
-export async function getCachedPendingPosts(
+export const getCachedPendingPosts = cache(async function getCachedPendingPosts(
   offset: number,
   supabase: SupabaseClient,
   limit: number = 15
@@ -218,4 +219,4 @@ export async function getCachedPendingPosts(
     data,
     total: countResult.count || 0,
   }
-}
+})
