@@ -7,7 +7,9 @@
       "Bash(for f:*)",
       "Bash(do echo:*)",
       "Read(//c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/**)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(grep -n \"channel\\\\|home\\\\|Home\\\\|Channel\\\\|slug\" c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/dashboard/channels/[slug]/page.tsx)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

@@ -95,3 +95,26 @@ export function getInitials(name: string): string {
   }
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
 }
+
+/**
+ * Canonical display order for channels across the app (home feed sections, create post dropdown, etc.)
+ * Any channel slug not listed here falls to the end.
+ */
+export const CHANNEL_DISPLAY_ORDER = [
+  'general',
+  'fundraising',
+  'football-tickets',
+  'jobs-networking',
+  'promotions',
+]
+
+export function sortChannelsByDisplayOrder<T extends { slug: string }>(channels: T[]): T[] {
+  return [...channels].sort((a, b) => {
+    const ai = CHANNEL_DISPLAY_ORDER.indexOf(a.slug)
+    const bi = CHANNEL_DISPLAY_ORDER.indexOf(b.slug)
+    const aOrder = ai === -1 ? CHANNEL_DISPLAY_ORDER.length : ai
+    const bOrder = bi === -1 ? CHANNEL_DISPLAY_ORDER.length : bi
+    return aOrder - bOrder
+  })
+}
+

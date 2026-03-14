@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,7 +17,7 @@ import UserProfileModal from '@/components/UserProfileModal'
 import HomeAnnouncementSection from '@/components/HomeAnnouncementSection'
 import PendingEditPreviewModal from '@/components/PendingEditPreviewModal'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
-import { useHomeFeedState } from '@/lib/hooks/useHomeFeedState'
+import { useHomeFeedState, type ChannelSection } from '@/lib/hooks/useHomeFeedState'
 import { useModalState } from '@/lib/hooks/useModalState'
 import { getInitials } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
@@ -25,31 +25,25 @@ import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/li
 
 interface DashboardClientProps {
   profile: Profile | null
-  posts: FeedPost[]
+  channelSections: ChannelSection[]
   allChannels: Channel[]
   initialHomeAnnouncement: ChannelAnnouncement | null
 }
 
 export default function DashboardClient({
   profile,
-  posts,
+  channelSections,
   allChannels,
   initialHomeAnnouncement,
 }: DashboardClientProps) {
   const {
-    postsState,
-    hasMorePosts,
-    isLoadingMorePosts,
-    feedLoadError,
-    loadMorePosts,
+    sections,
     handlePostCreated,
     handlePostDeleted,
     handlePostLikeChange,
     handlePostUpdated,
     handlePostCommentChange,
-    pendingNewPostsCount,
-    flushPendingPosts,
-  } = useHomeFeedState({ profile, posts, allChannels })
+  } = useHomeFeedState({ profile, channelSections, allChannels })
 
   const {
     activePostId, setActivePostId,
@@ -62,23 +56,6 @@ export default function DashboardClient({
 
   const { showToast, ToastContainer } = useToast()
   const agreementState = useFirstTimeAgreement(profile)
-  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (!hasMorePosts) return
-    const trigger = loadMoreTriggerRef.current
-    if (!trigger) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) void loadMorePosts()
-      },
-      { root: null, rootMargin: '750px 0px', threshold: 0.1 }
-    )
-
-    observer.observe(trigger)
-    return () => observer.disconnect()
-  }, [hasMorePosts, loadMorePosts])
 
   const onPostUpdated = (updatedPost: Post) => {
     handlePostUpdated(updatedPost)
@@ -88,9 +65,10 @@ export default function DashboardClient({
     }
   }
 
-  const editingPost = postsState.find(post => post.id === editingPostId)
+  const allPosts = sections.flatMap(s => s.posts)
+  const editingPost = allPosts.find(post => post.id === editingPostId)
   const editingChannel = allChannels.find(channel => channel.id === editingPost?.channel_id)
-  const previewPost = postsState.find(p => p.id === previewEditPostId)
+  const previewPost = allPosts.find(p => p.id === previewEditPostId)
 
   return (
     <>
@@ -146,61 +124,69 @@ export default function DashboardClient({
           isAgreementOpen={agreementState.isOpen}
         />
 
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-page-heading-text">Home Feed</h2>
+        <div className="space-y-10">
+          {sections.length > 0 ? (
+            sections.map(({ channel, posts }) => (
+              <div key={channel.id} className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold text-page-heading-text flex items-center gap-2">
+                    {channel.icon && <span aria-hidden="true">{channel.icon}</span>}
+                    <span>Latest from {channel.name}</span>
+                  </h2>
+                  <Link
+                    href={`/dashboard/channels/${channel.slug}`}
+                    className="text-sm font-medium text-primary hover:underline underline-offset-4"
+                  >
+                    See all →
+                  </Link>
+                </div>
 
-          {pendingNewPostsCount > 0 && (
-            <button
-              onClick={flushPendingPosts}
-              className="w-full rounded-lg border border-primary/30 bg-primary/10 py-2 px-4 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-            >
-              ↑ {pendingNewPostsCount} new {pendingNewPostsCount === 1 ? 'post' : 'posts'} — click to load
-            </button>
-          )}
-
-          {postsState && postsState.length > 0 ? (
-            postsState.map((post: FeedPost) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <PostCardHeader
-                    post={post}
-                    isAdmin={profile?.role === 'Admin'}
-                    channels={allChannels}
-                    currentUserId={profile?.id}
-                    onPostDeleted={handlePostDeleted}
-                    onEditClick={post.approval_status === 'pending_edit' && post.author_id === profile?.id ? undefined : () => setEditingPostId(post.id)}
-                    onProfileClick={setSelectedUserId}
-                    onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === profile?.id && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
-                  />
-                </CardHeader>
-                <CardContent className="space-y-3 pb-0">
-                  <h3 className="text-xl font-bold text-card-header-text">{post.title}</h3>
-                  <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
-                  </p>
-                  {post.images && post.images.length > 0 && (
-                    <PostImageGrid images={post.images} postTitle={post.title} />
-                  )}
-                  <div className="flex items-center justify-between space-x-4 py-4 border-t">
-                    <div className="flex items-center space-x-4">
-                      <PostLikeButton
-                        postId={post.id}
-                        likeCount={post.like_count || 0}
-                        userHasLiked={post.user_has_liked || false}
-                        likeId={post.like_id || null}
-                      />
-                      <CommentCountButton
-                        postId={post.id}
-                        commentCount={post.comment_count || 0}
-                        onOpenPost={() => setActivePostId(post.id)}
-                      />
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
-                      View Full Post
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                <div className="space-y-4">
+                  {posts.map((post: FeedPost) => (
+                    <Card key={post.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader>
+                        <PostCardHeader
+                          post={post}
+                          isAdmin={profile?.role === 'Admin'}
+                          channels={allChannels}
+                          currentUserId={profile?.id}
+                          onPostDeleted={handlePostDeleted}
+                          onEditClick={post.approval_status === 'pending_edit' && post.author_id === profile?.id ? undefined : () => setEditingPostId(post.id)}
+                          onProfileClick={setSelectedUserId}
+                          onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === profile?.id && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
+                        />
+                      </CardHeader>
+                      <CardContent className="space-y-3 pb-0">
+                        <h3 className="text-xl font-bold text-card-header-text">{post.title}</h3>
+                        <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                          {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
+                        </p>
+                        {post.images && post.images.length > 0 && (
+                          <PostImageGrid images={post.images} postTitle={post.title} />
+                        )}
+                        <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                          <div className="flex items-center space-x-4">
+                            <PostLikeButton
+                              postId={post.id}
+                              likeCount={post.like_count || 0}
+                              userHasLiked={post.user_has_liked || false}
+                              likeId={post.like_id || null}
+                            />
+                            <CommentCountButton
+                              postId={post.id}
+                              commentCount={post.comment_count || 0}
+                              onOpenPost={() => setActivePostId(post.id)}
+                            />
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
+                            View Full Post
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))
           ) : (
             <Card>
@@ -211,28 +197,6 @@ export default function DashboardClient({
                 <Button onClick={() => openCreatePost()}>Create First Post</Button>
               </CardContent>
             </Card>
-          )}
-
-          {postsState.length > 0 && (
-            <div ref={loadMoreTriggerRef} className="py-4 text-center">
-              {isLoadingMorePosts && (
-                <p className="text-sm text-muted-foreground">Loading more posts...</p>
-              )}
-              {!isLoadingMorePosts && feedLoadError && (
-                <div className="flex flex-col items-center gap-2">
-                  <p className="text-sm text-muted-foreground">{feedLoadError}</p>
-                  <button
-                    onClick={() => void loadMorePosts()}
-                    className="text-sm font-medium text-primary underline underline-offset-4"
-                  >
-                    Try again
-                  </button>
-                </div>
-              )}
-              {!hasMorePosts && !feedLoadError && (
-                <p className="text-sm text-muted-foreground">You&apos;ve reached the end of your home feed.</p>
-              )}
-            </div>
           )}
         </div>
 

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { validatePost } from '@/lib/profanity-filter'
 import { POST_LIMITS } from '@/lib/types'
+import { sortChannelsByDisplayOrder } from '@/lib/utils'
 import type { Channel, Post, UserRole } from '@/lib/types'
 
 type PostCounts = {
@@ -80,7 +81,7 @@ export function useCreatePostForm({
       return
     }
 
-    setChannels(loadedChannels)
+    setChannels(sortChannelsByDisplayOrder(loadedChannels))
 
     if (initialChannelSlug) {
       const channel = loadedChannels.find(c => c.slug === initialChannelSlug)
