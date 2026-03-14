@@ -355,6 +355,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
             id: string
             channel_id: string
             is_moderated: boolean
+            author_id: string
           }
 
           if (!updated.is_moderated) return
