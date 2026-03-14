@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -109,6 +110,17 @@ function LoginForm() {
               {loading ? 'Signing in...' : 'Sign in with Google'}
             </Button>
           </div>
+          <p className="text-center text-xs text-muted-foreground pt-2">
+            By signing in you agree to our{' '}
+            <Link href="/terms" className="underline hover:text-foreground">
+              Terms and Conditions
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy-policy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import Modal from './Modal'
 import { Button } from './ui/button'
 import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
@@ -104,7 +105,14 @@ export default function UserAgreementModal({
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
-          You must accept to continue using Aggies Helping Aggies
+          You must accept to continue using Aggies Helping Aggies.{' '}
+          <Link href="/terms" target="_blank" className="underline hover:text-foreground">
+            Full Terms
+          </Link>{' '}
+          &amp;{' '}
+          <Link href="/privacy-policy" target="_blank" className="underline hover:text-foreground">
+            Privacy Policy
+          </Link>
         </p>
       </div>
     </Modal>
