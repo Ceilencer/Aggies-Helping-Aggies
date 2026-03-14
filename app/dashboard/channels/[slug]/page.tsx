@@ -119,6 +119,8 @@ export default function ChannelPage() {
     hasMorePosts,
     isLoadingMore,
     loadMoreTriggerRef,
+    pendingNewPostsCount,
+    flushPendingPosts,
   } = useChannelFeedState({ rawSlug, canonicalSlug })
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
@@ -249,6 +251,14 @@ export default function ChannelPage() {
 
       {/* Posts */}
       <div className="space-y-4">
+        {pendingNewPostsCount > 0 && (
+          <button
+            onClick={flushPendingPosts}
+            className="w-full rounded-lg border border-primary/30 bg-primary/10 py-2 px-4 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+          >
+            ↑ {pendingNewPostsCount} new {pendingNewPostsCount === 1 ? 'post' : 'posts'} — click to load
+          </button>
+        )}
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
@@ -280,7 +290,7 @@ export default function ChannelPage() {
                 </p>
 
                 {post.images && post.images.length > 0 && (
-                  <PostImageGrid images={post.images} postTitle={post.title} maxImages={3} />
+                  <PostImageGrid images={post.images} postTitle={post.title} />
                 )}
 
                 <div className="flex items-center justify-between space-x-4 py-4 border-t">

@@ -47,6 +47,8 @@ export default function DashboardClient({
     handlePostLikeChange,
     handlePostUpdated,
     handlePostCommentChange,
+    pendingNewPostsCount,
+    flushPendingPosts,
   } = useHomeFeedState({ profile, posts, allChannels })
 
   const {
@@ -147,6 +149,15 @@ export default function DashboardClient({
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-page-heading-text">Home Feed</h2>
 
+          {pendingNewPostsCount > 0 && (
+            <button
+              onClick={flushPendingPosts}
+              className="w-full rounded-lg border border-primary/30 bg-primary/10 py-2 px-4 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
+            >
+              ↑ {pendingNewPostsCount} new {pendingNewPostsCount === 1 ? 'post' : 'posts'} — click to load
+            </button>
+          )}
+
           {postsState && postsState.length > 0 ? (
             postsState.map((post: FeedPost) => (
               <Card key={post.id} className="hover:shadow-md transition-shadow">
@@ -168,7 +179,7 @@ export default function DashboardClient({
                     {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
                   </p>
                   {post.images && post.images.length > 0 && (
-                    <PostImageGrid images={post.images} postTitle={post.title} maxImages={3} />
+                    <PostImageGrid images={post.images} postTitle={post.title} />
                   )}
                   <div className="flex items-center justify-between space-x-4 py-4 border-t">
                     <div className="flex items-center space-x-4">

@@ -6,132 +6,167 @@ import { useState } from 'react'
 interface PostImageGridProps {
   images: string[]
   postTitle: string
-  maxImages?: number
 }
 
-/**
- * PostImageGrid - Displays images in a grid format for post listings
- * Shows up to 3 images per row, uniform square thumbnails
- * Includes preview modal on click
- */
-export function PostImageGrid({ 
-  images, 
-  postTitle,
-  maxImages = 3 
-}: PostImageGridProps) {
-  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+export function PostImageGrid({ images, postTitle }: PostImageGridProps) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
-  if (!images || images.length === 0) {
-    return null
+  if (!images || images.length === 0) return null
+
+  const count = images.length
+  // Show at most 5 tiles; anything beyond is collapsed into a "+N" overlay on the 5th tile.
+  const visibleCount = Math.min(count, 5)
+  const hiddenCount = count - visibleCount
+
+  // A single image tile. The button is positioned (relative) so the fill Image renders correctly.
+  const Tile = ({
+    index,
+    className = '',
+    sizes,
+  }: {
+    index: number
+    className?: string
+    sizes: string
+  }) => (
+    <button
+      onClick={() => setSelectedIndex(index)}
+      className={`relative overflow-hidden bg-muted group ${className}`}
+    >
+      <Image
+        src={images[index]}
+        alt={`${postTitle} — image ${index + 1}`}
+        fill
+        className="object-cover transition-opacity duration-200 group-hover:opacity-90"
+        sizes={sizes}
+        unoptimized
+      />
+      {/* "+N" overlay on the last visible tile when images are hidden */}
+      {index === visibleCount - 1 && hiddenCount > 0 && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none select-none">
+          <span className="text-white text-2xl font-bold">+{hiddenCount}</span>
+        </div>
+      )}
+    </button>
+  )
+
+  let grid: React.ReactNode
+
+  if (count === 1) {
+    // Single image: full width, natural height
+    grid = (
+      <div className="h-72 sm:h-96">
+        <Tile index={0} className="w-full h-full" sizes="(max-width: 768px) 100vw, 700px" />
+      </div>
+    )
+  } else if (count === 2) {
+    // Two images: side by side, equal width
+    grid = (
+      <div className="flex gap-0.5 h-64">
+        <Tile index={0} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        <Tile index={1} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
+      </div>
+    )
+  } else if (count === 3) {
+    // Three images: large on left (2/3), two stacked on right (1/3)
+    grid = (
+      <div className="flex gap-0.5 h-64">
+        <Tile index={0} className="flex-[2] h-full" sizes="(max-width: 768px) 66vw, 460px" />
+        <div className="flex-1 flex flex-col gap-0.5">
+          <Tile index={1} className="flex-1 w-full" sizes="(max-width: 768px) 33vw, 230px" />
+          <Tile index={2} className="flex-1 w-full" sizes="(max-width: 768px) 33vw, 230px" />
+        </div>
+      </div>
+    )
+  } else if (count === 4) {
+    // Four images: 2×2 grid
+    grid = (
+      <div className="grid grid-cols-2 grid-rows-2 gap-0.5 h-80">
+        <Tile index={0} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        <Tile index={1} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        <Tile index={2} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        <Tile index={3} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
+      </div>
+    )
+  } else {
+    // 5+ images: two large on top, three smaller on bottom (5th tile gets "+N" overlay)
+    grid = (
+      <div className="flex flex-col gap-0.5">
+        <div className="flex gap-0.5 h-56">
+          <Tile index={0} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
+          <Tile index={1} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        </div>
+        <div className="flex gap-0.5 h-40">
+          <Tile index={2} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
+          <Tile index={3} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
+          <Tile index={4} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
+        </div>
+      </div>
+    )
   }
-
-  // Limit displayed images to maxImages
-  const displayImages = images.slice(0, maxImages)
-  const hasMore = images.length > maxImages
-
-  // Choose grid layout: single image should span full width
-  const gridColsClass = displayImages.length === 1 ? 'grid-cols-1' : 'grid-cols-3'
-
-  // fixed height for all thumbnails so layout is consistent
-  const cellHeightClass = 'h-40 sm:h-48'
 
   return (
     <>
-      {/* Image Grid */}
-      <div className={`grid ${gridColsClass} gap-2 mt-3 rounded-lg overflow-hidden`}>
-        {displayImages.map((imageUrl, index) => (
-          <button
-            key={`${imageUrl}-${index}`}
-            onClick={() => setSelectedImageIndex(index)}
-            className={`relative w-full bg-muted hover:opacity-75 transition-opacity overflow-hidden flex items-center justify-center ${cellHeightClass}`}
-          >
-            <Image
-              src={imageUrl}
-              alt={`${postTitle} - Image ${index + 1}`}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 80px, 96px"
-              unoptimized
-            />
-          </button>
-        ))}
-
-        {/* Remaining Images Counter */}
-        {hasMore && (
-          <div className={`relative w-full bg-muted/80 flex items-center justify-center ${cellHeightClass}`}>            <div className="text-center">
-              <p className="text-sm font-semibold text-foreground dark:text-white">
-                +{images.length - maxImages}
-              </p>
-              <p className="text-xs text-muted-foreground dark:text-white/70">
-                more
-              </p>
-            </div>
-          </div>
-        )}
+      <div className="mt-3 rounded-lg overflow-hidden border border-border">
+        {grid}
       </div>
 
-      {/* Image Preview Modal */}
-      {selectedImageIndex !== null && (
+      {/* Full-screen lightbox */}
+      {selectedIndex !== null && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setSelectedImageIndex(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          onClick={() => setSelectedIndex(null)}
         >
           <div
-            className="relative max-w-4xl max-h-[90vh] w-full h-[80vh]"
-            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-5xl h-[85vh]"
+            onClick={e => e.stopPropagation()}
           >
-            {/* Main Image */}
-            <div className="relative w-full h-full bg-black rounded-lg overflow-hidden">
-              <Image
-                src={images[selectedImageIndex]}
-                alt={`${postTitle} - Image ${selectedImageIndex + 1}`}
-                fill
-                className="object-contain"
-                sizes="90vw"
-                unoptimized
-              />
+            <Image
+              src={images[selectedIndex]}
+              alt={`${postTitle} — image ${selectedIndex + 1}`}
+              fill
+              className="object-contain"
+              sizes="90vw"
+              unoptimized
+            />
+
+            {/* Counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white text-sm px-3 py-1 rounded-full pointer-events-none select-none">
+              {selectedIndex + 1} / {count}
             </div>
 
-            {/* Navigation and Info */}
-            <div className="absolute bottom-0 left-0 right-0 text-white text-sm p-4 bg-gradient-to-t from-black/60 to-transparent">
-              <p>
-                Image {selectedImageIndex + 1} of {images.length}
-              </p>
-            </div>
-
-            {/* Navigation Buttons */}
-            {images.length > 1 && (
-              <>
-                <button
-                  onClick={() =>
-                    setSelectedImageIndex((prev) =>
-                      prev === 0 ? images.length - 1 : (prev ?? 0) - 1
-                    )
-                  }
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 transition rounded-full p-2"
-                  aria-label="Previous image"
-                >
-                  ←
-                </button>
-                <button
-                  onClick={() =>
-                    setSelectedImageIndex((prev) =>
-                      prev === images.length - 1 ? 0 : (prev ?? -1) + 1
-                    )
-                  }
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20 transition rounded-full p-2"
-                  aria-label="Next image"
-                >
-                  →
-                </button>
-              </>
+            {/* Prev */}
+            {count > 1 && (
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  setSelectedIndex(i => (i === 0 ? count - 1 : (i ?? 0) - 1))
+                }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 text-lg leading-none transition-colors"
+                aria-label="Previous image"
+              >
+                ←
+              </button>
             )}
 
-            {/* Close Button */}
+            {/* Next */}
+            {count > 1 && (
+              <button
+                onClick={e => {
+                  e.stopPropagation()
+                  setSelectedIndex(i => (i === count - 1 ? 0 : (i ?? -1) + 1))
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/70 text-white rounded-full p-3 text-lg leading-none transition-colors"
+                aria-label="Next image"
+              >
+                →
+              </button>
+            )}
+
+            {/* Close */}
             <button
-              onClick={() => setSelectedImageIndex(null)}
-              className="absolute top-4 right-4 text-white hover:bg-white/20 transition rounded-full p-2"
-              aria-label="Close preview"
+              onClick={() => setSelectedIndex(null)}
+              className="absolute top-2 right-2 bg-black/40 hover:bg-black/70 text-white rounded-full p-2 text-lg leading-none transition-colors"
+              aria-label="Close"
             >
               ✕
             </button>

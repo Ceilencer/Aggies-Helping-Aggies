@@ -10,11 +10,11 @@ import PostLikeButton from '@/components/PostLikeButton'
 import CommentsSection from '@/components/CommentsSection'
 import PostHistory from '@/components/PostHistory'
 import PostAdminMenu from '@/components/PostAdminMenu'
-import { PostImageDisplay } from '@/components/PostImageDisplay'
+import { PostImageGrid } from '@/components/PostImageGrid'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trash2 } from 'lucide-react'
-import type { Post, Channel } from '@/lib/types'
+import type { FeedAuthorDTO, Post, Channel } from '@/lib/types'
 
 interface PostDetailPanelProps {
   postId: string
@@ -41,6 +41,7 @@ export default function PostDetailPanel({
   const [post, setPost] = useState<Post | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [currentUserRole, setCurrentUserRole] = useState<string>('')
+  const [currentUserProfile, setCurrentUserProfile] = useState<FeedAuthorDTO | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
@@ -54,12 +55,18 @@ export default function PostDetailPanel({
 
           const { data: profile } = await supabase
             .from('profiles')
-            .select('role')
+            .select('id, role, full_name, avatar_url')
             .eq('id', user.id)
             .single()
 
           if (profile) {
             setCurrentUserRole(profile.role)
+            setCurrentUserProfile({
+              id: profile.id,
+              role: profile.role,
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url,
+            })
           }
         }
 
@@ -276,7 +283,7 @@ export default function PostDetailPanel({
           </div>
 
           {post.images && post.images.length > 0 && (
-            <PostImageDisplay images={post.images} postTitle={post.title} />
+            <PostImageGrid images={post.images} postTitle={post.title} />
           )}
 
           <div className="flex items-center space-x-4 pt-4 border-t">
@@ -304,10 +311,11 @@ export default function PostDetailPanel({
         </CardContent>
       </Card>
 
-      <CommentsSection 
-        postId={post.id} 
-        currentUserId={currentUserId} 
-        currentUserRole={currentUserRole} 
+      <CommentsSection
+        postId={post.id}
+        currentUserId={currentUserId}
+        currentUserRole={currentUserRole}
+        currentUserProfile={currentUserProfile}
         onProfileClick={onProfileClick}
         onCommentCountChange={(newCount) => {
           setPost((currentPost) => {

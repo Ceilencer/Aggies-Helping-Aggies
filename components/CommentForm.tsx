@@ -3,11 +3,15 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import type { Comment, FeedAuthorDTO } from '@/lib/types'
 
 interface CommentFormProps {
   postId: string
   parentCommentId?: string
-  onCommentCreated?: (comment: any) => void
+  currentUserProfile?: FeedAuthorDTO | null
+  onOptimisticComment?: (tempComment: Comment) => void
+  onCommentCreated?: (comment: Comment, tempId?: string) => void
+  onOptimisticFailed?: (tempId: string) => void
   placeholder?: string
   isReply?: boolean
 }
@@ -15,7 +19,10 @@ interface CommentFormProps {
 export default function CommentForm({
   postId,
   parentCommentId,
+  currentUserProfile,
+  onOptimisticComment,
   onCommentCreated,
+  onOptimisticFailed,
   placeholder = 'Add a comment...',
   isReply = false,
 }: CommentFormProps) {
@@ -37,6 +44,29 @@ export default function CommentForm({
       return
     }
 
+    const trimmedContent = content.trim()
+    const tempId = `optimistic-${Date.now()}`
+
+    // Optimistic update: add the comment immediately if we have the user profile
+    if (currentUserProfile && onOptimisticComment) {
+      const now = new Date().toISOString()
+      const tempComment: Comment = {
+        id: tempId,
+        post_id: postId,
+        author_id: currentUserProfile.id,
+        parent_comment_id: parentCommentId,
+        content: trimmedContent,
+        is_moderated: true,
+        created_at: now,
+        updated_at: now,
+        author: currentUserProfile as Comment['author'],
+        like_count: 0,
+        user_has_liked: false,
+      }
+      onOptimisticComment(tempComment)
+      setContent('')
+    }
+
     setLoading(true)
     try {
       const response = await fetch('/api/comments', {
@@ -44,7 +74,7 @@ export default function CommentForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           post_id: postId,
-          content: content.trim(),
+          content: trimmedContent,
           parent_comment_id: parentCommentId || null,
         }),
       })
@@ -55,11 +85,25 @@ export default function CommentForm({
       }
 
       const newComment = await response.json()
-      setContent('')
-      onCommentCreated?.(newComment)
-    } catch (err: any) {
+
+      if (currentUserProfile && onOptimisticComment) {
+        // Replace optimistic placeholder with real comment
+        onCommentCreated?.(newComment, tempId)
+      } else {
+        // No optimistic update was done — clear input and add normally
+        setContent('')
+        onCommentCreated?.(newComment)
+      }
+    } catch (err: unknown) {
       console.error('Error creating comment:', err)
-      setError(err.message || 'Failed to create comment')
+      const message = err instanceof Error ? err.message : 'Failed to create comment'
+      setError(message)
+
+      if (currentUserProfile && onOptimisticComment) {
+        // Roll back the optimistic comment and restore the input
+        onOptimisticFailed?.(tempId)
+        setContent(trimmedContent)
+      }
     } finally {
       setLoading(false)
     }
