@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 
@@ -9,42 +8,27 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const supabase = await createClient()
-  const cookieStore = await cookies()
-  const hasAdminSession = cookieStore.get('admin_session')?.value === 'true'
 
-  // Check for either Supabase auth or admin session
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user && !hasAdminSession) {
+  if (!user) {
     redirect('/')
   }
 
-  // Fetch profile if user is authenticated via Supabase
-  let profile = null
-  if (user) {
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('full_name, role, avatar_url')
-      .eq('id', user.id)
-      .single()
-    profile = profileData
-  }
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('full_name, role, avatar_url')
+    .eq('id', user.id)
+    .single()
 
-  const displayName = profile?.full_name || 'Admin'
+  const displayName = profile?.full_name || 'User'
 
   const handleSignOut = async () => {
     'use server'
     const supabase = await createClient()
-    const cookieStore = await cookies()
-
-    // Sign out from Supabase if authenticated
     await supabase.auth.signOut()
-
-    // Clear admin session cookie
-    cookieStore.delete('admin_session')
-
     redirect('/')
   }
 

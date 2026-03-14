@@ -82,7 +82,11 @@ export async function POST(request: NextRequest) {
 
     // 6. Server-side post-limit check via RPC
     const limits = POST_LIMITS[role] ?? POST_LIMITS['Personal']
-    const { data: trackingData } = await supabase.rpc('get_post_counts')
+    const { data: trackingData, error: trackingError } = await supabase.rpc('get_post_counts')
+    if (trackingError) {
+      console.error('Error fetching post counts from RPC:', trackingError)
+      return NextResponse.json({ error: 'Unable to verify post limits. Please try again.' }, { status: 500 })
+    }
     if (trackingData) {
       const tracking = Array.isArray(trackingData) ? trackingData[0] : trackingData
       if (tracking) {
