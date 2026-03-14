@@ -15,6 +15,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import type { FlairType } from '@/lib/types'
+
+const AFFILIATION_TO_FLAIR: Record<string, FlairType> = {
+  'Student':         'Student',
+  'Former Student':  'Former Student',
+  'Faculty':         'Faculty',
+  'Parent':          'Parent',
+  'BCS Local':       'BCS Local',
+}
 
 
 const CURRENT_YEAR = new Date().getFullYear()
@@ -139,12 +148,14 @@ export default function VerificationQuestionnairePage() {
 
       if (insertError) throw insertError
 
-      // Ensure profile name is up-to-date and status is pending_approval
+      // Ensure profile name, flair, and status are up-to-date
+      const flairUpdate = AFFILIATION_TO_FLAIR[formData.affiliation]
       await supabase
         .from('profiles')
         .update({
           full_name: formData.full_name,
           account_status: 'pending_approval',
+          ...(flairUpdate ? { flair: flairUpdate } : {}),
         })
         .eq('id', userId)
 

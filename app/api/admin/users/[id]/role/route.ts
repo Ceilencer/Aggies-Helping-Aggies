@@ -23,6 +23,19 @@ export async function PATCH(
       return admin.error
     }
 
+    // Fetch current role before updating so we can log the transition
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !existingProfile) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const previousRole = existingProfile.role
+
     const { data: updatedProfile, error: updateError } = await supabase
       .from('profiles')
       .update({ role })
@@ -34,6 +47,13 @@ export async function PATCH(
       console.error('Error updating account type:', updateError)
       return NextResponse.json({ error: 'Failed to update account type' }, { status: 500 })
     }
+
+    // Audit log — write to admin_notes so role changes are traceable
+    await supabase.from('admin_notes').insert({
+      user_id: id,
+      created_by: admin.user.id,
+      content: `Role changed from "${previousRole}" to "${role}".`,
+    })
 
     return NextResponse.json(updatedProfile)
   } catch (error) {
