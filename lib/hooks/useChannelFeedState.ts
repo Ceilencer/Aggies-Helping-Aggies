@@ -33,6 +33,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     offset: number
     formattedPosts: FeedPost[]
     fetchedCount: number
+    totalCount: number | null
   } | null>(null)
   const prefetchInFlightRef = useRef(false)
 
@@ -167,6 +168,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
         offset,
         formattedPosts: page.formattedPosts,
         fetchedCount: page.fetchedCount,
+        totalCount: page.totalCount,
       }
     } catch {
       prefetchedPageRef.current = null
