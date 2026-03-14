@@ -6,6 +6,9 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'lBYzRmAK-62abICBuO0MNeS9Rte-nxq9s3kQmt0165k',
+  },
   title: "Aggies Helping Aggies - Texas A&M Community Platform",
   description: "A verified community engagement platform for Texas A&M University affiliates",
 }
