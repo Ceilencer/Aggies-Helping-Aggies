@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-const isDev = process.env.NODE_ENV === 'development'
-
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -19,23 +17,8 @@ const nextConfig = {
       {
         source: '/:path*',
         headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: `
-              default-src 'self';
-              script-src 'self' ${isDev ? "'unsafe-eval' " : ''}'unsafe-inline' https://accounts.google.com https://*.supabase.co;
-              style-src 'self' 'unsafe-inline';
-              img-src 'self' blob: data: https://*.googleusercontent.com https://*.supabase.co;
-              font-src 'self';
-              connect-src 'self' https://*.supabase.co https://accounts.google.com;
-              frame-src 'self' https://accounts.google.com;
-              object-src 'none';
-              base-uri 'self';
-              form-action 'self';
-              frame-ancestors 'none';
-              upgrade-insecure-requests;
-            `.replace(/\s{2,}/g, ' ').trim(),
-          },
+          // CSP is set dynamically in proxy.ts with a per-request nonce.
+          // Static headers here apply to all routes as a fallback.
           {
             key: 'X-Frame-Options',
             value: 'DENY',

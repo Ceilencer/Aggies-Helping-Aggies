@@ -2,10 +2,39 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
+  // Generate a unique nonce for this request.
+  // This is used in the Content-Security-Policy header to allow only
+  // scripts/styles that carry this nonce, removing the need for 'unsafe-inline'.
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  const isDev = process.env.NODE_ENV === 'development'
+
+  const csp = [
+    "default-src 'self'",
+    // 'strict-dynamic' allows scripts loaded by a nonce-trusted script to run,
+    // which is required for Next.js lazy-loaded chunks and Google Sign-In.
+    // 'unsafe-eval' is only added in development for hot-reloading.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https://accounts.google.com https://*.supabase.co${isDev ? " 'unsafe-eval'" : ''}`,
+    // 'unsafe-inline' for styles is kept — Tailwind and next-themes require it,
+    // and CSS-based attacks are much less severe than script injection.
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' blob: data: https://*.googleusercontent.com https://*.supabase.co",
+    "font-src 'self'",
+    "connect-src 'self' https://*.supabase.co https://accounts.google.com",
+    "frame-src 'self' https://accounts.google.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests",
+  ].join('; ')
+
+  // Inject the nonce into request headers so layout server components can read
+  // it via headers() and pass it to scripts/ThemeProvider.
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: requestHeaders },
   })
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -21,7 +50,9 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
+          // Preserve the nonce in request headers when the response is recreated
+          // for cookie refresh, otherwise the layout loses access to it.
+          response = NextResponse.next({ request: { headers: requestHeaders } })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
@@ -48,19 +79,26 @@ export async function proxy(request: NextRequest) {
   const protectedPrefixes = ['/dashboard', '/verification-questionnaire', '/pending-approval']
   if (protectedPrefixes.some((p) => pathname.startsWith(p))) {
     if (!user) {
-      return NextResponse.redirect(new URL('/', request.url))
+      const redirectResponse = NextResponse.redirect(new URL('/', request.url))
+      redirectResponse.headers.set('Content-Security-Policy', csp)
+      return redirectResponse
     }
   }
 
   // Redirect logged-in users away from auth pages
   if (pathname === '/login' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    redirectResponse.headers.set('Content-Security-Policy', csp)
+    return redirectResponse
   }
 
   if (pathname === '/' && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    redirectResponse.headers.set('Content-Security-Policy', csp)
+    return redirectResponse
   }
 
+  response.headers.set('Content-Security-Policy', csp)
   return response
 }
 
