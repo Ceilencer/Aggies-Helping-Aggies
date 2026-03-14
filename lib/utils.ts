@@ -6,44 +6,24 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format a date to a relative time string (e.g., "2 hours ago")
+ * Format a date to a relative time string (e.g., "2 hours ago", "yesterday").
+ * Uses Intl.RelativeTimeFormat for correct locale handling and natural phrasing.
+ * ISO timestamps from Supabase include timezone offset so the diff is always correct
+ * regardless of the viewer's local timezone.
  */
 export function formatRelativeTime(date: string | Date): string {
-  const now = new Date()
-  const then = new Date(date)
-  const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000)
+  const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
+  const diffMs = new Date(date).getTime() - Date.now()
+  const diffSecs = Math.round(diffMs / 1000)
+  const abs = Math.abs(diffSecs)
 
-  if (diffInSeconds < 60) {
-    return 'just now'
-  }
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60)
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`
-  }
-
-  const diffInHours = Math.floor(diffInMinutes / 60)
-  if (diffInHours < 24) {
-    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`
-  }
-
-  const diffInDays = Math.floor(diffInHours / 24)
-  if (diffInDays < 7) {
-    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`
-  }
-
-  const diffInWeeks = Math.floor(diffInDays / 7)
-  if (diffInWeeks < 4) {
-    return `${diffInWeeks} ${diffInWeeks === 1 ? 'week' : 'weeks'} ago`
-  }
-
-  const diffInMonths = Math.floor(diffInDays / 30)
-  if (diffInMonths < 12) {
-    return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'} ago`
-  }
-
-  const diffInYears = Math.floor(diffInDays / 365)
-  return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'} ago`
+  if (abs < 60)     return rtf.format(diffSecs, 'second')        // "now", "5 seconds ago"
+  if (abs < 3600)   return rtf.format(Math.round(diffSecs / 60), 'minute')   // "3 minutes ago"
+  if (abs < 86400)  return rtf.format(Math.round(diffSecs / 3600), 'hour')   // "2 hours ago"
+  if (abs < 604800) return rtf.format(Math.round(diffSecs / 86400), 'day')   // "yesterday", "3 days ago"
+  if (abs < 2592000) return rtf.format(Math.round(diffSecs / 604800), 'week') // "last week", "2 weeks ago"
+  if (abs < 31536000) return rtf.format(Math.round(diffSecs / 2592000), 'month') // "last month", "3 months ago"
+  return rtf.format(Math.round(diffSecs / 31536000), 'year')                 // "last year", "2 years ago"
 }
 
 /**

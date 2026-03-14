@@ -23,6 +23,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
   const [currentUserId, setCurrentUserId] = useState<string>('')
   const [currentUserProfile, setCurrentUserProfile] = useState<FeedAuthorDTO | null>(null)
   const [postOffset, setPostOffset] = useState(0)
+  const [totalPostCount, setTotalPostCount] = useState<number | null>(null)
   const [hasMorePosts, setHasMorePosts] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set())
@@ -64,14 +65,14 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     offset: number,
     userId: string
   ) => {
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('posts')
       .select(`
         id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
         channel:channels(id, name, slug, description, icon),
         pending_edit:post_edits(proposed_title, proposed_content)
-      `)
+      `, { count: 'exact' })
       .eq('channel_id', channelId)
       .eq('is_moderated', true)
       .order('created_at', { ascending: false })
@@ -116,6 +117,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
     return {
       formattedPosts: formatPostsWithCounts(postsData, likedIds, likeIdsByPost, commentCountMap),
       fetchedCount: postsData.length,
+      totalCount: count ?? null,
     }
   }, [formatPostsWithCounts, supabase])
 
@@ -191,11 +193,14 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
 
       prefetchedPageRef.current = null
 
-      const { formattedPosts, fetchedCount } = page
+      const { formattedPosts, fetchedCount, totalCount } = page
+      if (totalCount !== null) setTotalPostCount(totalCount)
 
       setPosts(current => [...current, ...formattedPosts])
       const nextOffset = postOffset + fetchedCount
-      const nextHasMore = fetchedCount === POSTS_PAGE_SIZE
+      const nextHasMore = totalCount !== null
+        ? nextOffset < totalCount
+        : fetchedCount === POSTS_PAGE_SIZE
 
       setPostOffset(nextOffset)
       setHasMorePosts(nextHasMore)
@@ -291,10 +296,13 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
             fetchPostsPage(channelData.id, 0, userId)
           ])
 
-          const { formattedPosts, fetchedCount } = postsResult
+          const { formattedPosts, fetchedCount, totalCount } = postsResult
           setPosts(formattedPosts)
           setPostOffset(fetchedCount)
-          const initialHasMore = fetchedCount === POSTS_PAGE_SIZE
+          if (totalCount !== null) setTotalPostCount(totalCount)
+          const initialHasMore = totalCount !== null
+            ? fetchedCount < totalCount
+            : fetchedCount === POSTS_PAGE_SIZE
           setHasMorePosts(initialHasMore)
 
           if (initialHasMore) {

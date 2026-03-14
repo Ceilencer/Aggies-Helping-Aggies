@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import {
-  Bell,
   Briefcase,
   Gem,
   Home,
@@ -148,13 +147,6 @@ export default function Header({
           >
             Donate
           </a>
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-header-bg text-white transition-colors hover:bg-white/10"
-            aria-label="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-          </button>
           {isAdmin ? (
             <Link
               href="/dashboard/admin"

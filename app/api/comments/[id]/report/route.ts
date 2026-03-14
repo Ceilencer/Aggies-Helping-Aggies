@@ -94,10 +94,7 @@ export async function POST(
       )
     }
 
-    return NextResponse.json(
-      { message: 'Report submitted successfully', report },
-      { status: 201 }
-    )
+    return NextResponse.json(report, { status: 201 })
   } catch (error) {
     console.error('Error reporting comment:', error)
     return NextResponse.json(

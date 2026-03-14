@@ -174,9 +174,7 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({
-      message: `Report ${action}ed successfully`,
-    })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error in admin reports endpoint:', error)
     return NextResponse.json(
