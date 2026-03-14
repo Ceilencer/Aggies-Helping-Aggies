@@ -44,6 +44,7 @@ export function useUserProfilePanelState({ userId, showToast }: UseUserProfilePa
   const [isUpdatingRole, setIsUpdatingRole] = useState(false)
   const [selectedFlair, setSelectedFlair] = useState<FlairType>('Student')
   const [isUpdatingFlair, setIsUpdatingFlair] = useState(false)
+  const [isResettingLimits, setIsResettingLimits] = useState(false)
   const [activeSection, setActiveSection] = useState<ProfileSection>('posts')
   const [postsOffset, setPostsOffset] = useState(0)
   const [commentsOffset, setCommentsOffset] = useState(0)
@@ -383,6 +384,34 @@ export function useUserProfilePanelState({ userId, showToast }: UseUserProfilePa
     }
   }
 
+  const handleResetPostLimits = async () => {
+    try {
+      setIsResettingLimits(true)
+
+      const response = await fetch(`/api/admin/users/${userId}/reset-post-limits`, {
+        method: 'POST',
+      })
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}))
+        throw new Error(result?.error || 'Failed to reset posting limits')
+      }
+
+      showToast({
+        message: 'Posting limits reset successfully',
+        type: 'success',
+      })
+    } catch (err) {
+      console.error('Error resetting posting limits:', err)
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to reset posting limits',
+        type: 'error',
+      })
+    } finally {
+      setIsResettingLimits(false)
+    }
+  }
+
   return {
     profile,
     posts,
@@ -400,6 +429,7 @@ export function useUserProfilePanelState({ userId, showToast }: UseUserProfilePa
     selectedFlair,
     setSelectedFlair,
     isUpdatingFlair,
+    isResettingLimits,
     activeSection,
     setActiveSection,
     isLoadingMorePosts,
@@ -412,5 +442,6 @@ export function useUserProfilePanelState({ userId, showToast }: UseUserProfilePa
     handleSaveNote,
     handleRoleUpdate,
     handleFlairUpdate,
+    handleResetPostLimits,
   }
 }

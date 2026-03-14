@@ -3,7 +3,11 @@
     "allow": [
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -name .env* -o -name supabase.json)",
       "Bash(py --version)",
-      "Bash(py -c \":*)"
+      "Bash(py -c \":*)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/**)",
+      "Bash(done)"
     ]
   }
 }

@@ -51,6 +51,7 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
     selectedFlair,
     setSelectedFlair,
     isUpdatingFlair,
+    isResettingLimits,
     activeSection,
     setActiveSection,
     isLoadingMorePosts,
@@ -63,6 +64,7 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
     handleSaveNote,
     handleRoleUpdate,
     handleFlairUpdate,
+    handleResetPostLimits,
   } = useUserProfilePanelState({ userId, showToast })
 
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
@@ -316,6 +318,23 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Reset Posting Limits */}
+            <div className="mt-6 rounded-lg border bg-muted/30 p-4">
+              <h4 className="text-sm font-semibold mb-1">Posting Limits</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Reset this user&apos;s daily and monthly post counters to zero immediately.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void handleResetPostLimits()}
+                disabled={isResettingLimits}
+              >
+                {isResettingLimits ? 'Resetting...' : 'Reset Posting Limits'}
+              </Button>
             </div>
 
             {/* Danger Zone */}
