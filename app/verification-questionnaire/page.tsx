@@ -110,6 +110,19 @@ export default function VerificationQuestionnairePage() {
     setLoading(true)
 
     try {
+      // Guard: reject if a request already exists for this user
+      const { data: existingRequest } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (existingRequest) {
+        setError('You already have a pending verification request. Please wait for admin review.')
+        setLoading(false)
+        return
+      }
+
       // Save questionnaire response
       const { error: insertError } = await supabase
         .from('verification_requests')

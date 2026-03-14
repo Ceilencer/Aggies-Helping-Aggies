@@ -57,6 +57,21 @@ export async function POST(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
+    // Rate limit: max 5 reports per user per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const { count: recentCount } = await supabase
+      .from('reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('reported_by', user.id)
+      .gte('created_at', oneHourAgo)
+
+    if ((recentCount ?? 0) >= 5) {
+      return NextResponse.json(
+        { error: 'You are submitting reports too quickly. Please wait before reporting again.' },
+        { status: 429 }
+      )
+    }
+
     // Check if user already reported this post
     const { data: existingReport } = await supabase
       .from('reports')
