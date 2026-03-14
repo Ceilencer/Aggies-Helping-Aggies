@@ -89,9 +89,9 @@ export function useImageUpload() {
     setError('')
   }, [])
 
-  const uploadImages = useCallback(async (postId: string): Promise<{ success: boolean; urls: string[]; error?: string }> => {
+  const uploadImages = useCallback(async (postId: string): Promise<{ success: boolean; urls: string[]; paths: string[]; error?: string }> => {
     if (uploadedImages.length === 0) {
-      return { success: true, urls: [] }
+      return { success: true, urls: [], paths: [] }
     }
 
     // Assign stable file paths before any uploads start
@@ -121,7 +121,8 @@ export function useImageUpload() {
         })
       )
 
-      return { success: true, urls }
+      const paths = tasks.map((t) => t.fileName)
+      return { success: true, urls, paths }
     } catch (err: any) {
       // Clean up every file that was assigned a path (some may not have uploaded)
       try {
@@ -132,7 +133,7 @@ export function useImageUpload() {
         console.error('Cleanup error:', cleanupErr)
       }
 
-      return { success: false, urls: [], error: err.message || 'Failed to upload images' }
+      return { success: false, urls: [], paths: [], error: err.message || 'Failed to upload images' }
     }
   }, [uploadedImages, supabase])
 

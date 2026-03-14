@@ -139,10 +139,11 @@ export function useCreatePostForm({
         return
       }
 
-      // Client-side profanity pre-check for instant feedback (server also validates)
+      // Client-side profanity check — hard block, same validatePost() the server uses,
+      // so they can never produce different results. Avoids a round trip for a clear violation.
       const profanityCheck = validatePost(formData.title, formData.content)
       if (!profanityCheck.valid) {
-        setError(profanityCheck.error || 'Content contains inappropriate language')
+        setError(profanityCheck.error || 'Content contains inappropriate language. Please revise before submitting.')
         return
       }
 
@@ -174,18 +175,37 @@ export function useCreatePostForm({
         setUploading(false)
 
         if (!uploadResult.success) {
-          // Clean up the orphaned post since images failed
-          await supabase.from('posts').delete().eq('id', newPost.id)
+          // Storage cleanup is handled inside uploadImages(). Delete the orphaned post.
+          const { error: deleteError } = await supabase
+            .from('posts')
+            .delete()
+            .eq('id', newPost.id)
+          if (deleteError) {
+            console.error('Failed to delete orphaned post after image upload failure:', deleteError)
+          }
           setError(uploadResult.error || 'Failed to upload images. Post was not created.')
           return
         }
 
         if (uploadResult.urls.length > 0) {
           // Patch the post record with image URLs
-          await supabase
+          const { error: patchError } = await supabase
             .from('posts')
             .update({ images: uploadResult.urls })
             .eq('id', newPost.id)
+
+          if (patchError) {
+            // Images are in storage but not linked to the post — clean up both
+            console.error('Failed to patch post with image URLs:', patchError)
+            try {
+              await supabase.storage.from('post-images').remove(uploadResult.paths)
+            } catch (cleanupErr) {
+              console.error('Failed to clean up storage after patch failure:', cleanupErr)
+            }
+            await supabase.from('posts').delete().eq('id', newPost.id)
+            setError('Failed to attach images to post. Please try again.')
+            return
+          }
 
           newPost.images = uploadResult.urls
         }
@@ -202,6 +222,9 @@ export function useCreatePostForm({
           positionClassName: 'top-24',
         })
       }
+
+      // Clear image previews now that the post is fully committed
+      imageUpload.clearImages()
 
       if (onPostCreated) {
         onPostCreated(newPost, selectedChannel)

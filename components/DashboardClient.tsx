@@ -1,10 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import Modal from '@/components/Modal'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentCountButton from '@/components/CommentCountButton'
 import PostCardHeader from '@/components/PostCardHeader'
@@ -15,11 +14,12 @@ import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import UserAgreementModal from '@/components/UserAgreementModal'
 import UserProfileModal from '@/components/UserProfileModal'
-import ChannelAnnouncementModal from '@/components/ChannelAnnouncementModal'
-import UserAvatar from '@/components/UserAvatar'
+import HomeAnnouncementSection from '@/components/HomeAnnouncementSection'
+import PendingEditPreviewModal from '@/components/PendingEditPreviewModal'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
 import { useHomeFeedState } from '@/lib/hooks/useHomeFeedState'
-import { formatRelativeTime, getInitials } from '@/lib/utils'
+import { useModalState } from '@/lib/hooks/useModalState'
+import { getInitials } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
 
@@ -47,73 +47,36 @@ export default function DashboardClient({
     handlePostLikeChange,
     handlePostUpdated,
     handlePostCommentChange,
-  } = useHomeFeedState({
-    profile,
-    posts,
-    allChannels,
-  })
-  const [activePostId, setActivePostId] = useState<string | null>(null)
-  const [createPostOpen, setCreatePostOpen] = useState(false)
-  const [createPostChannelSlug, setCreatePostChannelSlug] = useState<string | undefined>(undefined)
-  const [editingPostId, setEditingPostId] = useState<string | null>(null)
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  const [homeAnnouncement, setHomeAnnouncement] = useState<ChannelAnnouncement | null>(initialHomeAnnouncement)
-  const [homeAnnouncementEditorOpen, setHomeAnnouncementEditorOpen] = useState(false)
-  const [homeAnnouncementPopupOpen, setHomeAnnouncementPopupOpen] = useState(false)
-  const [previewEditPostId, setPreviewEditPostId] = useState<string | null>(null)
+  } = useHomeFeedState({ profile, posts, allChannels })
+
+  const {
+    activePostId, setActivePostId,
+    createPostOpen, setCreatePostOpen,
+    createPostChannelSlug, openCreatePost,
+    editingPostId, setEditingPostId,
+    selectedUserId, setSelectedUserId,
+    previewEditPostId, setPreviewEditPostId,
+  } = useModalState()
+
   const { showToast, ToastContainer } = useToast()
-  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const agreementState = useFirstTimeAgreement(profile)
-
-  const markHomeAnnouncementSeen = (updatedAt: string) => {
-    if (typeof window === 'undefined' || !profile?.id) {
-      return
-    }
-
-    window.localStorage.setItem(`home-announcement-seen-${profile.id}`, updatedAt)
-  }
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!hasMorePosts) {
-      return
-    }
-
+    if (!hasMorePosts) return
     const trigger = loadMoreTriggerRef.current
-    if (!trigger) {
-      return
-    }
+    if (!trigger) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
-          void loadMorePosts()
-        }
+        if (entries[0]?.isIntersecting) void loadMorePosts()
       },
       { root: null, rootMargin: '750px 0px', threshold: 0.1 }
     )
 
     observer.observe(trigger)
-    return () => {
-      observer.disconnect()
-    }
+    return () => observer.disconnect()
   }, [hasMorePosts, loadMorePosts])
-
-  useEffect(() => {
-    if (agreementState.isOpen || !homeAnnouncement?.updated_at || !profile?.id || typeof window === 'undefined') {
-      setHomeAnnouncementPopupOpen(false)
-      return
-    }
-
-    const seenVersion = window.localStorage.getItem(`home-announcement-seen-${profile.id}`)
-    if (seenVersion !== homeAnnouncement.updated_at) {
-      setHomeAnnouncementPopupOpen(true)
-    }
-  }, [homeAnnouncement?.updated_at, agreementState.isOpen, profile?.id])
-
-  const openCreatePost = (channelSlug?: string) => {
-    setCreatePostChannelSlug(channelSlug)
-    setCreatePostOpen(true)
-  }
 
   const onPostUpdated = (updatedPost: Post) => {
     handlePostUpdated(updatedPost)
@@ -123,15 +86,9 @@ export default function DashboardClient({
     }
   }
 
-  const dismissHomeAnnouncementPopup = () => {
-    if (homeAnnouncement?.updated_at) {
-      markHomeAnnouncementSeen(homeAnnouncement.updated_at)
-    }
-    setHomeAnnouncementPopupOpen(false)
-  }
-
   const editingPost = postsState.find(post => post.id === editingPostId)
   const editingChannel = allChannels.find(channel => channel.id === editingPost?.channel_id)
+  const previewPost = postsState.find(p => p.id === previewEditPostId)
 
   return (
     <>
@@ -145,6 +102,7 @@ export default function DashboardClient({
         userId={selectedUserId}
         onClose={() => setSelectedUserId(null)}
       />
+
       <div className="space-y-6">
         <Card>
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
@@ -173,62 +131,21 @@ export default function DashboardClient({
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6">
-            <div className="flex flex-wrap gap-4">
-              <Button size="lg" onClick={() => openCreatePost()}>
-                Create New Post
-              </Button>
-              {profile?.role === 'Admin' && (
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => setHomeAnnouncementEditorOpen(true)}
-                >
-                  {homeAnnouncement ? 'Edit Announcement' : 'Post Announcement'}
-                </Button>
-              )}
-            </div>
+            <Button size="lg" onClick={() => openCreatePost()}>
+              Create New Post
+            </Button>
           </CardContent>
         </Card>
 
-        {homeAnnouncement && (
-          <>
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-2xl font-bold text-page-heading-text">Announcement</h2>
-            </div>
-            <Card className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark">
-              <CardHeader>
-                <div className="flex items-center gap-3 min-w-0">
-                  {homeAnnouncement.updated_by_profile ? (
-                    <div className="flex items-center gap-3 min-w-0">
-                      <UserAvatar user={homeAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-card-header-text truncate">
-                          {homeAnnouncement.updated_by_profile.full_name}
-                        </p>
-                        <p className="text-xs text-card-subtext">Updated {formatRelativeTime(homeAnnouncement.updated_at)}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-card-subtext">Updated {formatRelativeTime(homeAnnouncement.updated_at)}</p>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <h2 className="text-xl font-bold text-card-header-text mb-2">
-                  {homeAnnouncement.title}
-                </h2>
-                <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                  {homeAnnouncement.content}
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        <HomeAnnouncementSection
+          initialAnnouncement={initialHomeAnnouncement}
+          profileId={profile?.id}
+          isAdmin={profile?.role === 'Admin'}
+          isAgreementOpen={agreementState.isOpen}
+        />
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-page-heading-text">Home Feed</h2>
-          </div>
+          <h2 className="text-2xl font-bold text-page-heading-text">Home Feed</h2>
 
           {postsState && postsState.length > 0 ? (
             postsState.map((post: FeedPost) => (
@@ -245,22 +162,14 @@ export default function DashboardClient({
                     onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === profile?.id && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
                   />
                 </CardHeader>
-
                 <CardContent className="space-y-3 pb-0">
-                  <h3 className="text-xl font-bold text-card-header-text">
-                    {post.title}
-                  </h3>
+                  <h3 className="text-xl font-bold text-card-header-text">{post.title}</h3>
                   <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {post.content.length > 300
-                      ? `${post.content.substring(0, 300)}...`
-                      : post.content
-                    }
+                    {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
                   </p>
-
                   {post.images && post.images.length > 0 && (
                     <PostImageGrid images={post.images} postTitle={post.title} maxImages={3} />
                   )}
-
                   <div className="flex items-center justify-between space-x-4 py-4 border-t">
                     <div className="flex items-center space-x-4">
                       <PostLikeButton
@@ -274,8 +183,6 @@ export default function DashboardClient({
                         commentCount={post.comment_count || 0}
                         onOpenPost={() => setActivePostId(post.id)}
                       />
-                      <span className="text-sm text-card-subtext">
-                      </span>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => setActivePostId(post.id)}>
                       View Full Post
@@ -290,9 +197,7 @@ export default function DashboardClient({
                 <p className="text-muted-foreground mb-4">
                   No posts yet. Be the first to share something with the community!
                 </p>
-                <Button onClick={() => openCreatePost()}>
-                  Create First Post
-                </Button>
+                <Button onClick={() => openCreatePost()}>Create First Post</Button>
               </CardContent>
             </Card>
           )}
@@ -340,50 +245,6 @@ export default function DashboardClient({
         />
       )}
 
-      <ChannelAnnouncementModal
-        isOpen={homeAnnouncementEditorOpen}
-        channelSlug="home"
-        initialAnnouncement={homeAnnouncement}
-        onClose={() => setHomeAnnouncementEditorOpen(false)}
-        onSaved={(announcement) => {
-          markHomeAnnouncementSeen(announcement.updated_at)
-          setHomeAnnouncement(announcement)
-          setHomeAnnouncementPopupOpen(false)
-        }}
-      />
-
-      <Modal
-        isOpen={homeAnnouncementPopupOpen}
-        onClose={dismissHomeAnnouncementPopup}
-        title="Home Announcement"
-        headerExtra={homeAnnouncement?.updated_by_profile ? (
-          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1">
-            <UserAvatar user={homeAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
-            <div className="min-w-0">
-              <p className="text-xs font-medium text-card-header-text truncate leading-tight">
-                {homeAnnouncement.updated_by_profile.full_name}
-              </p>
-              <p className="text-[11px] text-card-subtext leading-tight">Updated {formatRelativeTime(homeAnnouncement.updated_at)}</p>
-            </div>
-          </div>
-        ) : (
-          <span className="text-[11px] text-card-subtext leading-tight">Updated {formatRelativeTime(homeAnnouncement?.updated_at || '')}</span>
-        )}
-        size="md"
-      >
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-card-header-text">
-            {homeAnnouncement?.title}
-          </h2>
-          <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-            {homeAnnouncement?.content}
-          </p>
-          <div className="flex justify-end">
-            <Button onClick={dismissHomeAnnouncementPopup}>Close</Button>
-          </div>
-        </div>
-      </Modal>
-
       <PostDetailModal
         isOpen={!!activePostId}
         postId={activePostId}
@@ -394,44 +255,10 @@ export default function DashboardClient({
         onPostCommentChange={handlePostCommentChange}
       />
 
-      {(() => {
-        const previewPost = postsState.find(p => p.id === previewEditPostId)
-        return (
-          <Modal
-            isOpen={!!previewEditPostId}
-            onClose={() => setPreviewEditPostId(null)}
-            title="Your Pending Edit"
-            size="md"
-          >
-            {previewPost?.pending_edit ? (
-              <div className="space-y-6 p-6">
-                <p className="text-sm text-muted-foreground">
-                  This edit is currently under admin review. The changes below will go live if approved.
-                </p>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Title</p>
-                    <p className="font-semibold text-card-header-text">{previewPost.pending_edit.proposed_title}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Proposed Content</p>
-                    <p className="text-sm text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                      {previewPost.pending_edit.proposed_content}
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-2 border-t">
-                  <p className="text-xs text-muted-foreground">
-                    <span className="font-medium">Current post</span> remains visible to other users until this edit is approved.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="p-6 text-sm text-muted-foreground">No pending edit data available.</p>
-            )}
-          </Modal>
-        )
-      })()}
+      <PendingEditPreviewModal
+        post={previewPost}
+        onClose={() => setPreviewEditPostId(null)}
+      />
 
       <ToastContainer />
     </>
