@@ -1,28 +1,32 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
+import AnnouncementCard from '@/components/AnnouncementCard'
 import ChannelAnnouncementModal from '@/components/ChannelAnnouncementModal'
 import UserAvatar from '@/components/UserAvatar'
 import { formatRelativeTime } from '@/lib/utils'
 import type { ChannelAnnouncement } from '@/lib/types'
 
 interface HomeAnnouncementSectionProps {
-  initialAnnouncement: ChannelAnnouncement | null
+  announcement: ChannelAnnouncement | null
+  onAnnouncementChange: (a: ChannelAnnouncement | null) => void
   profileId: string | undefined
   isAdmin: boolean
   isAgreementOpen: boolean
+  /** Increment to imperatively open the popup (e.g. from a toast "View" button) */
+  popupTrigger?: number
 }
 
 export default function HomeAnnouncementSection({
-  initialAnnouncement,
+  announcement,
+  onAnnouncementChange,
   profileId,
   isAdmin,
   isAgreementOpen,
+  popupTrigger = 0,
 }: HomeAnnouncementSectionProps) {
-  const [announcement, setAnnouncement] = useState<ChannelAnnouncement | null>(initialAnnouncement)
   const [editorOpen, setEditorOpen] = useState(false)
   const [popupOpen, setPopupOpen] = useState(false)
 
@@ -32,12 +36,11 @@ export default function HomeAnnouncementSection({
   }
 
   const dismiss = () => {
-    if (announcement?.updated_at) {
-      markSeen(announcement.updated_at)
-    }
+    if (announcement?.updated_at) markSeen(announcement.updated_at)
     setPopupOpen(false)
   }
 
+  // Show popup on load/update if the user hasn't seen this version yet
   useEffect(() => {
     if (isAgreementOpen || !announcement?.updated_at || !profileId || typeof window === 'undefined') {
       setPopupOpen(false)
@@ -48,6 +51,11 @@ export default function HomeAnnouncementSection({
       setPopupOpen(true)
     }
   }, [announcement?.updated_at, isAgreementOpen, profileId])
+
+  // External trigger: open popup on demand (e.g. from toast "View" button)
+  useEffect(() => {
+    if (popupTrigger > 0) setPopupOpen(true)
+  }, [popupTrigger])
 
   return (
     <>
@@ -64,31 +72,12 @@ export default function HomeAnnouncementSection({
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-2xl font-bold text-page-heading-text">Announcement</h2>
           </div>
-          <Card className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark">
-            <CardHeader>
-              <div className="flex items-center gap-3 min-w-0">
-                {announcement.updated_by_profile ? (
-                  <div className="flex items-center gap-3 min-w-0">
-                    <UserAvatar user={announcement.updated_by_profile} size="sm" linkToProfile={false} />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-card-header-text truncate">
-                        {announcement.updated_by_profile.full_name}
-                      </p>
-                      <p className="text-xs text-card-subtext">Updated {formatRelativeTime(announcement.updated_at)}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-card-subtext">Updated {formatRelativeTime(announcement.updated_at)}</p>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <h2 className="text-xl font-bold text-card-header-text mb-2">{announcement.title}</h2>
-              <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                {announcement.content}
-              </p>
-            </CardContent>
-          </Card>
+          <AnnouncementCard
+            announcement={announcement}
+            isAdmin={isAdmin}
+            onEditClick={() => setEditorOpen(true)}
+            onExpire={() => onAnnouncementChange(null)}
+          />
         </>
       )}
 
@@ -99,7 +88,11 @@ export default function HomeAnnouncementSection({
         onClose={() => setEditorOpen(false)}
         onSaved={(saved) => {
           markSeen(saved.updated_at)
-          setAnnouncement(saved)
+          onAnnouncementChange(saved)
+          setPopupOpen(false)
+        }}
+        onDeleted={() => {
+          onAnnouncementChange(null)
           setPopupOpen(false)
         }}
       />
@@ -115,14 +108,14 @@ export default function HomeAnnouncementSection({
               <p className="text-xs font-medium text-card-header-text truncate leading-tight">
                 {announcement.updated_by_profile.full_name}
               </p>
-              <p className="text-[11px] text-card-subtext leading-tight">
+              <p className="text-[11px] text-card-subtext leading-tight" suppressHydrationWarning>
                 Updated {formatRelativeTime(announcement.updated_at)}
               </p>
             </div>
           </div>
         ) : (
-          <span className="text-[11px] text-card-subtext leading-tight">
-            Updated {formatRelativeTime(announcement?.updated_at || '')}
+          <span className="text-[11px] text-card-subtext leading-tight" suppressHydrationWarning>
+            {announcement?.updated_at ? `Updated ${formatRelativeTime(announcement.updated_at)}` : ''}
           </span>
         )}
         size="md"
@@ -132,6 +125,11 @@ export default function HomeAnnouncementSection({
           <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
             {announcement?.content}
           </p>
+          {isAdmin && announcement?.expires_at && (
+            <p className="text-xs text-amber-600 dark:text-amber-400" suppressHydrationWarning>
+              Expires {formatRelativeTime(announcement.expires_at)}
+            </p>
+          )}
           <div className="flex justify-end">
             <Button onClick={dismiss}>Close</Button>
           </div>

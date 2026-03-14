@@ -10,11 +10,25 @@ const ANNOUNCEMENT_SELECT = `
   channel_id,
   title,
   content,
+  expires_at,
   updated_by,
   created_at,
   updated_at,
   updated_by_profile:profiles!channel_announcements_updated_by_fkey(id, full_name, avatar_url, role)
 `
+
+function normalizeRow(row: AnnouncementSelectRow): ChannelAnnouncement {
+  return {
+    ...row,
+    updated_by_profile: Array.isArray(row.updated_by_profile)
+      ? (row.updated_by_profile[0] ?? null)
+      : (row.updated_by_profile ?? null),
+  }
+}
+
+function isExpired(announcement: ChannelAnnouncement): boolean {
+  return !!announcement.expires_at && new Date(announcement.expires_at) < new Date()
+}
 
 export async function getChannelAnnouncementByChannelId(
   supabase: SupabaseClient,
@@ -31,7 +45,10 @@ export async function getChannelAnnouncementByChannelId(
     return null
   }
 
-  return data || null
+  if (!data) return null
+
+  const normalized = normalizeRow(data)
+  return isExpired(normalized) ? null : normalized
 }
 
 export async function upsertChannelAnnouncement(
@@ -41,9 +58,10 @@ export async function upsertChannelAnnouncement(
     title: string
     content: string
     updatedBy: string
+    expiresAt?: string | null
   }
 ): Promise<{ data: ChannelAnnouncement | null; error: string | null }> {
-  const { channelId, title, content, updatedBy } = params
+  const { channelId, title, content, updatedBy, expiresAt } = params
 
   const { data, error } = await supabase
     .from('channel_announcements')
@@ -53,6 +71,7 @@ export async function upsertChannelAnnouncement(
         title: title.trim(),
         content: content.trim(),
         updated_by: updatedBy,
+        expires_at: expiresAt ?? null,
       },
       { onConflict: 'channel_id' }
     )
@@ -64,5 +83,22 @@ export async function upsertChannelAnnouncement(
     return { data: null, error: 'Failed to save channel announcement' }
   }
 
-  return { data, error: null }
+  return { data: normalizeRow(data), error: null }
+}
+
+export async function deleteChannelAnnouncement(
+  supabase: SupabaseClient,
+  channelId: string
+): Promise<{ error: string | null }> {
+  const { error } = await supabase
+    .from('channel_announcements')
+    .delete()
+    .eq('channel_id', channelId)
+
+  if (error) {
+    console.error('Error deleting channel announcement:', error)
+    return { error: 'Failed to remove channel announcement' }
+  }
+
+  return { error: null }
 }

@@ -8,9 +8,10 @@ const POSTS_PAGE_SIZE = 10
 type UseChannelFeedStateArgs = {
   rawSlug: string
   canonicalSlug: string
+  onRealtimeAnnouncement?: (a: ChannelAnnouncement) => void
 }
 
-export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedStateArgs) {
+export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnouncement }: UseChannelFeedStateArgs) {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
 
@@ -132,6 +133,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
         channel_id,
         title,
         content,
+        expires_at,
         updated_by,
         created_at,
         updated_at,
@@ -146,16 +148,22 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
       return
     }
 
-    const normalizedAnnouncement = data
-      ? {
-          ...data,
-          updated_by_profile: Array.isArray(data.updated_by_profile)
-            ? data.updated_by_profile[0] || null
-            : data.updated_by_profile || null,
-        }
-      : null
+    if (!data) {
+      setChannelAnnouncement(null)
+      return
+    }
 
-    setChannelAnnouncement(normalizedAnnouncement)
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      setChannelAnnouncement(null)
+      return
+    }
+
+    setChannelAnnouncement({
+      ...data,
+      updated_by_profile: Array.isArray(data.updated_by_profile)
+        ? data.updated_by_profile[0] || null
+        : data.updated_by_profile || null,
+    })
   }, [supabase])
 
   const prefetchNextPage = useCallback(async (channelId: string, userId: string, offset: number) => {
@@ -425,6 +433,72 @@ export function useChannelFeedState({ rawSlug, canonicalSlug }: UseChannelFeedSt
             }
             return [feedPost, ...prev]
           })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      void supabase.removeChannel(subscription)
+    }
+  }, [channel?.id, supabase])
+
+  // Keep a stable ref to the callback so it never invalidates the subscription effect
+  const onRealtimeAnnouncementRef = useRef(onRealtimeAnnouncement)
+  onRealtimeAnnouncementRef.current = onRealtimeAnnouncement
+
+  // Supabase Realtime: live announcement updates for this channel
+  useEffect(() => {
+    if (!channel?.id) return
+
+    const channelId = channel.id
+    const subscription = supabase
+      .channel(`channel-${channelId}-announcement`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'channel_announcements',
+          filter: `channel_id=eq.${channelId}`,
+        },
+        async (payload) => {
+          if (payload.eventType === 'DELETE') {
+            setChannelAnnouncement(null)
+            return
+          }
+
+          const { data } = await supabase
+            .from('channel_announcements')
+            .select(`
+              id,
+              channel_id,
+              title,
+              content,
+              expires_at,
+              updated_by,
+              created_at,
+              updated_at,
+              updated_by_profile:profiles!channel_announcements_updated_by_fkey(id, full_name, avatar_url, role)
+            `)
+            .eq('id', (payload.new as { id: string }).id)
+            .maybeSingle()
+
+          if (!data) return
+          if (data.expires_at && new Date(data.expires_at) < new Date()) return
+
+          const normalized: ChannelAnnouncement = {
+            ...data,
+            updated_by_profile: Array.isArray(data.updated_by_profile)
+              ? data.updated_by_profile[0] ?? null
+              : (data.updated_by_profile as ChannelAnnouncement['updated_by_profile']) ?? null,
+          }
+
+          // Pre-mark as seen so the popup useEffect is suppressed — toast handles the notification
+          if (typeof window !== 'undefined' && data.updated_at) {
+            localStorage.setItem(`channel-announcement-seen:${channelId}`, data.updated_at)
+          }
+          setChannelAnnouncement(normalized)
+          onRealtimeAnnouncementRef.current?.(normalized)
         }
       )
       .subscribe()

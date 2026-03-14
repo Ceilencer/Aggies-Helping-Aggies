@@ -88,6 +88,7 @@ export interface ChannelAnnouncement {
   updated_by?: string | null
   created_at: string
   updated_at: string
+  expires_at?: string | null
   updated_by_profile?: Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'> | null
 }
 

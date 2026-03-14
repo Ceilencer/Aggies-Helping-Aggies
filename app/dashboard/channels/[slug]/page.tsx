@@ -15,6 +15,7 @@ import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
 import UserProfileModal from '@/components/UserProfileModal'
 import ChannelAnnouncementModal from '@/components/ChannelAnnouncementModal'
+import AnnouncementCard from '@/components/AnnouncementCard'
 import UserAvatar from '@/components/UserAvatar'
 import { useChannelFeedState } from '@/lib/hooks/useChannelFeedState'
 import { formatRelativeTime } from '@/lib/utils'
@@ -121,13 +122,25 @@ export default function ChannelPage() {
     loadMoreTriggerRef,
     pendingNewPostsCount,
     flushPendingPosts,
-  } = useChannelFeedState({ rawSlug, canonicalSlug })
+  } = useChannelFeedState({
+    rawSlug,
+    canonicalSlug,
+    onRealtimeAnnouncement: (a) => {
+      showToast({
+        message: `📢 ${a.title}`,
+        type: 'info',
+        duration: 8000,
+        action: { label: 'View', onClick: () => setAnnouncementPopupTrigger(t => t + 1) },
+      })
+    },
+  })
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [announcementEditorOpen, setAnnouncementEditorOpen] = useState(false)
   const [announcementPopupOpen, setAnnouncementPopupOpen] = useState(false)
+  const [announcementPopupTrigger, setAnnouncementPopupTrigger] = useState(0)
   const [previewEditPostId, setPreviewEditPostId] = useState<string | null>(null)
   const { showToast, ToastContainer } = useToast()
 
@@ -157,6 +170,10 @@ export default function ChannelPage() {
       setAnnouncementPopupOpen(true)
     }
   }, [channel?.id, channelAnnouncement?.updated_at])
+
+  useEffect(() => {
+    if (announcementPopupTrigger > 0) setAnnouncementPopupOpen(true)
+  }, [announcementPopupTrigger])
 
   const dismissAnnouncementPopup = () => {
     if (channelAnnouncement?.updated_at) {
@@ -219,33 +236,12 @@ export default function ChannelPage() {
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-2xl font-bold text-page-heading-text">Announcement</h2>
           </div>
-          <Card className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark">
-            <CardHeader>
-              <div className="flex items-center gap-3 min-w-0">
-                {channelAnnouncement.updated_by_profile ? (
-                  <div className="flex items-center gap-3 min-w-0">
-                    <UserAvatar user={channelAnnouncement.updated_by_profile} size="sm" linkToProfile={false} />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-card-header-text truncate">
-                        {channelAnnouncement.updated_by_profile.full_name}
-                      </p>
-                      <p className="text-xs text-card-subtext">Updated {formatRelativeTime(channelAnnouncement.updated_at)}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-xs text-card-subtext">Updated {formatRelativeTime(channelAnnouncement.updated_at)}</p>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <h2 className="text-xl font-bold text-card-header-text mb-2">
-                {channelAnnouncement.title}
-              </h2>
-              <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                {channelAnnouncement.content}
-              </p>
-            </CardContent>
-          </Card>
+          <AnnouncementCard
+            announcement={channelAnnouncement}
+            isAdmin={currentUserRole === 'Admin'}
+            onEditClick={() => setAnnouncementEditorOpen(true)}
+            onExpire={() => setChannelAnnouncement(null)}
+          />
         </>
       )}
 
@@ -429,6 +425,10 @@ export default function ChannelPage() {
         onSaved={(announcement) => {
           markAnnouncementSeen(announcement.updated_at)
           setChannelAnnouncement(announcement)
+          setAnnouncementPopupOpen(false)
+        }}
+        onDeleted={() => {
+          setChannelAnnouncement(null)
           setAnnouncementPopupOpen(false)
         }}
       />

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,10 +19,51 @@ import HomeAnnouncementSection from '@/components/HomeAnnouncementSection'
 import PendingEditPreviewModal from '@/components/PendingEditPreviewModal'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
 import { useHomeFeedState, type ChannelSection } from '@/lib/hooks/useHomeFeedState'
+import { useAnnouncementRealtime } from '@/lib/hooks/useAnnouncementRealtime'
 import { useModalState } from '@/lib/hooks/useModalState'
 import { getInitials } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
 import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
+
+function ChannelAnnouncementBanner({
+  announcement,
+  onExpire,
+}: {
+  announcement: ChannelAnnouncement
+  onExpire: () => void
+}) {
+  const onExpireRef = useRef(onExpire)
+  onExpireRef.current = onExpire
+
+  const [hidden, setHidden] = useState(() =>
+    !!announcement.expires_at && new Date(announcement.expires_at) < new Date()
+  )
+
+  useEffect(() => {
+    if (!announcement.expires_at) return
+    const msLeft = new Date(announcement.expires_at).getTime() - Date.now()
+    if (msLeft <= 0) { setHidden(true); onExpireRef.current(); return }
+    const timer = setTimeout(() => { setHidden(true); onExpireRef.current() }, msLeft)
+    return () => clearTimeout(timer)
+  }, [announcement.expires_at])
+
+  if (hidden) return null
+
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900 dark:bg-amber-950/30">
+      <span className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400">📢</span>
+      <div className="min-w-0">
+        <span className="font-medium text-card-header-text">{announcement.title}</span>
+        {announcement.content.length > 80 && (
+          <span className="text-card-subtext"> — {announcement.content.slice(0, 80)}…</span>
+        )}
+        {announcement.content.length <= 80 && announcement.content && (
+          <span className="text-card-subtext"> — {announcement.content}</span>
+        )}
+      </div>
+    </div>
+  )
+}
 
 interface DashboardClientProps {
   profile: Profile | null
@@ -43,6 +85,7 @@ export default function DashboardClient({
     handlePostLikeChange,
     handlePostUpdated,
     handlePostCommentChange,
+    handleChannelAnnouncementChange,
   } = useHomeFeedState({ profile, channelSections, allChannels })
 
   const {
@@ -56,6 +99,29 @@ export default function DashboardClient({
 
   const { showToast, ToastContainer } = useToast()
   const agreementState = useFirstTimeAgreement(profile)
+
+  // Lifted home announcement state (kept here so Realtime can update it)
+  const [homeAnnouncement, setHomeAnnouncement] = useState(initialHomeAnnouncement)
+  const [homePopupTrigger, setHomePopupTrigger] = useState(0)
+
+  const homeChannel = useMemo(() => allChannels.find(c => c.slug === 'home'), [allChannels])
+  const trackedChannelIds = useMemo(() => sections.map(s => s.channel.id), [sections])
+
+  useAnnouncementRealtime({
+    homeChannelId: homeChannel?.id,
+    trackedChannelIds,
+    profileId: profile?.id,
+    onHomeAnnouncementChange: setHomeAnnouncement,
+    onChannelAnnouncementChange: handleChannelAnnouncementChange,
+    onNewHomeAnnouncement: (a) => {
+      showToast({
+        message: `📢 ${a.title}`,
+        type: 'info',
+        duration: 8000,
+        action: { label: 'View', onClick: () => setHomePopupTrigger(t => t + 1) },
+      })
+    },
+  })
 
   const onPostUpdated = (updatedPost: Post) => {
     handlePostUpdated(updatedPost)
@@ -118,15 +184,17 @@ export default function DashboardClient({
         </Card>
 
         <HomeAnnouncementSection
-          initialAnnouncement={initialHomeAnnouncement}
+          announcement={homeAnnouncement}
+          onAnnouncementChange={setHomeAnnouncement}
           profileId={profile?.id}
           isAdmin={profile?.role === 'Admin'}
           isAgreementOpen={agreementState.isOpen}
+          popupTrigger={homePopupTrigger}
         />
 
         <div className="space-y-10">
           {sections.length > 0 ? (
-            sections.map(({ channel, posts }) => (
+            sections.map(({ channel, posts, announcement }) => (
               <div key={channel.id} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-page-heading-text flex items-center gap-2">
@@ -140,6 +208,13 @@ export default function DashboardClient({
                     See all →
                   </Link>
                 </div>
+
+                {announcement && (
+                  <ChannelAnnouncementBanner
+                    announcement={announcement}
+                    onExpire={() => handleChannelAnnouncementChange(channel.id, null)}
+                  />
+                )}
 
                 <div className="space-y-4">
                   {posts.map((post: FeedPost) => (

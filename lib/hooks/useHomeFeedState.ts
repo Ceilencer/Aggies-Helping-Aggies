@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react'
-import type { Channel, FeedPost, Post, Profile } from '@/lib/types'
+import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
 
 export type ChannelSection = {
   channel: Channel
   posts: FeedPost[]
+  announcement: ChannelAnnouncement | null
 }
 
 type UseHomeFeedStateArgs = {
@@ -97,6 +98,16 @@ export function useHomeFeedState({
     )
   }, [])
 
+  const handleChannelAnnouncementChange = useCallback((channelId: string, announcement: ChannelAnnouncement | null) => {
+    setSections(current =>
+      current.map(section =>
+        section.channel.id === channelId
+          ? { ...section, announcement }
+          : section
+      )
+    )
+  }, [])
+
   return {
     sections,
     handlePostCreated,
@@ -104,5 +115,6 @@ export function useHomeFeedState({
     handlePostLikeChange,
     handlePostUpdated,
     handlePostCommentChange,
+    handleChannelAnnouncementChange,
   }
 }

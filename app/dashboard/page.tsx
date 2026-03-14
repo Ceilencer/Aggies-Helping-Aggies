@@ -6,6 +6,7 @@ import {
   getCachedAllChannels,
   getCachedPostsByChannel,
 } from '@/lib/supabase/cached-queries'
+import { getChannelAnnouncementByChannelId } from '@/lib/supabase/channel-announcements'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
 import type { ChannelAnnouncement, FeedPost } from '@/lib/types'
 
@@ -47,10 +48,13 @@ export default async function DashboardPage() {
     allChannels.filter((channel) => channel.slug !== 'home')
   )
 
-  // --- WAVE 3: Fetch posts per channel + home announcement in parallel ---
-  const [channelPostsResults, announcementResult] = await Promise.all([
+  // --- WAVE 3: Fetch posts per channel + channel announcements + home announcement in parallel ---
+  const [channelPostsResults, channelAnnouncementResults, announcementResult] = await Promise.all([
     Promise.all(
       displayChannels.map((channel) => getCachedPostsByChannel(channel.id, supabase, SECTION_POSTS_LIMIT))
+    ),
+    Promise.all(
+      displayChannels.map((channel) => getChannelAnnouncementByChannelId(supabase, channel.id))
     ),
     homeChannel?.id
       ? supabase
@@ -60,6 +64,7 @@ export default async function DashboardPage() {
             channel_id,
             title,
             content,
+            expires_at,
             updated_by,
             created_at,
             updated_at,
@@ -113,18 +118,23 @@ export default async function DashboardPage() {
     .map((channel, i) => ({
       channel,
       posts: channelPostsResults[i].map(enrichPost),
+      announcement: channelAnnouncementResults[i],
     }))
-    .filter((section) => section.posts.length > 0)
+    .filter((section) => section.posts.length > 0 || section.announcement !== null)
 
   // --- Home announcement ---
   let initialHomeAnnouncement: ChannelAnnouncement | null = null
 
   if (announcementResult.data) {
-    initialHomeAnnouncement = {
-      ...announcementResult.data,
-      updated_by_profile: Array.isArray((announcementResult.data as { updated_by_profile?: unknown }).updated_by_profile)
-        ? ((announcementResult.data as { updated_by_profile?: any[] }).updated_by_profile?.[0] || null)
-        : ((announcementResult.data as { updated_by_profile?: any }).updated_by_profile || null),
+    const expiresAt = (announcementResult.data as { expires_at?: string | null }).expires_at
+    const isExpired = !!expiresAt && new Date(expiresAt) < new Date()
+    if (!isExpired) {
+      initialHomeAnnouncement = {
+        ...announcementResult.data,
+        updated_by_profile: Array.isArray((announcementResult.data as { updated_by_profile?: unknown }).updated_by_profile)
+          ? ((announcementResult.data as { updated_by_profile?: any[] }).updated_by_profile?.[0] || null)
+          : ((announcementResult.data as { updated_by_profile?: any }).updated_by_profile || null),
+      }
     }
   }
 

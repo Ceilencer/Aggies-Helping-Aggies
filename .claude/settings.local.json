@@ -9,7 +9,9 @@
       "Read(//c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/**)",
       "Bash(done)",
       "Bash(grep -n \"channel\\\\|home\\\\|Home\\\\|Channel\\\\|slug\" c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/dashboard/channels/[slug]/page.tsx)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -n \"UserAvatar\\\\|formatRelativeTime\" c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/dashboard/channels/[slug]/page.tsx)",
+      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/lib/supabase -type f -name *.sql)"
     ]
   }
 }

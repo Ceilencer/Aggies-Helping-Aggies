@@ -9,14 +9,16 @@ export interface ToastProps {
   duration?: number
   onClose?: () => void
   positionClassName?: string
+  action?: { label: string; onClick: () => void }
 }
 
-export const Toast: React.FC<ToastProps> = ({ 
-  message, 
-  type = "info", 
+export const Toast: React.FC<ToastProps> = ({
+  message,
+  type = "info",
   duration = 3000,
   onClose,
   positionClassName,
+  action,
 }) => {
   React.useEffect(() => {
     if (duration > 0) {
@@ -41,7 +43,15 @@ export const Toast: React.FC<ToastProps> = ({
     )}>
       <div className="flex items-center gap-2">
         <span>{message}</span>
-        <button 
+        {action && (
+          <button
+            onClick={() => { action.onClick(); onClose?.() }}
+            className="ml-1 underline font-semibold hover:opacity-80 text-sm"
+          >
+            {action.label}
+          </button>
+        )}
+        <button
           onClick={onClose}
           className="ml-2 hover:opacity-80"
         >
@@ -76,6 +86,7 @@ export function useToast() {
             type={toast.type}
             duration={toast.duration}
             positionClassName={toast.positionClassName}
+            action={toast.action}
             onClose={() => removeToast(toast.id)}
           />
         ))}

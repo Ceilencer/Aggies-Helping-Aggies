@@ -13,7 +13,9 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatRelativeTime(date: string | Date): string {
   const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' })
-  const diffMs = new Date(date).getTime() - Date.now()
+  const parsed = new Date(date)
+  if (isNaN(parsed.getTime())) return ''
+  const diffMs = parsed.getTime() - Date.now()
   const diffSecs = Math.round(diffMs / 1000)
   const abs = Math.abs(diffSecs)
 
