@@ -184,9 +184,18 @@ export default function Home() {
           <p className="mb-2">
             &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built for Aggies by Aggies.
           </p>
-          <p className="text-sm">
+          <p className="text-sm mb-3">
             This is an independent platform and is not officially affiliated with Texas A&M University.
           </p>
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <Link href="/privacy-policy" className="underline hover:opacity-80">
+              Privacy Policy
+            </Link>
+            <span aria-hidden="true">&middot;</span>
+            <Link href="/terms" className="underline hover:opacity-80">
+              Terms and Conditions
+            </Link>
+          </div>
         </div>
       </footer>
     </div>
