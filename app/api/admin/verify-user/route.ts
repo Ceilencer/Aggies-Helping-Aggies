@@ -8,7 +8,8 @@ const AFFILIATION_TO_FLAIR: Record<string, FlairType> = {
   'Student':        'Student',
   'Former Student': 'Former Student',
   'Faculty':        'Faculty',
-  'Parent':         'Parent',
+  'Family Member':  'Family Member',
+  'Aggie Mom':      'Aggie Mom',
   'BCS Local':      'BCS Local',
 }
 
