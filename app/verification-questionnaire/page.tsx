@@ -254,23 +254,30 @@ export default function VerificationQuestionnairePage() {
                     Graduation Year{' '}
                     <span className="text-muted-foreground text-xs">(if applicable)</span>
                   </Label>
-                  <select
+                  <Input
                     id="graduation_year"
                     name="graduation_year"
-                    value={formData.graduation_year ?? 'na'}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        graduation_year: e.target.value === 'na' ? null : Number(e.target.value),
-                      }))
-                    }
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <option value="na">N/A</option>
-                    {Array.from({ length: CURRENT_YEAR + 6 - 1876 + 1 }, (_, i) => CURRENT_YEAR + 6 - i).map((yr) => (
-                      <option key={yr} value={yr}>{yr}</option>
-                    ))}
-                  </select>
+                    type="number"
+                    min={1876}
+                    max={CURRENT_YEAR + 6}
+                    disabled={formData.graduation_year === null}
+                    value={formData.graduation_year ?? ''}
+                    onChange={handleChange}
+                    placeholder="e.g. 2024"
+                  />
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.graduation_year === null}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          graduation_year: e.target.checked ? null : CURRENT_YEAR,
+                        }))
+                      }
+                    />
+                    N/A — not a student or alumni
+                  </label>
                 </div>
 
                 {/* Major */}
