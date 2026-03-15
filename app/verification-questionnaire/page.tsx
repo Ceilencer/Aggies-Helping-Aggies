@@ -112,7 +112,10 @@ export default function VerificationQuestionnairePage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const value = e.target.name === 'graduation_year'
+      ? (e.target.value === '' ? null : Number(e.target.value))
+      : e.target.value
+    setFormData((prev) => ({ ...prev, [e.target.name]: value }))
   }
 
   // ── submit ─────────────────────────────────────────────────────────────────
@@ -276,7 +279,7 @@ export default function VerificationQuestionnairePage() {
                         }))
                       }
                     />
-                    N/A — not a student or alumni
+                    N/A, not a student or former student
                   </label>
                 </div>
 
