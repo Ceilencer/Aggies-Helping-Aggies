@@ -65,33 +65,42 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
       })
     }
 
-    void fetchCounts()
-
-    // Re-fetch whenever an admin action fires this event
     const handleAdminAction = () => void fetchCounts()
-    window.addEventListener('admin-count-changed', handleAdminAction)
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    // Realtime subscription for external changes (new post submissions, new signups, new reports)
-    const channel = supabase
-      .channel(channelNameRef.current)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
-        void fetchCounts()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'verification_requests' }, () => {
-        void fetchCounts()
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
-        void fetchCounts()
-      })
-      .subscribe((status, err) => {
-        if (err) console.error('[admin-count] realtime error:', status, err)
-        else console.log('[admin-count] realtime status:', status)
-      })
+    // In production (no React StrictMode double-mount), the Supabase browser
+    // client may not have loaded its session from cookies yet when the effect
+    // first runs. Awaiting getSession() ensures the JWT is ready before we
+    // query the DB or establish the realtime channel — both of which require
+    // an authenticated connection for RLS to pass.
+    const setup = async () => {
+      await supabase.auth.getSession()
+      if (!mountedRef.current) return
+
+      void fetchCounts()
+
+      window.addEventListener('admin-count-changed', handleAdminAction)
+
+      channel = supabase
+        .channel(channelNameRef.current)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
+          void fetchCounts()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'verification_requests' }, () => {
+          void fetchCounts()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
+          void fetchCounts()
+        })
+        .subscribe()
+    }
+
+    void setup()
 
     return () => {
       mountedRef.current = false
       window.removeEventListener('admin-count-changed', handleAdminAction)
-      void supabase.removeChannel(channel)
+      if (channel) void supabase.removeChannel(channel)
     }
   }, [enabled])
 
