@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -100,7 +101,8 @@ export default function PendingApprovalPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[hsl(var(--background-login))] p-4">
+    <div className="min-h-screen flex flex-col bg-[hsl(var(--background-login))]">
+    <div className="flex-1 flex items-center justify-center p-4">
       <Card className="w-full max-w-md text-center">
         <CardHeader className="space-y-1">
           <div className="mx-auto mb-4 w-16">
@@ -203,6 +205,14 @@ export default function PendingApprovalPage() {
           </Button>
         </CardContent>
       </Card>
+    </div>
+      <footer className="py-4 text-center">
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <Link href="/privacy-policy" className="underline hover:opacity-80">Privacy Policy</Link>
+          <span aria-hidden="true">&middot;</span>
+          <Link href="/terms" className="underline hover:opacity-80">Terms and Conditions</Link>
+        </div>
+      </footer>
     </div>
   )
 }

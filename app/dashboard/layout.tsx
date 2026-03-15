@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import { AdminCountProvider } from '@/components/AdminCountProvider'
+import LegalModal from '@/components/LegalModal'
+import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
+import { PRIVACY_SECTIONS, PRIVACY_EFFECTIVE_DATE } from '@/lib/legal/privacy'
 
 export default async function DashboardLayout({
   children,
@@ -74,9 +77,14 @@ export default async function DashboardLayout({
           <p className="mb-2">
             &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built for Aggies by Aggies.
           </p>
-          <p className="text-sm">
+          <p className="text-sm mb-3">
             This is an independent platform and is not officially affiliated with Texas A&M University.
           </p>
+          <div className="flex items-center justify-center gap-4 text-sm">
+            <LegalModal title="Privacy Policy" effectiveDate={PRIVACY_EFFECTIVE_DATE} sections={PRIVACY_SECTIONS} />
+            <span aria-hidden="true">&middot;</span>
+            <LegalModal title="Terms and Conditions" effectiveDate={TERMS_EFFECTIVE_DATE} sections={TERMS_SECTIONS} />
+          </div>
         </div>
       </footer>
     </div>

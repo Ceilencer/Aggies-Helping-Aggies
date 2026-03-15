@@ -10,8 +10,8 @@ export default function TermsPage() {
     <div className="min-h-screen bg-background py-12 px-4">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8">
-          <Link href="/login" className="text-sm text-primary hover:underline">
-            &larr; Back to login
+          <Link href="https://aggieshelpingaggies.org" className="text-sm text-primary hover:underline">
+            &larr; Back to home
           </Link>
         </div>
 
