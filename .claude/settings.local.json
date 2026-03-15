@@ -24,7 +24,8 @@
       "Bash(find c:UsersCeilencerCapstoneHowdy-Helps-Capstone -type f \\\\\\(-name *flair* -o -name *admin*profile* \\\\\\))",
       "Bash(find . -type f -name *verification* -o -name *onboarding* -o -name *schema*)",
       "Bash(grep -r upsert_profile_on_login /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone --include=*.sql --include=*.ts --include=*.tsx)",
-      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -name *.sql -type f)"
+      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -name *.sql -type f)",
+      "Bash(grep -r \"created_at.*24\\\\|delete.*old\\\\|cleanup.*post\" c:UsersCeilencerCapstoneHowdy-Helps-Capstone --include=*.ts --include=*.tsx)"
     ]
   }
 }

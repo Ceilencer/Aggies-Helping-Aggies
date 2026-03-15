@@ -31,10 +31,26 @@ export default function PostCardHeader({
   onViewPendingEdit,
 }: PostCardHeaderProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
+  const [expiryLabel, setExpiryLabel] = useState<{ text: string; className: string } | null>(null)
   const isAuthor = currentUserId === post.author?.id
 
   useEffect(() => {
     setFormattedDate(new Date(post.created_at).toLocaleDateString())
+
+    const expiresAt = new Date(post.created_at).getTime() + 14 * 24 * 60 * 60 * 1000
+    const msLeft = expiresAt - Date.now()
+    const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24))
+
+    if (daysLeft <= 0) {
+      setExpiryLabel({ text: 'expires today', className: 'text-red-500 dark:text-red-400' })
+    } else if (daysLeft === 1) {
+      setExpiryLabel({ text: 'expires tomorrow', className: 'text-red-500 dark:text-red-400' })
+    } else if (daysLeft <= 3) {
+      setExpiryLabel({ text: `expires in ${daysLeft} days`, className: 'text-amber-500 dark:text-amber-400' })
+    } else {
+      const expireDate = new Date(expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      setExpiryLabel({ text: `expires ${expireDate}`, className: 'text-muted-foreground' })
+    }
   }, [post.created_at])
 
   return (
@@ -64,6 +80,12 @@ export default function PostCardHeader({
             <span>{post.channel?.icon} {post.channel?.name}</span>
             <span>•</span>
             <span>{formattedDate || '—'}</span>
+            {expiryLabel && (
+              <>
+                <span>•</span>
+                <span className={expiryLabel.className}>{expiryLabel.text}</span>
+              </>
+            )}
           </div>
         </div>
       </div>
