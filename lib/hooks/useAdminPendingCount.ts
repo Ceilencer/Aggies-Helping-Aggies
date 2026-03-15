@@ -3,6 +3,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+export interface AdminPendingCounts {
+  total: number
+  pendingPosts: number
+  pendingUsers: number
+  unresolvedReports: number
+}
+
+const DEFAULT_COUNTS: AdminPendingCounts = {
+  total: 0,
+  pendingPosts: 0,
+  pendingUsers: 0,
+  unresolvedReports: 0,
+}
+
 // Dispatch this event anywhere in the app to immediately trigger a badge re-fetch.
 // Use after admin actions (approve, deny, remove) so the badge updates instantly.
 export function notifyAdminCountChanged() {
@@ -11,10 +25,11 @@ export function notifyAdminCountChanged() {
   }
 }
 
-export function useAdminPendingCount(): number {
-  const [count, setCount] = useState(0)
+export function useAdminPendingCount(): AdminPendingCounts {
+  const [counts, setCounts] = useState<AdminPendingCounts>(DEFAULT_COUNTS)
   const supabase = createClient()
   const mountedRef = useRef(true)
+  const channelNameRef = useRef(`admin-pending-count-${Math.random().toString(36).slice(2)}`)
 
   useEffect(() => {
     mountedRef.current = true
@@ -37,11 +52,16 @@ export function useAdminPendingCount(): number {
 
       if (!mountedRef.current) return
 
-      setCount(
-        (postsResult.count ?? 0) +
-        (profilesResult.count ?? 0) +
-        (reportsResult.count ?? 0)
-      )
+      const pendingPosts = postsResult.count ?? 0
+      const pendingUsers = profilesResult.count ?? 0
+      const unresolvedReports = reportsResult.count ?? 0
+
+      setCounts({
+        pendingPosts,
+        pendingUsers,
+        unresolvedReports,
+        total: pendingPosts + pendingUsers + unresolvedReports,
+      })
     }
 
     void fetchCounts()
@@ -52,7 +72,7 @@ export function useAdminPendingCount(): number {
 
     // Realtime subscription for external changes (new post submissions, new signups, new reports)
     const channel = supabase
-      .channel('admin-pending-count')
+      .channel(channelNameRef.current)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
         void fetchCounts()
       })
@@ -71,5 +91,5 @@ export function useAdminPendingCount(): number {
     }
   }, [])
 
-  return count
+  return counts
 }

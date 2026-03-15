@@ -150,12 +150,6 @@ export default function ReportedPostsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Reported Posts & Comments</h1>
-        <Link href="/dashboard/admin" className="text-sm text-primary hover:underline">
-          ← Back to Admin
-        </Link>
-      </div>
 
       {accessDenied && (
         <div className="rounded-md border p-4">

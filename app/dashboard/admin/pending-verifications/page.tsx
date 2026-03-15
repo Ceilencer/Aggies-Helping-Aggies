@@ -268,7 +268,7 @@ export default function PendingVerificationsPage() {
 
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold">Pending Verifications</h2>
+          <h2 className="text-lg font-semibold">Pending New Users</h2>
           <p className="text-sm text-muted-foreground">
             Users who signed up with non-TAMU email addresses and submitted a
             verification questionnaire.

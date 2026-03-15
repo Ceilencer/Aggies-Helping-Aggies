@@ -90,7 +90,7 @@ export default function UserManagementPage() {
 
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">User Management</h1>
+          <h2 className="text-lg font-semibold">User Management</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Manage platform users
           </p>

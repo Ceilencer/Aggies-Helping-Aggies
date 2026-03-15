@@ -1,10 +1,11 @@
 "use client"
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
+import { createClient } from '@/lib/supabase/client'
 import type { AdminPendingPostDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
@@ -21,48 +22,81 @@ export default function AdminDashboardPage() {
   const [hasMore, setHasMore] = useState(false)
   const [accessDenied, setAccessDenied] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [newPostsAvailable, setNewPostsAvailable] = useState(false)
+
+  const loadedPostIdsRef = useRef<Set<string>>(new Set())
+
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true)
+    try {
+      setAccessDenied(false)
+      setLoadError(null)
+      const offset = 0
+      const limit = POSTS_PER_PAGE
+      const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${limit}`, { credentials: 'include' })
+
+      if (res.status === 401 || res.status === 403) {
+        setAccessDenied(true)
+        setPosts([])
+        setTotalCount(0)
+        setHasMore(false)
+        return
+      }
+
+      if (!res.ok) {
+        throw new Error('Failed to load admin posts')
+      }
+
+      const { data, total } = await res.json()
+      const fetched: PostItem[] = data || []
+      setPosts(fetched)
+      setTotalCount(total)
+      setHasMore(fetched.length >= limit)
+      setPage(0)
+      setNewPostsAvailable(false)
+      loadedPostIdsRef.current = new Set(fetched.map((p) => p.id))
+    } catch (e) {
+      console.error(e)
+      setLoadError('Unable to load admin posts right now.')
+    } finally {
+      if (!silent) setLoading(false)
+    }
+  }
 
   useEffect(() => {
     let mounted = true
-    const load = async () => {
-      setLoading(true)
-      try {
-        setAccessDenied(false)
-        setLoadError(null)
-        const offset = 0
-        const limit = POSTS_PER_PAGE
-        const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${limit}`, { credentials: 'include' })
-
-        if (res.status === 401 || res.status === 403) {
-          if (mounted) {
-            setAccessDenied(true)
-            setPosts([])
-            setTotalCount(0)
-            setHasMore(false)
-          }
-          return
-        }
-
-        if (!res.ok) {
-          throw new Error('Failed to load admin posts')
-        }
-
-        const { data, total } = await res.json()
-        if (mounted) {
-          setPosts(data || [])
-          setTotalCount(total)
-          setHasMore((data?.length || 0) >= limit)
-          setPage(0)
-        }
-      } catch (e) {
-        console.error(e)
-        if (mounted) setLoadError('Unable to load admin posts right now.')
-      } finally {
-        if (mounted) setLoading(false)
-      }
+    const run = async () => {
+      await load()
+      if (!mounted) return
     }
-    load()
+    run()
     return () => { mounted = false }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Realtime: watch for new pending posts arriving while admin is on this page
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`admin-new-posts-${Math.random().toString(36).slice(2)}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'posts' },
+        (payload) => {
+          const status = (payload.new as { approval_status?: string }).approval_status
+          const id = (payload.new as { id?: string }).id
+          if (
+            (status === 'pending' || status === 'pending_edit') &&
+            id &&
+            !loadedPostIdsRef.current.has(id)
+          ) {
+            setNewPostsAvailable(true)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { void supabase.removeChannel(channel) }
   }, [])
 
   const loadMore = async () => {
@@ -84,9 +118,11 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error('Failed to load admin posts')
 
       const { data } = await res.json()
-      setPosts((prev) => [...prev, ...(data || [])])
+      const fetched: PostItem[] = data || []
+      setPosts((prev) => [...prev, ...fetched])
       setPage(nextPage)
-      setHasMore((data?.length || 0) >= limit)
+      setHasMore(fetched.length >= limit)
+      fetched.forEach((p) => loadedPostIdsRef.current.add(p.id))
     } catch (e) {
       console.error(e)
     } finally {
@@ -105,6 +141,7 @@ export default function AdminDashboardPage() {
       })
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
+      loadedPostIdsRef.current.delete(id)
       setTotalCount((count) => Math.max(0, count - 1))
       notifyAdminCountChanged()
     } catch (e) {
@@ -125,6 +162,7 @@ export default function AdminDashboardPage() {
       })
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
+      loadedPostIdsRef.current.delete(id)
       setTotalCount((count) => Math.max(0, count - 1))
       notifyAdminCountChanged()
     } catch (e) {
@@ -136,12 +174,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Link href="/dashboard/admin/reported-posts" className="text-sm text-primary hover:underline font-medium">
-          View Reported Posts & Comments →
-        </Link>
-      </div>
 
       {accessDenied && (
         <div className="rounded-md border p-4">
@@ -165,6 +197,16 @@ export default function AdminDashboardPage() {
             Showing {posts.length} of {totalCount}
           </span>
         </div>
+
+        {newPostsAvailable && (
+          <button
+            onClick={() => load()}
+            className="w-full mb-4 rounded-md border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-950/60 transition-colors"
+          >
+            New posts have arrived — click to refresh
+          </button>
+        )}
+
         {accessDenied ? null : loading ? (
           <p className="text-muted-foreground">Loading…</p>
         ) : posts.length === 0 ? (
