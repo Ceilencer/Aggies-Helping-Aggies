@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import Modal from '@/components/Modal'
+import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import type { AdminUserVerificationDTO } from '@/lib/types'
 
 type PendingUser = AdminUserVerificationDTO
@@ -110,6 +111,7 @@ export default function PendingVerificationsPage() {
       setUsers((prev) => prev.filter((u) => u.id !== userId))
       setRejectTarget(null)
       setRejectionReason('')
+      notifyAdminCountChanged()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Action failed')
     } finally {
@@ -133,6 +135,7 @@ export default function PendingVerificationsPage() {
       }
       setUsers((prev) => prev.filter((u) => u.id !== userId))
       setRemoveTarget(null)
+      notifyAdminCountChanged()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Removal failed')
     } finally {

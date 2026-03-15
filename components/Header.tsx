@@ -10,11 +10,11 @@ import {
   Home,
   Megaphone,
   MessageCircle,
-  Shield,
   Ticket,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
+import { AdminShieldLink } from "@/components/AdminShieldLink";
 
 const CHANNELS = [
   {
@@ -147,15 +147,7 @@ export default function Header({
           >
             Donate
           </a>
-          {isAdmin ? (
-            <Link
-              href="/dashboard/admin"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-header-bg text-white transition-colors hover:bg-white/10"
-              aria-label="Admin"
-            >
-              <Shield className="h-5 w-5" />
-            </Link>
-          ) : null}
+          {isAdmin ? <AdminShieldLink /> : null}
           {signOutAction ? (
             <UserMenu
               displayName={displayName}

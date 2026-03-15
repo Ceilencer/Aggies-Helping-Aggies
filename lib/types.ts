@@ -130,6 +130,7 @@ export interface AdminPendingPostDTO {
   id: string
   title: string
   content: string
+  images: string[] | null
   created_at: string
   approval_status: ApprovalStatus
   author: FeedAuthorDTO | null
@@ -141,6 +142,7 @@ export interface AdminPendingPostQueryRowDTO {
   id: string
   title: string
   content: string
+  images: string[] | null
   created_at: string
   approval_status: ApprovalStatus
   author?: FeedAuthorDTO[] | FeedAuthorDTO | null

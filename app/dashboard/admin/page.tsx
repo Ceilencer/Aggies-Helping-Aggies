@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { PostImageGrid } from '@/components/PostImageGrid'
+import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import type { AdminPendingPostDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
@@ -104,6 +106,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
       setTotalCount((count) => Math.max(0, count - 1))
+      notifyAdminCountChanged()
     } catch (e) {
       console.error(e)
     } finally {
@@ -123,6 +126,7 @@ export default function AdminDashboardPage() {
       if (!res.ok) throw new Error('Failed')
       setPosts((p) => p.filter((x) => x.id !== id))
       setTotalCount((count) => Math.max(0, count - 1))
+      notifyAdminCountChanged()
     } catch (e) {
       console.error(e)
     } finally {
@@ -201,11 +205,17 @@ export default function AdminDashboardPage() {
                               <p className="font-medium text-sm">{post.pending_edit.proposed_title}</p>
                               <p className="text-sm text-card-subtext mt-1 line-clamp-3 break-words [overflow-wrap:anywhere]">{post.pending_edit.proposed_content}</p>
                             </div>
+                            {post.images && post.images.length > 0 && (
+                              <PostImageGrid images={post.images} postTitle={post.title} />
+                            )}
                           </div>
                         ) : (
                           <>
                             <h3 className="text-base font-medium mb-1">{post.title}</h3>
                             <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
+                            {post.images && post.images.length > 0 && (
+                              <PostImageGrid images={post.images} postTitle={post.title} />
+                            )}
                           </>
                         )}
                       </div>

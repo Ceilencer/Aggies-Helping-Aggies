@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import type { AdminReportedItemDTO } from '@/lib/types'
 
 type ReportItem = AdminReportedItemDTO
@@ -117,6 +118,7 @@ export default function ReportedPostsPage() {
       }
       setReports((p) => p.filter((x) => x.id !== reportId))
       setTotalCount((count) => Math.max(0, count - 1))
+      notifyAdminCountChanged()
     } catch (e) {
       console.error(e)
       if (e instanceof Error && !e.message.includes('Failed to resolve')) {
