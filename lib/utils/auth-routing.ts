@@ -36,11 +36,10 @@ const PROVIDER_ROUTING: Partial<
   },
 
   // Facebook: always manual – Facebook accounts are not educational-domain-keyed.
-  // Uncomment when Facebook OAuth is enabled.
-  // facebook: (_email: string): AuthRouteDecision => ({
-  //   route: 'verification-questionnaire',
-  //   accountStatus: 'pending_approval',
-  // }),
+  facebook: (_email: string): AuthRouteDecision => ({
+    route: 'verification-questionnaire',
+    accountStatus: 'pending_approval',
+  }),
 }
 
 /** Default fallback: any unrecognised provider is treated as manual verification. */

@@ -46,7 +46,7 @@ export async function GET(request: Request) {
   // Pending/unverified users have no profile row.
   const { data: existingProfile } = await service
     .from('profiles')
-    .select('account_status')
+    .select('account_status, avatar_url')
     .eq('id', data.user.id)
     .maybeSingle()
 
@@ -58,16 +58,18 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/login`)
     }
 
-    // Active returning user — update last_login via RPC and go to dashboard
+    // Active returning user — update last_login via RPC and go to dashboard.
+    // Keep the existing avatar_url so switching providers doesn't overwrite it.
+    const newAvatar = data.user.user_metadata?.avatar_url ||
+                      data.user.user_metadata?.picture ||
+                      null
     await supabase.rpc('upsert_profile_on_login', {
       p_id:             data.user.id,
       p_email:          email,
       p_full_name:      data.user.user_metadata?.full_name ||
                         data.user.user_metadata?.name ||
                         '',
-      p_avatar_url:     data.user.user_metadata?.avatar_url ||
-                        data.user.user_metadata?.picture ||
-                        null,
+      p_avatar_url:     existingProfile?.avatar_url ?? newAvatar,
       p_account_status: 'active' as const,
       p_is_verified:    true,
     })

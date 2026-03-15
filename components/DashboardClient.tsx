@@ -127,7 +127,6 @@ export default function DashboardClient({
 
   useHomePostRealtime({
     trackedChannelIds,
-    currentUserId: profile?.id,
     onPostUpserted: handleRealtimePost,
     onPostDeleted: handlePostDeleted,
   })

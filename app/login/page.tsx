@@ -13,6 +13,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [facebookLoading, setFacebookLoading] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -23,6 +24,29 @@ function LoginForm() {
       setError('This account has been permanently banned after two failed verification attempts.')
     }
   }, [searchParams])
+
+  const handleFacebookSignIn = async () => {
+    setError('')
+    setFacebookLoading(true)
+
+    try {
+      const redirectTo =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/callback?next=/dashboard`
+          : undefined
+
+      const { error: signInError } = await supabase.auth.signInWithOAuth({
+        provider: 'facebook',
+        options: { redirectTo },
+      })
+
+      if (signInError) throw signInError
+    } catch (err: any) {
+      console.error('Facebook sign-in error:', err)
+      setError(err.message || 'Failed to sign in with Facebook')
+      setFacebookLoading(false)
+    }
+  }
 
   const handleGoogleSignIn = async () => {
     setError('')
@@ -73,9 +97,9 @@ function LoginForm() {
             Howdy Ags!
           </CardTitle>
           <CardDescription>
-            Sign in with Google to join the community. TAMU accounts
-            (@tamu.edu) get instant access; other accounts will be
-            reviewed by our team.
+            Sign in to join the community. TAMU accounts (@tamu.edu)
+            get instant access; all other accounts will be reviewed
+            by our team.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -89,8 +113,21 @@ function LoginForm() {
             <Button
               type="button"
               className="w-full"
+              style={{ backgroundColor: '#1877F2', color: '#fff' }}
+              onClick={handleFacebookSignIn}
+              disabled={facebookLoading || loading}
+            >
+              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.885v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+              </svg>
+              {facebookLoading ? 'Signing in...' : 'Sign in with Facebook'}
+            </Button>
+
+            <Button
+              type="button"
+              className="w-full"
               onClick={handleGoogleSignIn}
-              disabled={loading}
+              disabled={loading || facebookLoading}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                 <path

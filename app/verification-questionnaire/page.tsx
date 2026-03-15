@@ -31,6 +31,9 @@ export default function VerificationQuestionnairePage() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [priorRejectionReason, setPriorRejectionReason] = useState<string | null>(null)
+  const [duplicateAccountWarning, setDuplicateAccountWarning] = useState(false)
+
+  const [showAlreadyHaveAccount, setShowAlreadyHaveAccount] = useState(false)
 
   const [formData, setFormData] = useState<{
     full_name: string
@@ -75,13 +78,30 @@ export default function VerificationQuestionnairePage() {
       // If a profile exists and is active, the user was already approved
       const { data: profile } = await supabase
         .from('profiles')
-        .select('account_status')
+        .select('id, account_status')
         .eq('id', user.id)
         .maybeSingle()
 
       if (profile?.account_status === 'active') {
         router.replace('/dashboard')
         return
+      }
+
+      // Duplicate account check: if a *different* active profile shares this email,
+      // the user likely has an existing account via another provider (e.g. Google).
+      const userEmail = (user.email ?? '').toLowerCase().trim()
+      if (userEmail) {
+        const { data: emailMatch } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .eq('account_status', 'active')
+          .neq('id', user.id)
+          .maybeSingle()
+
+        if (emailMatch) {
+          setDuplicateAccountWarning(true)
+        }
       }
 
       // If a VR already exists, the user already submitted — send to hold page
@@ -201,6 +221,18 @@ export default function VerificationQuestionnairePage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
+                {duplicateAccountWarning && (
+                  <div className="rounded-md bg-blue-500/10 border border-blue-500/30 p-4 text-sm space-y-1">
+                    <p className="font-semibold text-blue-700 dark:text-blue-400">Existing account detected</p>
+                    <p className="text-muted-foreground">
+                      We found an active account with this email address. Did you previously sign in with Google?
+                      If so, please{' '}
+                      <a href="/login" className="underline hover:text-foreground">sign in with Google instead</a>
+                      {' '}to access your existing account.
+                    </p>
+                  </div>
+                )}
+
                 {priorRejectionReason && (
                   <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-4 text-sm space-y-1">
                     <p className="font-semibold text-amber-700 dark:text-amber-400">Your previous application was not approved</p>
@@ -346,6 +378,35 @@ export default function VerificationQuestionnairePage() {
                 >
                   {loading ? 'Submitting…' : 'Submit for Review'}
                 </Button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground underline hover:text-foreground"
+                    onClick={() => setShowAlreadyHaveAccount((v) => !v)}
+                  >
+                    Already have an account?
+                  </button>
+                  {showAlreadyHaveAccount && (
+                    <div className="rounded-md bg-muted border border-border p-4 text-sm space-y-2 text-left mt-2">
+                      <p className="font-semibold">Reached this page by mistake?</p>
+                      <p className="text-muted-foreground">
+                        If you already have an account, you may have signed in with a different
+                        method than usual. Try signing out and signing back in with a different method.
+                      </p>
+                      <button
+                        type="button"
+                        className="text-xs underline hover:text-foreground text-muted-foreground"
+                        onClick={async () => {
+                          await supabase.auth.signOut()
+                          window.location.href = '/login'
+                        }}
+                      >
+                        Sign out and try another way →
+                      </button>
+                    </div>
+                  )}
+                </div>
               </form>
             )}
           </CardContent>

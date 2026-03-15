@@ -27,6 +27,7 @@ export default function PendingVerificationsPage() {
   const [rejectTarget, setRejectTarget] = useState<PendingUser | null>(null)
   const [rejectionReasons, setRejectionReasons] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [duplicateEmails, setDuplicateEmails] = useState<Set<string>>(new Set())
 
   const loadUsers = async () => {
     setLoading(true)
@@ -69,6 +70,20 @@ export default function PendingVerificationsPage() {
       }))
 
       setUsers(mapped)
+
+      // Check for duplicate accounts: flag any verification email that already
+      // has an active profile (e.g. user has both a Google and Facebook account)
+      const emails = mapped.map((u) => u.email).filter(Boolean)
+      if (emails.length > 0) {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('email')
+          .in('email', emails)
+          .eq('account_status', 'active')
+        if (existing && existing.length > 0) {
+          setDuplicateEmails(new Set(existing.map((p: { email: string }) => p.email)))
+        }
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -215,6 +230,11 @@ if (accessDenied) {
             {users.map((u) => (
               <Card key={u.id}>
                 <CardHeader className="pb-2">
+                  {duplicateEmails.has(u.email) && (
+                    <div className="rounded-md bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 mb-2">
+                      ⚠ This email already has an active account — possible duplicate
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <CardTitle className="text-base">{u.full_name}</CardTitle>
