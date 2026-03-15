@@ -106,11 +106,11 @@ export default function PostCardHeader({
           </Button>
         )}
 
-        {isAdmin && (
+        {currentUserId && !isAuthor && (
           <PostAdminMenu
             postId={post.id}
             postChannelId={post.channel_id}
-            isAdmin={true}
+            isAdmin={isAdmin}
             channels={channels}
             onPostDeleted={onPostDeleted}
           />

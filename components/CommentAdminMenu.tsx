@@ -39,10 +39,6 @@ export default function CommentAdminMenu({
     }
   }, [isOpen])
 
-  if (!isAdmin) {
-    return null
-  }
-
   const handleDeleteComment = async () => {
     if (!window.confirm('Are you sure you want to delete this comment?')) {
       return

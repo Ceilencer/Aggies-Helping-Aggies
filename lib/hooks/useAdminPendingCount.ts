@@ -25,13 +25,14 @@ export function notifyAdminCountChanged() {
   }
 }
 
-export function useAdminPendingCount(): AdminPendingCounts {
+export function useAdminPendingCount(enabled = true): AdminPendingCounts {
   const [counts, setCounts] = useState<AdminPendingCounts>(DEFAULT_COUNTS)
   const supabase = createClient()
   const mountedRef = useRef(true)
   const channelNameRef = useRef(`admin-pending-count-${Math.random().toString(36).slice(2)}`)
 
   useEffect(() => {
+    if (!enabled) return
     mountedRef.current = true
 
     const fetchCounts = async () => {
@@ -89,7 +90,7 @@ export function useAdminPendingCount(): AdminPendingCounts {
       window.removeEventListener('admin-count-changed', handleAdminAction)
       void supabase.removeChannel(channel)
     }
-  }, [])
+  }, [enabled])
 
   return counts
 }

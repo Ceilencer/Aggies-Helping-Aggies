@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
+import { AdminCountProvider } from '@/components/AdminCountProvider'
 
 export default async function DashboardLayout({
   children,
@@ -32,13 +33,16 @@ export default async function DashboardLayout({
     redirect('/')
   }
 
+  const isAdmin = profile?.role === 'Admin'
+
   return (
+    <AdminCountProvider isAdmin={isAdmin}>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
       <Header
         displayName={displayName}
         avatarUrl={profile?.avatar_url ?? null}
-        isAdmin={profile?.role === 'Admin'}
+        isAdmin={isAdmin}
         signOutAction={handleSignOut}
       />
 
@@ -59,5 +63,6 @@ export default async function DashboardLayout({
         </div>
       </footer>
     </div>
+    </AdminCountProvider>
   )
 }

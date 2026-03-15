@@ -2,10 +2,10 @@
 
 import Link from 'next/link'
 import { Shield } from 'lucide-react'
-import { useAdminPendingCount } from '@/lib/hooks/useAdminPendingCount'
+import { useAdminCounts } from '@/components/AdminCountProvider'
 
 export function AdminShieldLink() {
-  const { total } = useAdminPendingCount()
+  const { total } = useAdminCounts()
 
   return (
     <Link

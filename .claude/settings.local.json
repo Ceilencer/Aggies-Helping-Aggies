@@ -14,7 +14,8 @@
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/lib/supabase -type f -name *.sql)",
       "WebSearch",
       "Bash(grep -r \"RealtimeChannel\\\\|subscribe\\\\|\\\\.on\\(\" /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app --include=*.tsx --include=*.ts)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

@@ -47,20 +47,6 @@ export default function PostAdminMenu({
     }
   }, [isOpen])
 
-  if (!isAdmin && !isOpen) {
-    return (
-      <div ref={menuRef} className="relative">
-        <ReportModal
-          isOpen={isReportModalOpen}
-          onClose={() => setIsReportModalOpen(false)}
-          itemType="post"
-          itemId={postId}
-          onReportSubmitted={onReported}
-        />
-      </div>
-    )
-  }
-
   const handleDeletePost = async () => {
     if (!window.confirm('Are you sure you want to delete this post?')) {
       return

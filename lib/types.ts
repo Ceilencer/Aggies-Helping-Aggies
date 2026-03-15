@@ -180,6 +180,26 @@ export interface AdminReportedItemDTO {
   comments?: { id: string; content?: string; post_id: string; author_id: string; profiles?: { id: string; full_name?: string } | null } | null
 }
 
+export interface AdminReportSummaryDTO {
+  id: string
+  reason: string
+  description?: string | null
+  created_at: string
+  reporter: { id: string; full_name?: string } | null
+}
+
+export interface AdminReportedGroupDTO {
+  content_type: 'post' | 'comment'
+  content_id: string
+  report_count: number
+  latest_report_at: string
+  is_resolved: boolean
+  resolution_action?: string | null
+  post: { id: string; title?: string; content?: string; profiles?: { id: string; full_name?: string } | null } | null
+  comment: { id: string; content?: string; profiles?: { id: string; full_name?: string } | null } | null
+  reports: AdminReportSummaryDTO[]
+}
+
 export interface FeedPostQueryRowDTO {
   id: string
   channel_id: string

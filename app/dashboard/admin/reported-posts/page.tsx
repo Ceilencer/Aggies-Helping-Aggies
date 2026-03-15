@@ -4,14 +4,12 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
-import type { AdminReportedItemDTO } from '@/lib/types'
+import type { AdminReportedGroupDTO } from '@/lib/types'
 
-type ReportItem = AdminReportedItemDTO
-
-const REPORTS_PER_PAGE = 15
+const GROUPS_PER_PAGE = 15
 
 export default function ReportedPostsPage() {
-  const [reports, setReports] = useState<ReportItem[]>([])
+  const [groups, setGroups] = useState<AdminReportedGroupDTO[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [actioning, setActioning] = useState<string | null>(null)
@@ -22,6 +20,7 @@ export default function ReportedPostsPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [filter, setFilter] = useState('unresolved')
   const [typeFilter, setTypeFilter] = useState('')
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     let mounted = true
@@ -30,34 +29,29 @@ export default function ReportedPostsPage() {
       try {
         setAccessDenied(false)
         setLoadError(null)
-        const offset = 0
-        const limit = REPORTS_PER_PAGE
-        let url = `/api/admin/reported-posts?offset=${offset}&limit=${limit}&filter=${filter}`
-        if (typeFilter) {
-          url += `&type=${typeFilter}`
-        }
+        let url = `/api/admin/reported-posts?offset=0&limit=${GROUPS_PER_PAGE}&filter=${filter}`
+        if (typeFilter) url += `&type=${typeFilter}`
         const res = await fetch(url, { credentials: 'include' })
 
         if (res.status === 401 || res.status === 403) {
           if (mounted) {
             setAccessDenied(true)
-            setReports([])
+            setGroups([])
             setTotalCount(0)
             setHasMore(false)
           }
           return
         }
 
-        if (!res.ok) {
-          throw new Error('Failed to load reported posts')
-        }
+        if (!res.ok) throw new Error('Failed to load reported posts')
 
         const { data, total } = await res.json()
         if (mounted) {
-          setReports(data || [])
+          setGroups(data || [])
           setTotalCount(total)
-          setHasMore((data?.length || 0) >= limit)
+          setHasMore((data?.length || 0) >= GROUPS_PER_PAGE)
           setPage(0)
+          setExpanded(new Set())
         }
       } catch (e) {
         console.error(e)
@@ -72,16 +66,11 @@ export default function ReportedPostsPage() {
 
   const loadMore = async () => {
     if (accessDenied) return
-
     setLoadingMore(true)
     try {
       const nextPage = page + 1
-      const offset = nextPage * REPORTS_PER_PAGE
-      const limit = REPORTS_PER_PAGE
-      let url = `/api/admin/reported-posts?offset=${offset}&limit=${limit}&filter=${filter}`
-      if (typeFilter) {
-        url += `&type=${typeFilter}`
-      }
+      let url = `/api/admin/reported-posts?offset=${nextPage * GROUPS_PER_PAGE}&limit=${GROUPS_PER_PAGE}&filter=${filter}`
+      if (typeFilter) url += `&type=${typeFilter}`
       const res = await fetch(url, { credentials: 'include' })
 
       if (res.status === 401 || res.status === 403) {
@@ -90,12 +79,12 @@ export default function ReportedPostsPage() {
         return
       }
 
-      if (!res.ok) throw new Error('Failed to load reported posts')
+      if (!res.ok) throw new Error('Failed to load')
 
       const { data } = await res.json()
-      setReports((prev) => [...prev, ...(data || [])])
+      setGroups((prev) => [...prev, ...(data || [])])
       setPage(nextPage)
-      setHasMore((data?.length || 0) >= limit)
+      setHasMore((data?.length || 0) >= GROUPS_PER_PAGE)
     } catch (e) {
       console.error(e)
     } finally {
@@ -103,49 +92,44 @@ export default function ReportedPostsPage() {
     }
   }
 
-  const resolveReport = async (reportId: string, action: 'delete' | 'dismiss') => {
-    setActioning(reportId)
+  const resolveGroup = async (group: AdminReportedGroupDTO, action: 'delete' | 'dismiss') => {
+    const key = `${group.content_type}:${group.content_id}`
+    setActioning(key)
     try {
       const res = await fetch(`/api/admin/reported-posts`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reportId, action }),
+        body: JSON.stringify({
+          contentType: group.content_type,
+          contentId: group.content_id,
+          action,
+        }),
       })
       if (!res.ok) {
         const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to resolve report')
+        throw new Error(errorData.error || 'Failed to resolve')
       }
-      setReports((p) => p.filter((x) => x.id !== reportId))
-      setTotalCount((count) => Math.max(0, count - 1))
+      setGroups((prev) => prev.filter(
+        (g) => !(g.content_type === group.content_type && g.content_id === group.content_id)
+      ))
+      setTotalCount((c) => Math.max(0, c - 1))
       notifyAdminCountChanged()
     } catch (e) {
       console.error(e)
-      if (e instanceof Error && !e.message.includes('Failed to resolve')) {
-        alert(e.message)
-      }
+      if (e instanceof Error) alert(e.message)
     } finally {
       setActioning(null)
     }
   }
 
-  const getItemPreview = (report: ReportItem) => {
-    if (report.report_type === 'post' && report.posts) {
-      return {
-        type: 'Post',
-        title: report.posts.title,
-        content: report.posts.content,
-        author: report.posts.profiles?.full_name,
-      }
-    } else if (report.report_type === 'comment' && report.comments) {
-      return {
-        type: 'Comment',
-        title: undefined,
-        content: report.comments.content,
-        author: report.comments.profiles?.full_name,
-      }
-    }
-    return { type: 'Unknown', title: undefined, content: '', author: 'Unknown' }
+  const toggleExpanded = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   return (
@@ -153,9 +137,7 @@ export default function ReportedPostsPage() {
 
       {accessDenied && (
         <div className="rounded-md border p-4">
-          <p className="text-sm text-muted-foreground">
-            You no longer have admin access.
-          </p>
+          <p className="text-sm text-muted-foreground">You no longer have admin access.</p>
           <Link href="/dashboard" className="text-sm font-medium text-primary hover:underline">
             Return to dashboard
           </Link>
@@ -166,10 +148,9 @@ export default function ReportedPostsPage() {
         <p className="text-sm text-red-600">{loadError}</p>
       )}
 
-      {/* Filters */}
       {!accessDenied && (
         <div className="flex gap-4 flex-wrap">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <label className="text-sm font-medium">Status:</label>
             <select
               value={filter}
@@ -181,7 +162,7 @@ export default function ReportedPostsPage() {
               <option value="all">All</option>
             </select>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <label className="text-sm font-medium">Type:</label>
             <select
               value={typeFilter}
@@ -202,76 +183,110 @@ export default function ReportedPostsPage() {
             {filter === 'unresolved' ? 'Unresolved' : filter === 'resolved' ? 'Resolved' : 'All'} Reports
           </h2>
           <span className="text-sm text-muted-foreground">
-            Showing {reports.length} of {totalCount}
+            Showing {groups.length} of {totalCount}
           </span>
         </div>
+
         {accessDenied ? null : loading ? (
           <p className="text-muted-foreground">Loading…</p>
-        ) : reports.length === 0 ? (
-          <p className="text-muted-foreground">No {filter === 'unresolved' ? 'unresolved ' : filter === 'resolved' ? 'resolved ' : ''}reports.</p>
+        ) : groups.length === 0 ? (
+          <p className="text-muted-foreground">
+            No {filter === 'unresolved' ? 'unresolved ' : filter === 'resolved' ? 'resolved ' : ''}reports.
+          </p>
         ) : (
           <>
             <ul className="space-y-4">
-              {reports.map((report) => {
-                const item = getItemPreview(report)
+              {groups.map((group) => {
+                const key = `${group.content_type}:${group.content_id}`
+                const isExpanded = expanded.has(key)
+                const actioning_key = actioning === key
+
+                const contentLabel = group.content_type === 'post' ? 'Post' : 'Comment'
+                const title = group.post?.title
+                const content = group.post?.content ?? group.comment?.content ?? ''
+                const author = group.post?.profiles?.full_name ?? group.comment?.profiles?.full_name ?? 'Unknown'
+
                 return (
-                  <li key={report.id} className="rounded-md border p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-                            {item.type}
+                  <li key={key} className="rounded-md border p-4 space-y-3">
+                    {/* Header row */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                            {contentLabel}
                           </span>
-                          {report.is_resolved && (
-                            <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
-                              ✓ {report.resolution_action
-                                ? report.resolution_action.charAt(0).toUpperCase() + report.resolution_action.slice(1)
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200">
+                            {group.report_count} {group.report_count === 1 ? 'report' : 'reports'}
+                          </span>
+                          {group.is_resolved && (
+                            <span className="inline-block px-2 py-0.5 text-xs font-semibold rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                              ✓ {group.resolution_action
+                                ? group.resolution_action.charAt(0).toUpperCase() + group.resolution_action.slice(1)
                                 : 'Resolved'}
                             </span>
                           )}
                         </div>
-                        <div className="mb-2">
-                          {item.title && (
-                            <h3 className="text-lg font-medium mb-1">{item.title}</h3>
-                          )}
-                          <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">
-                            {item.content}
-                          </p>
-                        </div>
-                        <div className="text-xs text-muted-foreground space-y-1">
-                          <p><strong>Author:</strong> {item.author}</p>
-                          <p><strong>Reason:</strong> {report.reason}</p>
-                          {report.description && (
-                            <p><strong>Details:</strong> {report.description}</p>
-                          )}
-                          <p><strong>Reported:</strong> {new Date(report.created_at).toLocaleString()}</p>
-                        </div>
+
+                        {title && <p className="text-sm font-medium">{title}</p>}
+                        <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">
+                          {content}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong>Author:</strong> {author} &nbsp;·&nbsp;
+                          <strong>Last reported:</strong> {new Date(group.latest_report_at).toLocaleString()}
+                        </p>
                       </div>
-                      {!report.is_resolved && (
-                        <div className="ml-4 flex-shrink-0 flex gap-2">
+
+                      {!group.is_resolved && (
+                        <div className="flex-shrink-0 flex flex-col gap-2">
                           <button
-                            className="rounded bg-red-600 px-3 py-1 text-white disabled:opacity-50 hover:bg-red-700"
-                            onClick={() => resolveReport(report.id, 'delete')}
-                            disabled={actioning === report.id}
-                            title="Delete the reported item"
+                            className="rounded bg-red-600 px-3 py-1 text-sm text-white disabled:opacity-50 hover:bg-red-700"
+                            onClick={() => resolveGroup(group, 'delete')}
+                            disabled={actioning_key}
+                            title="Delete the reported content"
                           >
                             Delete
                           </button>
                           <button
-                            className="rounded bg-gray-600 px-3 py-1 text-white disabled:opacity-50 hover:bg-gray-700"
-                            onClick={() => resolveReport(report.id, 'dismiss')}
-                            disabled={actioning === report.id}
-                            title="Dismiss the report"
+                            className="rounded bg-gray-600 px-3 py-1 text-sm text-white disabled:opacity-50 hover:bg-gray-700"
+                            onClick={() => resolveGroup(group, 'dismiss')}
+                            disabled={actioning_key}
+                            title="Dismiss all reports"
                           >
                             Dismiss
                           </button>
                         </div>
                       )}
                     </div>
+
+                    {/* Collapsible report list */}
+                    <div>
+                      <button
+                        onClick={() => toggleExpanded(key)}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {isExpanded ? 'Hide' : 'Show'} {group.report_count === 1 ? 'report detail' : `all ${group.report_count} reports`}
+                      </button>
+
+                      {isExpanded && (
+                        <ul className="mt-2 space-y-2">
+                          {group.reports.map((r) => (
+                            <li key={r.id} className="rounded border border-border bg-muted/30 px-3 py-2 text-xs space-y-0.5">
+                              <p><strong>Reason:</strong> {r.reason}</p>
+                              {r.description && <p><strong>Details:</strong> {r.description}</p>}
+                              <p className="text-muted-foreground">
+                                Reported by {r.reporter?.full_name ?? 'Unknown'} · {new Date(r.created_at).toLocaleString()}
+                              </p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </li>
                 )
               })}
             </ul>
+
             {hasMore && (
               <div className="mt-6 text-center">
                 <button

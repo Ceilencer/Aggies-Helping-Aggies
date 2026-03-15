@@ -3,11 +3,11 @@
 import { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAdminPendingCount } from '@/lib/hooks/useAdminPendingCount'
+import { useAdminCounts } from '@/components/AdminCountProvider'
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const { pendingPosts, pendingUsers, unresolvedReports } = useAdminPendingCount()
+  const { pendingPosts, pendingUsers, unresolvedReports } = useAdminCounts()
 
   const navItems = [
     { href: '/dashboard/admin', label: 'Pending Posts', count: pendingPosts },
