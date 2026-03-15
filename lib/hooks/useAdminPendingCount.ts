@@ -83,7 +83,10 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
         void fetchCounts()
       })
-      .subscribe()
+      .subscribe((status, err) => {
+        if (err) console.error('[admin-count] realtime error:', status, err)
+        else console.log('[admin-count] realtime status:', status)
+      })
 
     return () => {
       mountedRef.current = false
