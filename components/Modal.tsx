@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { X } from 'lucide-react'
 
 interface ModalProps {
   isOpen: boolean
@@ -58,10 +59,10 @@ export default function Modal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full bg-background/80 px-3 py-1 text-xl leading-none text-foreground shadow hover:bg-background"
+          className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 text-foreground shadow hover:bg-muted"
           aria-label="Close dialog"
         >
-          x
+          <X className="h-4 w-4" />
         </button>
         {title && (
           <div className="border-b border-border px-6 py-4">

@@ -30,11 +30,11 @@ export default function Home() {
       </header>
 
       {/* Hero Content */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <h1 className="mb-6 text-5xl font-bold text-page-heading-text">
+      <section className="container mx-auto px-4 py-12 sm:py-20 text-center">
+        <h1 className="mb-6 text-3xl sm:text-4xl lg:text-5xl font-bold text-page-heading-text">
           Support. Connect. Share.
         </h1>
-        <p className="mx-auto mb-8 max-w-2xl text-xl text-page-subtext">
+        <p className="mx-auto mb-8 max-w-2xl text-lg sm:text-xl text-page-subtext">
           A verified community platform exclusively for Texas A&M University students, 
           former students, and affiliates. Help fund aggie rings, graduation regalia and support the aggie network!
         </p>
@@ -57,7 +57,7 @@ export default function Home() {
 
       {/* Features Section */}
       <section className="container mx-auto px-4 py-16">
-        <h2 className="mb-12 text-center text-3xl font-bold text-page-heading-text">
+        <h2 className="mb-12 text-center text-2xl sm:text-3xl font-bold text-page-heading-text">
           Built for Aggies, by Aggies
         </h2>
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -126,7 +126,7 @@ export default function Home() {
       {/* How It Works */}
       <section className="bg-muted/50 py-16">
         <div className="container mx-auto px-4">
-          <h2 className="mb-12 text-center text-3xl font-bold text-page-heading">
+          <h2 className="mb-12 text-center text-2xl sm:text-3xl font-bold text-page-heading">
             Getting Started is Easy
           </h2>
           <div className="grid gap-8 md:grid-cols-3">
@@ -162,8 +162,8 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <h2 className="mb-6 text-4xl font-bold text-page-heading-text">
+      <section className="container mx-auto px-4 py-12 sm:py-20 text-center">
+        <h2 className="mb-6 text-2xl sm:text-3xl lg:text-4xl font-bold text-page-heading-text">
           Ready to Join the Network?
         </h2>
         <p className="mx-auto mb-8 max-w-2xl text-lg text-page-subtext">

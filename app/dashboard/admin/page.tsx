@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import type { AdminPendingPostDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
@@ -210,20 +211,22 @@ export default function AdminDashboardPage() {
                       </div>
 
                       <div className="flex-shrink-0 flex flex-col gap-2">
-                        <button
-                          className="rounded bg-green-600 px-3 py-1 text-white text-sm disabled:opacity-50 hover:bg-green-700"
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700 text-white"
                           onClick={() => approve(post.id)}
                           disabled={actioning === post.id}
                         >
                           {isEditReview ? 'Apply Edit' : 'Approve'}
-                        </button>
-                        <button
-                          className="rounded bg-red-600 px-3 py-1 text-white text-sm disabled:opacity-50 hover:bg-red-700"
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="bg-red-600 hover:bg-red-700 text-white"
                           onClick={() => deny(post.id)}
                           disabled={actioning === post.id}
                         >
                           {isEditReview ? 'Discard Edit' : 'Deny'}
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </li>
@@ -232,13 +235,9 @@ export default function AdminDashboardPage() {
             </ul>
             {hasMore && (
               <div className="mt-6 text-center">
-                <button
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="rounded bg-blue-600 px-6 py-2 text-white disabled:opacity-50"
-                >
+                <Button onClick={loadMore} disabled={loadingMore} variant="outline">
                   {loadingMore ? 'Loading...' : 'Load More'}
-                </button>
+                </Button>
               </div>
             )}
           </>

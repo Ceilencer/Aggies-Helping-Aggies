@@ -77,7 +77,7 @@ export function UserMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-48 rounded-md border bg-card p-2 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-2 w-48 max-w-[calc(100vw-1rem)] rounded-md border bg-card p-2 shadow-lg">
           <Link
             href="/dashboard/profile"
             className={menuItemClassName}

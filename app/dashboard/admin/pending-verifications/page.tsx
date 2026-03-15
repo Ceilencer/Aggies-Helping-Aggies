@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -24,6 +23,8 @@ export default function PendingVerificationsPage() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [actioning, setActioning] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<PendingUser | null>(null)
+  const [questionnaireTarget, setQuestionnaireTarget] = useState<PendingUser | null>(null)
+  const [removeTarget, setRemoveTarget] = useState<PendingUser | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -116,6 +117,29 @@ export default function PendingVerificationsPage() {
     }
   }
 
+  const handleRemove = async (userId: string) => {
+    setActioning(userId)
+    setError(null)
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+        credentials: 'include',
+      })
+      if (!res.ok) {
+        const errBody = await res.json()
+        throw new Error(errBody.error ?? 'Removal failed')
+      }
+      setUsers((prev) => prev.filter((u) => u.id !== userId))
+      setRemoveTarget(null)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Removal failed')
+    } finally {
+      setActioning(null)
+    }
+  }
+
   if (accessDenied) {
     return (
       <div className="p-6 text-center text-muted-foreground">
@@ -126,6 +150,83 @@ export default function PendingVerificationsPage() {
 
   return (
     <>
+      {/* Remove account confirmation modal */}
+      <Modal
+        isOpen={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        title={`Remove ${removeTarget?.full_name ?? ''}?`}
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            This will permanently delete <span className="font-medium text-foreground">{removeTarget?.email}</span> and
+            their auth account. They never submitted a questionnaire so there is nothing to review.
+            This action cannot be undone.
+          </p>
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setRemoveTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-600 text-white hover:bg-red-700"
+              disabled={actioning === removeTarget?.id}
+              onClick={() => removeTarget && handleRemove(removeTarget.id)}
+            >
+              {actioning === removeTarget?.id ? 'Removing…' : 'Remove Account'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Questionnaire answers modal */}
+      <Modal
+        isOpen={questionnaireTarget !== null}
+        onClose={() => setQuestionnaireTarget(null)}
+        title={`Questionnaire — ${questionnaireTarget?.full_name ?? ''}`}
+        size="md"
+      >
+        <div className="space-y-5">
+          {questionnaireTarget?.verification_request ? (
+            <>
+              <div className="space-y-4">
+                {[
+                  {
+                    question: 'What year did you (or will you) graduate from Texas A&M?',
+                    answer: questionnaireTarget.verification_request.graduation_year?.toString() ?? '—',
+                  },
+                  {
+                    question: 'What was your major at Texas A&M? (enter N/A if not applicable)',
+                    answer: questionnaireTarget.verification_request.major || '—',
+                  },
+                  {
+                    question: 'Describe a memorable Aggie tradition or experience.',
+                    answer: questionnaireTarget.verification_request.memorable_tradition || '—',
+                  },
+                  {
+                    question: 'How are you connected to Texas A&M University?',
+                    answer: questionnaireTarget.verification_request.connection_to_tamu || '—',
+                  },
+                ].map(({ question, answer }) => (
+                  <div key={question} className="rounded-md border border-border bg-muted/30 p-4 space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{question}</p>
+                    <p className="text-sm text-foreground whitespace-pre-wrap break-words">{answer}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Submitted by {questionnaireTarget.full_name} ({questionnaireTarget.email}) on{' '}
+                {new Date(questionnaireTarget.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric',
+                })}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">No questionnaire data available.</p>
+          )}
+        </div>
+      </Modal>
+
       {/* Reject confirmation modal */}
       <Modal
         isOpen={rejectTarget !== null}
@@ -192,62 +293,58 @@ export default function PendingVerificationsPage() {
                     <div>
                       <CardTitle className="text-base">{u.full_name}</CardTitle>
                       <CardDescription>{u.email}</CardDescription>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Submitted{' '}
+                        {new Date(u.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
                     </div>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex flex-wrap gap-2 shrink-0 justify-end">
                       <Button
                         size="sm"
-                        disabled={actioning === u.id}
-                        onClick={() => handleAction(u.id, 'approve')}
+                        variant="outline"
+                        onClick={() => setQuestionnaireTarget(u)}
                       >
-                        {actioning === u.id ? '…' : 'Approve'}
+                        View Questionnaire
                       </Button>
-                      <Button
-                        size="sm"
-                        className="bg-red-600 text-white hover:bg-red-700"
-                        disabled={actioning === u.id}
-                        onClick={() => {
-                          setRejectionReason('')
-                          setRejectTarget(u)
-                        }}
-                      >
-                        Reject
-                      </Button>
+                      {u.verification_request ? (
+                        <>
+                          <Button
+                            size="sm"
+                            disabled={actioning === u.id}
+                            onClick={() => handleAction(u.id, 'approve')}
+                          >
+                            {actioning === u.id ? '…' : 'Approve'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            disabled={actioning === u.id}
+                            onClick={() => {
+                              setRejectionReason('')
+                              setRejectTarget(u)
+                            }}
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
+                          disabled={actioning === u.id}
+                          onClick={() => setRemoveTarget(u)}
+                        >
+                          {actioning === u.id ? 'Removing…' : 'Remove Account'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardHeader>
-
-                {u.verification_request && (
-                  <CardContent className="space-y-2 text-sm">
-                    {u.verification_request.graduation_year && (
-                      <div>
-                        <span className="font-medium">Graduation year: </span>
-                        {u.verification_request.graduation_year}
-                      </div>
-                    )}
-                    {u.verification_request.major && u.verification_request.major !== 'N/A' && (
-                      <div>
-                        <span className="font-medium">Major: </span>
-                        {u.verification_request.major}
-                      </div>
-                    )}
-                    <div>
-                      <span className="font-medium">Favourite tradition: </span>
-                      {u.verification_request.memorable_tradition}
-                    </div>
-                    <div>
-                      <span className="font-medium">Connection to TAMU: </span>
-                      {u.verification_request.connection_to_tamu}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Submitted{' '}
-                      {new Date(u.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </CardContent>
-                )}
               </Card>
             ))}
           </div>

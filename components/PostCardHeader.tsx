@@ -68,23 +68,23 @@ export default function PostCardHeader({
         </div>
       </div>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-start gap-2 flex-wrap justify-end">
         {post.is_pinned && (
-          <span className="text-primary text-sm font-medium">📌 Pinned</span>
+          <span className="text-primary text-sm font-medium shrink-0">📌 Pinned</span>
         )}
-        
+
         {post.approval_status === 'pending' && !isAdmin && (
-          <span className="text-yellow-600 dark:text-yellow-400 text-sm font-medium">⏳ Pending Approval</span>
+          <span className="text-yellow-600 dark:text-yellow-400 text-sm font-medium shrink-0">⏳ Pending Approval</span>
         )}
 
         {post.approval_status === 'pending_edit' && isAuthor && (
-          <div className="flex items-center gap-2">
-            <span className="text-blue-600 dark:text-blue-400 text-sm font-medium">✏️ Edit Pending Review</span>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <span className="text-blue-600 dark:text-blue-400 text-sm font-medium shrink-0">✏️ Edit Pending Review</span>
             {onViewPendingEdit && (
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 text-xs px-2 py-0"
+                className="h-6 text-xs px-2 py-0 shrink-0"
                 onClick={onViewPendingEdit}
               >
                 View Pending Edit
@@ -92,20 +92,20 @@ export default function PostCardHeader({
             )}
           </div>
         )}
-        
+
         {isAuthor && (
           <Button
             variant="ghost"
             size="sm"
             onClick={onEditClick}
             disabled={!onEditClick}
-            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 gap-2 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             title={onEditClick ? 'Edit post' : 'Edit pending admin review'}
           >
             <Edit2 size={18} />
           </Button>
         )}
-        
+
         {isAdmin && (
           <PostAdminMenu
             postId={post.id}
