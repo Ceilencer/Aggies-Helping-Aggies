@@ -77,18 +77,27 @@ export default function PendingVerificationsPage() {
   }
 
   useEffect(() => {
-    void loadUsers()
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    const channel = supabase
-      .channel('pending-verifications')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'verification_requests' },
-        () => { void loadUsers() }
-      )
-      .subscribe()
+    const setup = async () => {
+      await supabase.auth.getSession()
+      void loadUsers()
 
-    return () => { void supabase.removeChannel(channel) }
+      channel = supabase
+        .channel('pending-verifications')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'verification_requests' },
+          () => { void loadUsers() }
+        )
+        .subscribe()
+    }
+
+    void setup()
+
+    return () => {
+      if (channel) void supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleAction = async (userId: string, action: 'approve' | 'reject') => {
