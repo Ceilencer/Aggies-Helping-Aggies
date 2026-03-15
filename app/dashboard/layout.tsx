@@ -24,7 +24,11 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
-  const displayName = profile?.full_name || 'User'
+  if (!profile) {
+    redirect('/pending-approval')
+  }
+
+  const displayName = profile.full_name || 'User'
 
   const handleSignOut = async () => {
     'use server'
