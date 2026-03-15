@@ -39,6 +39,7 @@ export default function VerificationQuestionnairePage() {
   const [pageReady, setPageReady] = useState(false)  // hides form until auth check is done
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [priorRejectionReason, setPriorRejectionReason] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -96,6 +97,13 @@ export default function VerificationQuestionnairePage() {
           router.replace('/pending-approval')
           return
         }
+      }
+
+      // Check for a prior rejection so we can show the reason as a banner
+      const rejectionRes = await fetch('/api/user/rejection-status', { credentials: 'include' })
+      if (rejectionRes.ok) {
+        const { latestReason } = await rejectionRes.json()
+        if (latestReason) setPriorRejectionReason(latestReason)
       }
 
       setPageReady(true)
@@ -205,6 +213,19 @@ export default function VerificationQuestionnairePage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                {priorRejectionReason && (
+                  <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-4 text-sm space-y-1">
+                    <p className="font-semibold text-amber-700 dark:text-amber-400">Your previous application was not approved</p>
+                    {priorRejectionReason.includes(' | ') ? (
+                      <ul className="list-disc pl-4 space-y-1 text-muted-foreground text-left">
+                        {priorRejectionReason.split(' | ').map((r) => <li key={r}>{r}</li>)}
+                      </ul>
+                    ) : (
+                      <p className="text-muted-foreground">Reason: {priorRejectionReason}</p>
+                    )}
+                    <p className="text-muted-foreground pt-1">Please address the reason above in your new submission. This is your final attempt.</p>
+                  </div>
+                )}
                 {/* Full name */}
                 <div className="space-y-1">
                   <Label htmlFor="full_name">Full Name</Label>
@@ -214,7 +235,7 @@ export default function VerificationQuestionnairePage() {
                     required
                     value={formData.full_name}
                     onChange={handleChange}
-                    placeholder="Jane Doe"
+                    placeholder=""
                   />
                 </div>
 
@@ -271,14 +292,14 @@ export default function VerificationQuestionnairePage() {
                     name="major"
                     value={formData.major}
                     onChange={handleChange}
-                    placeholder="Computer Science"
+                    placeholder=""
                   />
                 </div>
 
                 {/* Memorable tradition */}
                 <div className="space-y-1">
                   <Label htmlFor="memorable_tradition">
-                    What is your favourite Texas A&amp;M tradition or memory?
+                    What are your favourite Texas A&amp;M traditions or memories?
                   </Label>
                   <Textarea
                     id="memorable_tradition"
@@ -287,7 +308,7 @@ export default function VerificationQuestionnairePage() {
                     rows={3}
                     value={formData.memorable_tradition}
                     onChange={handleChange}
-                    placeholder="e.g. Midnight Yell Practice, Silver Taps…"
+                    placeholder=""
                   />
                 </div>
 
@@ -303,7 +324,7 @@ export default function VerificationQuestionnairePage() {
                     rows={3}
                     value={formData.connection_to_tamu}
                     onChange={handleChange}
-                    placeholder="I graduated in 2020 and…"
+                    placeholder=""
                   />
                 </div>
 

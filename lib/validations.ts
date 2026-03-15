@@ -194,11 +194,27 @@ export const adminPostReviewSchema = z.object({
   reason: z.string().optional(),
 })
 
-export const verifyUserSchema = z.object({
-  userId: z.string().uuid('Invalid user ID'),
-  action: z.enum(['approve', 'reject']),
-  rejectionReason: z.string().max(500).optional(),
-})
+export const REJECTION_REASONS = [
+  'Questionnaire answers were too vague or incomplete',
+  'Could not verify connection to Texas A&M University',
+  'Answers do not demonstrate sufficient TAMU affiliation',
+  'Does not meet community eligibility requirements',
+  'Suspected spam or automated account',
+  'Duplicate or suspicious account activity',
+] as const
+
+export type RejectionReason = typeof REJECTION_REASONS[number]
+
+export const verifyUserSchema = z
+  .object({
+    userId: z.string().uuid('Invalid user ID'),
+    action: z.enum(['approve', 'reject']),
+    rejectionReasons: z.array(z.enum(REJECTION_REASONS)).optional(),
+  })
+  .refine((data) => data.action !== 'reject' || (data.rejectionReasons && data.rejectionReasons.length > 0), {
+    message: 'At least one rejection reason is required',
+    path: ['rejectionReasons'],
+  })
 
 export const adminRoleUpdateSchema = z.object({
   role: z.enum(['Personal', 'Business', 'Charity', 'Admin'], {

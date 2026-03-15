@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { verifyUserSchema } from '@/lib/validations'
 
 // POST /api/admin/verify-user
-// Body: { userId: string, action: 'approve' | 'reject', rejectionReason?: string }
+// Body: { userId: string, action: 'approve' | 'reject', rejectionReasons?: string[] }
 export async function POST(request: Request) {
   const supabase = await createClient()
 
-  // Verify caller is an admin
+  // Verify caller is an admin (use session client to read own profile)
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
@@ -30,13 +31,17 @@ export async function POST(request: Request) {
     )
   }
 
-  const { userId, action, rejectionReason } = parsed.data
+  const { userId, action, rejectionReasons } = parsed.data
+
+  // Use service client for all operations on OTHER users' data —
+  // the session client is blocked by RLS from writing to profiles it doesn't own.
+  const service = createServiceClient()
 
   const now = new Date().toISOString()
 
   if (action === 'approve') {
-    // 1. Update profile → active + stamp who approved
-    const { error, data: updated } = await supabase
+    // Update profile → active + stamp who approved
+    const { error, data: updated } = await service
       .from('profiles')
       .update({
         account_status: 'active',
@@ -48,57 +53,56 @@ export async function POST(request: Request) {
       .select('id')
 
     if (error) return NextResponse.json({ error: 'Failed to approve user' }, { status: 500 })
-    if (!updated || updated.length === 0) return NextResponse.json({ error: 'User not found or update blocked' }, { status: 403 })
+    if (!updated || updated.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-    // 2. Delete the verification request — ownership moves to profiles
-    await supabase
-      .from('verification_requests')
-      .delete()
-      .eq('user_id', userId)
+    // Delete the verification request
+    await service.from('verification_requests').delete().eq('user_id', userId)
 
     return NextResponse.json({ success: true, action: 'approved' })
   }
 
   // action === 'reject'
 
-  // 1. Snapshot the questionnaire before deleting
-  const { data: vr } = await supabase
-    .from('verification_requests')
-    .select('graduation_year, major, memorable_tradition, connection_to_tamu')
-    .eq('user_id', userId)
-    .single()
-
-  // 2. Fetch rejected user's identity
-  const { data: rejectedProfile } = await supabase
+  // Fetch the rejected user's email (needed for rejection count lookup)
+  const { data: rejectedProfile } = await service
     .from('profiles')
     .select('email, full_name')
     .eq('id', userId)
     .single()
 
-  // 3. Mark profile suspended
-  const { error: suspendError } = await supabase
-    .from('profiles')
-    .update({ account_status: 'suspended' })
-    .eq('id', userId)
+  const rejectedEmail = rejectedProfile?.email ?? ''
 
-  if (suspendError) return NextResponse.json({ error: suspendError.message }, { status: 500 })
+  // Count prior rejections by EMAIL (user_id changes each time they re-register)
+  const { count: priorRejectionCount } = await service
+    .from('rejected_accounts')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', rejectedEmail)
 
-  // 4. Insert into rejected_accounts log
-  await supabase.from('rejected_accounts').insert({
+  const isPermanentBan = (priorRejectionCount ?? 0) >= 1
+
+  // Insert the rejection record BEFORE deleting the user.
+  // The FK user_id → auth.users ON DELETE SET NULL means the record survives
+  // after deletion with user_id = NULL, preserving email + reason + count.
+  const { error: insertError } = await service.from('rejected_accounts').insert({
     user_id: userId,
-    email: rejectedProfile?.email ?? '',
+    email: rejectedEmail,
     full_name: rejectedProfile?.full_name ?? '',
     rejected_by: user.id,
     rejected_at: now,
-    rejection_reason: rejectionReason ?? null,
-    questionnaire: vr ?? null,
+    rejection_reason: rejectionReasons ? rejectionReasons.join(' | ') : null,
   })
 
-  // 5. Delete the verification request
-  await supabase
-    .from('verification_requests')
-    .delete()
-    .eq('user_id', userId)
+  if (insertError) {
+    console.error('❌ rejected_accounts insert failed:', insertError)
+    return NextResponse.json({ error: 'Failed to save rejection record', detail: insertError.message }, { status: 500 })
+  }
 
-  return NextResponse.json({ success: true, action: 'rejected' })
+  // Delete the auth user — this cascades:
+  //   auth.users → profiles (ON DELETE CASCADE)
+  //   profiles → verification_requests (ON DELETE CASCADE)
+  //   rejected_accounts.user_id → SET NULL (record kept)
+  const { error: deleteError } = await service.auth.admin.deleteUser(userId)
+  if (deleteError) return NextResponse.json({ error: 'Failed to remove account' }, { status: 500 })
+
+  return NextResponse.json({ success: true, action: 'rejected', permanent: isPermanentBan })
 }

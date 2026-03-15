@@ -12,6 +12,17 @@ export default function PendingApprovalPage() {
   const supabase = createClient()
   const [email, setEmail] = useState('')
   const [checking, setChecking] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null)
+  const [sessionExpired, setSessionExpired] = useState(false)
+
+  const fetchRejectionStatus = async () => {
+    const res = await fetch('/api/user/rejection-status', { credentials: 'include' })
+    if (!res.ok) return
+    const { rejectionCount, latestReason } = await res.json()
+    if (rejectionCount > 0) {
+      setRejectionReason(latestReason ?? 'No reason provided')
+    }
+  }
 
   useEffect(() => {
     async function loadUser() {
@@ -20,7 +31,6 @@ export default function PendingApprovalPage() {
 
       setEmail(user.email ?? '')
 
-      // If admin approved the account while user is on this page, auto-forward.
       const { data: profile } = await supabase
         .from('profiles')
         .select('account_status')
@@ -29,6 +39,20 @@ export default function PendingApprovalPage() {
 
       if (profile?.account_status === 'active') {
         router.replace('/dashboard')
+        return
+      }
+
+      // Only show rejection status if the user has no active pending VR.
+      // If they just re-submitted, their new VR takes precedence and the
+      // page should show "Verification Pending", not "Application Not Approved".
+      const { data: activeVR } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!activeVR) {
+        await fetchRejectionStatus()
       }
     }
     void loadUser()
@@ -38,7 +62,12 @@ export default function PendingApprovalPage() {
   const handleCheckStatus = async () => {
     setChecking(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.replace('/login'); return }
+    if (!user) {
+      // Account was deleted (rejected) — can't check status without a session.
+      setSessionExpired(true)
+      setChecking(false)
+      return
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -48,9 +77,20 @@ export default function PendingApprovalPage() {
 
     if (profile?.account_status === 'active') {
       router.replace('/dashboard')
-    } else {
-      setChecking(false)
+      return
     }
+
+    const { data: activeVR } = await supabase
+      .from('verification_requests')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!activeVR) {
+      await fetchRejectionStatus()
+    }
+
+    setChecking(false)
   }
 
   const handleSignOut = async () => {
@@ -72,37 +112,86 @@ export default function PendingApprovalPage() {
             />
           </div>
           <CardTitle className="text-2xl font-bold text-page-heading">
-            Verification Pending
+            {rejectionReason ? 'Application Not Approved' : 'Verification Pending'}
           </CardTitle>
           <CardDescription>
-            Thanks for submitting your questionnaire!
+            {rejectionReason
+              ? 'Your application was reviewed and was not approved.'
+              : 'Thanks for submitting your questionnaire!'}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Our team is reviewing your application for{' '}
-            <span className="font-medium text-foreground">{email}</span>.
-            You&apos;ll receive an email once your account has been approved.
-          </p>
-
-          <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground space-y-1">
-            <p className="font-semibold text-foreground">What happens next?</p>
-            <ul className="list-disc list-inside space-y-1 text-left">
-              <li>An admin will review your questionnaire.</li>
-              <li>You&apos;ll be notified by email when approved.</li>
-              <li>Once approved you can access the full platform.</li>
-            </ul>
-          </div>
-
-          <Button
-            onClick={handleCheckStatus}
-            disabled={checking}
-            className="w-full"
-            variant="default"
-          >
-            {checking ? 'Checking…' : 'Check Approval Status'}
-          </Button>
+          {rejectionReason ? (
+            <>
+              <div className="rounded-md bg-red-500/10 border border-red-500/30 p-4 text-sm space-y-2">
+                <p className="font-semibold text-red-700 dark:text-red-400">
+                  Your application was not approved
+                </p>
+                {rejectionReason.includes(' | ') ? (
+                  <ul className="list-disc pl-4 space-y-1 text-muted-foreground text-left">
+                    {rejectionReason.split(' | ').map((r) => (
+                      <li key={r}>{r}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground text-left">
+                    <span className="font-medium text-foreground">Reason:</span> {rejectionReason}
+                  </p>
+                )}
+              </div>
+              <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground space-y-1">
+                <p className="font-semibold text-foreground">What you can do</p>
+                <ul className="list-disc pl-4 space-y-1 text-left">
+                  <li>Sign out and sign back in to submit a new application.</li>
+                  <li>Address the reason above in your new questionnaire.</li>
+                  <li>Note: you have one remaining attempt.</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Our team is reviewing your application for{' '}
+                <span className="font-medium text-foreground">{email}</span>.
+                You&apos;ll receive an email once your account has been approved.
+              </p>
+              <div className="rounded-md bg-muted p-4 text-sm text-muted-foreground space-y-1">
+                <p className="font-semibold text-foreground">What happens next?</p>
+                <ul className="list-disc list-inside space-y-1 text-left">
+                  <li>An admin will review your questionnaire.</li>
+                  <li>You&apos;ll be notified by email when approved.</li>
+                  <li>Once approved you can access the full platform.</li>
+                </ul>
+              </div>
+              {sessionExpired ? (
+                <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-4 text-sm space-y-2">
+                  <p className="font-semibold text-amber-700 dark:text-amber-400">
+                    Your application has been reviewed.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Sign in again to see the outcome and, if eligible, reapply.
+                  </p>
+                  <Button
+                    onClick={handleSignOut}
+                    className="w-full mt-2"
+                    variant="default"
+                  >
+                    Sign In
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={handleCheckStatus}
+                  disabled={checking}
+                  className="w-full"
+                  variant="default"
+                >
+                  {checking ? 'Checking…' : 'Check Approval Status'}
+                </Button>
+              )}
+            </>
+          )}
 
           <Button
             onClick={handleSignOut}

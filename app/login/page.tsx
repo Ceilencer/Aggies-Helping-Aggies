@@ -19,6 +19,8 @@ function LoginForm() {
     const errorParam = searchParams.get('error')
     if (errorParam === 'auth_failed') {
       setError('Authentication failed. Please try again.')
+    } else if (errorParam === 'banned') {
+      setError('This account has been permanently banned after two failed verification attempts.')
     }
   }, [searchParams])
 

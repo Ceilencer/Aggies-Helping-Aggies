@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Card,
   CardDescription,
@@ -12,6 +11,7 @@ import {
 } from '@/components/ui/card'
 import Modal from '@/components/Modal'
 import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
+import { REJECTION_REASONS } from '@/lib/validations'
 import type { AdminUserVerificationDTO } from '@/lib/types'
 
 type PendingUser = AdminUserVerificationDTO
@@ -25,8 +25,7 @@ export default function PendingVerificationsPage() {
   const [actioning, setActioning] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<PendingUser | null>(null)
   const [questionnaireTarget, setQuestionnaireTarget] = useState<PendingUser | null>(null)
-  const [removeTarget, setRemoveTarget] = useState<PendingUser | null>(null)
-  const [rejectionReason, setRejectionReason] = useState('')
+  const [rejectionReasons, setRejectionReasons] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const loadUsers = async () => {
@@ -65,17 +64,18 @@ export default function PendingVerificationsPage() {
 
       if (fetchError) throw fetchError
 
-      // Map rows — keep only the most recent pending verification request
-      const mapped: PendingUser[] = (data ?? []).map((row: any) => {
+      // Map rows — only include users who have submitted a questionnaire
+      const mapped: PendingUser[] = (data ?? []).flatMap((row: any) => {
         const reqs: any[] = row.verification_requests ?? []
         const pending = reqs.find((r) => r.status === 'pending') ?? reqs[0] ?? null
-        return {
+        if (!pending) return []
+        return [{
           id: row.id,
           email: row.email,
           full_name: row.full_name,
           created_at: row.created_at,
           verification_request: pending,
-        }
+        }]
       })
 
       setUsers(mapped)
@@ -98,7 +98,7 @@ export default function PendingVerificationsPage() {
         body: JSON.stringify({
           userId,
           action,
-          rejectionReason: action === 'reject' ? rejectionReason : undefined,
+          rejectionReasons: action === 'reject' ? rejectionReasons : undefined,
         }),
         credentials: 'include',
       })
@@ -110,7 +110,7 @@ export default function PendingVerificationsPage() {
 
       setUsers((prev) => prev.filter((u) => u.id !== userId))
       setRejectTarget(null)
-      setRejectionReason('')
+      setRejectionReasons([])
       notifyAdminCountChanged()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Action failed')
@@ -119,31 +119,7 @@ export default function PendingVerificationsPage() {
     }
   }
 
-  const handleRemove = async (userId: string) => {
-    setActioning(userId)
-    setError(null)
-    try {
-      const res = await fetch('/api/admin/delete-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-        credentials: 'include',
-      })
-      if (!res.ok) {
-        const errBody = await res.json()
-        throw new Error(errBody.error ?? 'Removal failed')
-      }
-      setUsers((prev) => prev.filter((u) => u.id !== userId))
-      setRemoveTarget(null)
-      notifyAdminCountChanged()
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Removal failed')
-    } finally {
-      setActioning(null)
-    }
-  }
-
-  if (accessDenied) {
+if (accessDenied) {
     return (
       <div className="p-6 text-center text-muted-foreground">
         You do not have permission to view this page.
@@ -153,35 +129,6 @@ export default function PendingVerificationsPage() {
 
   return (
     <>
-      {/* Remove account confirmation modal */}
-      <Modal
-        isOpen={removeTarget !== null}
-        onClose={() => setRemoveTarget(null)}
-        title={`Remove ${removeTarget?.full_name ?? ''}?`}
-        size="md"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            This will permanently delete <span className="font-medium text-foreground">{removeTarget?.email}</span> and
-            their auth account. They never submitted a questionnaire so there is nothing to review.
-            This action cannot be undone.
-          </p>
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRemoveTarget(null)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-red-600 text-white hover:bg-red-700"
-              disabled={actioning === removeTarget?.id}
-              onClick={() => removeTarget && handleRemove(removeTarget.id)}
-            >
-              {actioning === removeTarget?.id ? 'Removing…' : 'Remove Account'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
       {/* Questionnaire answers modal */}
       <Modal
         isOpen={questionnaireTarget !== null}
@@ -239,15 +186,27 @@ export default function PendingVerificationsPage() {
       >
         <div className="p-6 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Provide a reason for rejecting this user&apos;s verification
-            request (optional but recommended).
+            Select a reason for rejecting this user&apos;s verification request.
+            They will be able to see this reason and resubmit once. A second
+            rejection is permanent.
           </p>
-          <Textarea
-            placeholder="Reason for rejection…"
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            rows={3}
-          />
+          <div className="space-y-2">
+            {REJECTION_REASONS.map((r) => (
+              <label key={r} className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 shrink-0"
+                  checked={rejectionReasons.includes(r)}
+                  onChange={(e) =>
+                    setRejectionReasons((prev) =>
+                      e.target.checked ? [...prev, r] : prev.filter((x) => x !== r)
+                    )
+                  }
+                />
+                <span className="text-sm">{r}</span>
+              </label>
+            ))}
+          </div>
           {error && (
             <p className="text-sm text-red-500">{error}</p>
           )}
@@ -257,7 +216,7 @@ export default function PendingVerificationsPage() {
             </Button>
             <Button
               className="bg-red-600 text-white hover:bg-red-700"
-              disabled={actioning === rejectTarget?.id}
+              disabled={actioning === rejectTarget?.id || rejectionReasons.length === 0}
               onClick={() => rejectTarget && handleAction(rejectTarget.id, 'reject')}
             >
               {actioning === rejectTarget?.id ? 'Rejecting…' : 'Confirm Reject'}
@@ -305,7 +264,7 @@ export default function PendingVerificationsPage() {
                         })}
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2 shrink-0 justify-end">
+                    <div className="flex flex-wrap gap-2 shrink-0 justify-end items-center">
                       <Button
                         size="sm"
                         variant="outline"
@@ -313,38 +272,24 @@ export default function PendingVerificationsPage() {
                       >
                         View Questionnaire
                       </Button>
-                      {u.verification_request ? (
-                        <>
-                          <Button
-                            size="sm"
-                            disabled={actioning === u.id}
-                            onClick={() => handleAction(u.id, 'approve')}
-                          >
-                            {actioning === u.id ? '…' : 'Approve'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-red-600 text-white hover:bg-red-700"
-                            disabled={actioning === u.id}
-                            onClick={() => {
-                              setRejectionReason('')
-                              setRejectTarget(u)
-                            }}
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
-                          disabled={actioning === u.id}
-                          onClick={() => setRemoveTarget(u)}
-                        >
-                          {actioning === u.id ? 'Removing…' : 'Remove Account'}
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        disabled={actioning === u.id}
+                        onClick={() => handleAction(u.id, 'approve')}
+                      >
+                        {actioning === u.id ? '…' : 'Approve'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-red-600 text-white hover:bg-red-700"
+                        disabled={actioning === u.id}
+                        onClick={() => {
+                          setRejectionReasons([])
+                          setRejectTarget(u)
+                        }}
+                      >
+                        Reject
+                      </Button>
                     </div>
                   </div>
                 </CardHeader>

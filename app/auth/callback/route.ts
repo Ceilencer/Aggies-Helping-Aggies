@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { resolveAuthRoute } from '@/lib/utils/auth-routing'
 
 export async function GET(request: Request) {
@@ -31,16 +32,35 @@ export async function GET(request: Request) {
   // --- Routing decision (modular – see lib/utils/auth-routing.ts) ---
   const decision = resolveAuthRoute(provider, email)
 
-  // --- Upsert the profile via SECURITY DEFINER RPC -------------------------
-  // We call an RPC instead of a direct INSERT/UPDATE because in a Next.js
-  // Route Handler the session cookies from exchangeCodeForSession are written
-  // to the *response*, not back to the request, so auth.uid() is null inside
-  // normal RLS-protected table operations.
-  //
-  // The function returns the *actual* account_status stored after the upsert
-  // (never downgrades: active stays active, admin role is preserved, etc.)
-  // so we can route from a single source of truth without a second DB read.
+  const service = createServiceClient()
+
+  // --- Check if this email is permanently banned BEFORE creating a profile --
+  // Count rejections by email. On 2+ rejections the account is permanently
+  // banned: delete the newly-created auth user and stop here.
+  const { count: rejectionCount } = await service
+    .from('rejected_accounts')
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email)
+
+  if ((rejectionCount ?? 0) >= 2) {
+    await service.auth.admin.deleteUser(data.user.id)
+    return NextResponse.redirect(`${origin}/login?error=banned`)
+  }
+
+  // --- Read the pre-login profile status BEFORE the RPC runs ---------------
+  // The RPC may incorrectly overwrite pending_approval → active for returning
+  // users. Reading first lets us protect users already in pending/suspended
+  // states from being incorrectly upgraded by the upsert.
   // -------------------------------------------------------------------------
+  const { data: existingProfile } = await service
+    .from('profiles')
+    .select('account_status')
+    .eq('id', data.user.id)
+    .maybeSingle()
+
+  const preLoginStatus = existingProfile?.account_status ?? null
+
+  // --- Upsert the profile via SECURITY DEFINER RPC -------------------------
   const { data: rpcResult, error: upsertError } = await supabase.rpc(
     'upsert_profile_on_login',
     {
@@ -60,23 +80,45 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
 
-  const { account_status: finalStatus, is_new_user: isNewUser, has_submitted: hasSubmitted } =
-    rpcResult as { account_status: string; is_new_user: boolean; has_submitted: boolean }
+  // --- Route based on pre-login status for existing users ------------------
+  // Suspended users are permanently banned — send back to login regardless.
+  if (preLoginStatus === 'suspended') {
+    return NextResponse.redirect(`${origin}/login`)
+  }
 
-  // --- Route based on the status the DB actually stored ---
+  // Pending users: check whether they've already submitted a questionnaire.
+  // This correctly handles soft-rejected reapplicants whose verification_request
+  // was deleted — they have pending_approval status but no VR row, so they
+  // must fill in the questionnaire again.
+  if (preLoginStatus === 'pending_approval') {
+    const { data: vr } = await service
+      .from('verification_requests')
+      .select('id')
+      .eq('user_id', data.user.id)
+      .maybeSingle()
+    return NextResponse.redirect(
+      vr
+        ? `${origin}/pending-approval`
+        : `${origin}/verification-questionnaire`
+    )
+  }
+
+  // New user (no pre-existing profile) or already-active user:
+  // read the post-RPC status to decide where to send them.
+  const { data: postRpcProfile } = await service
+    .from('profiles')
+    .select('account_status')
+    .eq('id', data.user.id)
+    .single()
+
+  const finalStatus = postRpcProfile?.account_status ?? 'pending_approval'
+
   if (finalStatus === 'active') {
     return NextResponse.redirect(`${origin}/dashboard`)
   }
   if (finalStatus === 'pending_approval') {
-    // New user with no questionnaire yet → fill it in
-    // Returning user who already submitted → hold page
-    return NextResponse.redirect(
-      isNewUser || !hasSubmitted
-        ? `${origin}/verification-questionnaire`
-        : `${origin}/pending-approval`
-    )
+    return NextResponse.redirect(`${origin}/verification-questionnaire`)
   }
 
-  // suspended or any unexpected status → back to login
   return NextResponse.redirect(`${origin}/login`)
 }

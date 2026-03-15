@@ -43,7 +43,7 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
           .in('approval_status', ['pending', 'pending_edit']),
         supabase
           .from('profiles')
-          .select('*', { count: 'exact', head: true })
+          .select('id, verification_requests!verification_requests_user_id_fkey(id)')
           .eq('account_status', 'pending_approval'),
         supabase
           .from('reports')
@@ -54,7 +54,9 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
       if (!mountedRef.current) return
 
       const pendingPosts = postsResult.count ?? 0
-      const pendingUsers = profilesResult.count ?? 0
+      const pendingUsers = (profilesResult.data ?? []).filter(
+        (p: any) => Array.isArray(p.verification_requests) && p.verification_requests.length > 0
+      ).length
       const unresolvedReports = reportsResult.count ?? 0
 
       setCounts({
@@ -77,7 +79,7 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => {
         void fetchCounts()
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'verification_requests' }, () => {
         void fetchCounts()
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
