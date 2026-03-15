@@ -57,16 +57,11 @@ export function useCreatePostForm({
   }, [])
 
   const loadChannels = async (role: string) => {
-    let query = supabase
+    const { data, error: channelsError } = await supabase
       .from('channels')
       .select('*')
+      .eq('is_read_only', false)
       .order('name')
-
-    if (role !== 'Admin') {
-      query = query.eq('is_read_only', false)
-    }
-
-    const { data, error: channelsError } = await query
 
     if (channelsError) {
       console.error('Error loading channels:', channelsError)
