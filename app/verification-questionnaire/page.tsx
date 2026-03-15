@@ -15,16 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import type { FlairType } from '@/lib/types'
-
-const AFFILIATION_TO_FLAIR: Record<string, FlairType> = {
-  'Student':         'Student',
-  'Former Student':  'Former Student',
-  'Faculty':         'Faculty',
-  'Parent':          'Parent',
-  'BCS Local':       'BCS Local',
-}
-
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -36,14 +26,14 @@ export default function VerificationQuestionnairePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [pageReady, setPageReady] = useState(false)  // hides form until auth check is done
+  const [pageReady, setPageReady] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [priorRejectionReason, setPriorRejectionReason] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
     full_name: '',
-    affiliation: '',          // "Student" | "Faculty" | "Parent" | "BCS Local" | "Other"
+    affiliation: '',
     graduation_year: CURRENT_YEAR,
     major: '',
     memorable_tradition: '',
@@ -68,35 +58,34 @@ export default function VerificationQuestionnairePage() {
         setFormData((prev) => ({ ...prev, full_name: name }))
       }
 
-      // Fast-track domains should never reach this page — send straight to dashboard
+      // TAMU users should never reach this page
       if ((user.email ?? '').toLowerCase().trim().endsWith('@tamu.edu')) {
         router.replace('/dashboard')
         return
       }
 
-      // Check account status to guard against wrong-page navigation
+      // If a profile exists and is active, the user was already approved
       const { data: profile } = await supabase
         .from('profiles')
         .select('account_status')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profile?.account_status === 'active') {
         router.replace('/dashboard')
         return
       }
 
-      // Returning pending user who already submitted – send to the hold page
-      if (profile?.account_status === 'pending_approval') {
-        const { data: existingRequest } = await supabase
-          .from('verification_requests')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-        if (existingRequest) {
-          router.replace('/pending-approval')
-          return
-        }
+      // If a VR already exists, the user already submitted — send to hold page
+      const { data: existingVR } = await supabase
+        .from('verification_requests')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (existingVR) {
+        router.replace('/pending-approval')
+        return
       }
 
       // Check for a prior rejection so we can show the reason as a banner
@@ -140,32 +129,22 @@ export default function VerificationQuestionnairePage() {
         return
       }
 
-      // Save questionnaire response
+      // Save questionnaire response (profile is NOT updated here — created on approval)
       const { error: insertError } = await supabase
         .from('verification_requests')
         .insert({
-          user_id: userId,
-          email: userEmail,
-          full_name: formData.full_name,
-          graduation_year: formData.graduation_year,
-          major: formData.major || 'N/A',
+          user_id:             userId,
+          email:               userEmail,
+          full_name:           formData.full_name,
+          affiliation:         formData.affiliation || null,
+          graduation_year:     formData.graduation_year,
+          major:               formData.major || 'N/A',
           memorable_tradition: formData.memorable_tradition,
-          connection_to_tamu: formData.connection_to_tamu,
-          status: 'pending',
+          connection_to_tamu:  formData.connection_to_tamu,
+          status:              'pending',
         })
 
       if (insertError) throw insertError
-
-      // Ensure profile name, flair, and status are up-to-date
-      const flairUpdate = AFFILIATION_TO_FLAIR[formData.affiliation]
-      await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name,
-          account_status: 'pending_approval',
-          ...(flairUpdate ? { flair: flairUpdate } : {}),
-        })
-        .eq('id', userId)
 
       setSubmitted(true)
       setTimeout(() => router.replace('/pending-approval'), 1500)
@@ -178,8 +157,6 @@ export default function VerificationQuestionnairePage() {
   }
 
   // ── render ─────────────────────────────────────────────────────────────────
-  // Don't render anything until the auth/profile check completes —
-  // prevents a flash of the form for @tamu.edu fast-track users.
   if (!pageReady) return null
 
   return (

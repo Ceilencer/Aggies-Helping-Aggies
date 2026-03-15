@@ -31,11 +31,12 @@ export default function PendingApprovalPage() {
 
       setEmail(user.email ?? '')
 
+      // Pending users have no profile row. A profile only exists once approved.
       const { data: profile } = await supabase
         .from('profiles')
         .select('account_status')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
       if (profile?.account_status === 'active') {
         router.replace('/dashboard')
@@ -73,7 +74,7 @@ export default function PendingApprovalPage() {
       .from('profiles')
       .select('account_status')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
     if (profile?.account_status === 'active') {
       router.replace('/dashboard')

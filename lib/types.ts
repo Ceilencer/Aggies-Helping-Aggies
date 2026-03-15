@@ -28,13 +28,12 @@ export interface Profile {
 
 export interface RejectedAccount {
   id: string
-  user_id: string
+  user_id: string | null
   email: string
   full_name: string
   rejected_by?: string | null
   rejected_at: string
   rejection_reason?: string | null
-  questionnaire?: Record<string, unknown> | null
   created_at: string
 }
 
@@ -54,6 +53,7 @@ export interface VerificationRequest {
   user_id: string
   email: string
   full_name: string
+  affiliation?: string | null
   graduation_year: number
   major: string
   memorable_tradition: string

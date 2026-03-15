@@ -3,52 +3,70 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 // GET /api/cron/cleanup
 // Called daily by Vercel cron (see vercel.json).
-// Deletes pending_approval profiles that never completed the verification
-// questionnaire and are older than 24 hours.
+// Deletes auth users who signed in via OAuth but never submitted a
+// verification questionnaire, and cleans up abandoned VRs older than 30 days.
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = createServiceClient()
+  const service = createServiceClient()
 
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  // Find auth users created more than 24h ago with no profile and no VR.
+  // These are people who OAuth'd but abandoned the process entirely.
+  const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  // Fetch pending_approval profiles older than 24h, including any verification requests
-  const { data: profiles, error: fetchError } = await supabase
-    .from('profiles')
-    .select('id, verification_requests!verification_requests_user_id_fkey(id)')
-    .eq('account_status', 'pending_approval')
-    .lt('created_at', cutoff)
-
-  if (fetchError) {
-    console.error('[cron/cleanup] Failed to fetch stale profiles:', fetchError)
-    return NextResponse.json({ error: 'Failed to fetch profiles' }, { status: 500 })
-  }
-
-  // Keep only profiles with no questionnaire submission
-  const stale = (profiles ?? []).filter((p: any) => {
-    const reqs = p.verification_requests
-    return !reqs || (Array.isArray(reqs) && reqs.length === 0)
+  // Fetch all auth users (paginated — Supabase returns max 1000 per call)
+  const { data: { users: authUsers }, error: listError } = await service.auth.admin.listUsers({
+    perPage: 1000,
   })
 
-  if (stale.length === 0) {
+  if (listError) {
+    console.error('[cron/cleanup] Failed to list auth users:', listError)
+    return NextResponse.json({ error: 'Failed to list users' }, { status: 500 })
+  }
+
+  // Filter to users created before the cutoff
+  const oldUsers = (authUsers ?? []).filter(
+    (u) => u.created_at && u.created_at < cutoff24h
+  )
+
+  if (oldUsers.length === 0) {
     return NextResponse.json({ deleted: 0 })
   }
 
-  // Delete each stale account via the existing admin RPC
+  const oldUserIds = oldUsers.map((u) => u.id)
+
+  // Find which of these have a profile (approved) or a VR (pending)
+  const [profilesResult, vrsResult] = await Promise.all([
+    service.from('profiles').select('id').in('id', oldUserIds),
+    service.from('verification_requests').select('user_id').in('user_id', oldUserIds),
+  ])
+
+  const withProfile = new Set((profilesResult.data ?? []).map((p: any) => p.id))
+  const withVR = new Set((vrsResult.data ?? []).map((v: any) => v.user_id))
+
+  // Abandoned = no profile AND no VR
+  const abandoned = oldUsers.filter(
+    (u) => !withProfile.has(u.id) && !withVR.has(u.id)
+  )
+
+  if (abandoned.length === 0) {
+    return NextResponse.json({ deleted: 0 })
+  }
+
   const results = await Promise.allSettled(
-    stale.map((p: any) => supabase.rpc('admin_delete_user', { p_user_id: p.id }))
+    abandoned.map((u) => service.auth.admin.deleteUser(u.id))
   )
 
   const succeeded = results.filter((r) => r.status === 'fulfilled').length
   const failed = results.filter((r) => r.status === 'rejected').length
 
   if (failed > 0) {
-    console.error(`[cron/cleanup] ${failed} deletion(s) failed out of ${stale.length}`)
+    console.error(`[cron/cleanup] ${failed} deletion(s) failed out of ${abandoned.length}`)
   }
 
-  console.log(`[cron/cleanup] Deleted ${succeeded} stale account(s)`)
+  console.log(`[cron/cleanup] Deleted ${succeeded} abandoned account(s)`)
   return NextResponse.json({ deleted: succeeded, failed })
 }

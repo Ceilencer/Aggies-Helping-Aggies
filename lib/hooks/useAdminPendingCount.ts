@@ -36,15 +36,15 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
     mountedRef.current = true
 
     const fetchCounts = async () => {
-      const [postsResult, profilesResult, reportsResult] = await Promise.all([
+      const [postsResult, vrResult, reportsResult] = await Promise.all([
         supabase
           .from('posts')
           .select('*', { count: 'exact', head: true })
           .in('approval_status', ['pending', 'pending_edit']),
         supabase
-          .from('profiles')
-          .select('id, verification_requests!verification_requests_user_id_fkey(id)')
-          .eq('account_status', 'pending_approval'),
+          .from('verification_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending'),
         supabase
           .from('reports')
           .select('*', { count: 'exact', head: true })
@@ -54,9 +54,7 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
       if (!mountedRef.current) return
 
       const pendingPosts = postsResult.count ?? 0
-      const pendingUsers = (profilesResult.data ?? []).filter(
-        (p: any) => Array.isArray(p.verification_requests) && p.verification_requests.length > 0
-      ).length
+      const pendingUsers = vrResult.count ?? 0
       const unresolvedReports = reportsResult.count ?? 0
 
       setCounts({

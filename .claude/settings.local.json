@@ -15,7 +15,11 @@
       "WebSearch",
       "Bash(grep -r \"RealtimeChannel\\\\|subscribe\\\\|\\\\.on\\(\" /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app --include=*.tsx --include=*.ts)",
       "Bash(xargs grep:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(find c:UsersCeilencerCapstoneHowdy-Helps-Capstone -name *pending* -type f)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx|sql\\)$\")",
+      "Bash(find c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -name *.sql -type f)",
+      "Bash(grep -r CREATE.*FUNCTION c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/supabase-schema-2026-02-13.sql)"
     ]
   }
 }

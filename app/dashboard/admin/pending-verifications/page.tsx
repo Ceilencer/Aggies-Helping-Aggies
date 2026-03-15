@@ -43,40 +43,29 @@ export default function PendingVerificationsPage() {
 
       if (profile?.role !== 'Admin') { setAccessDenied(true); return }
 
-      // Fetch pending profiles with their verification requests (selective DTO columns)
+      // Fetch pending verification requests directly (no profile join needed —
+      // profiles don't exist until after approval)
       const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          email,
-          full_name,
-          created_at,
-          verification_requests!verification_requests_user_id_fkey(
-            graduation_year,
-            major,
-            memorable_tradition,
-            connection_to_tamu,
-            status
-          )
-        `)
-        .eq('account_status', 'pending_approval')
+        .from('verification_requests')
+        .select('id, user_id, email, full_name, graduation_year, major, memorable_tradition, connection_to_tamu, affiliation, created_at')
+        .eq('status', 'pending')
         .order('created_at', { ascending: true })
 
       if (fetchError) throw fetchError
 
-      // Map rows — only include users who have submitted a questionnaire
-      const mapped: PendingUser[] = (data ?? []).flatMap((row: any) => {
-        const reqs: any[] = row.verification_requests ?? []
-        const pending = reqs.find((r) => r.status === 'pending') ?? reqs[0] ?? null
-        if (!pending) return []
-        return [{
-          id: row.id,
-          email: row.email,
-          full_name: row.full_name,
-          created_at: row.created_at,
-          verification_request: pending,
-        }]
-      })
+      const mapped: PendingUser[] = (data ?? []).map((row: any) => ({
+        id: row.user_id,
+        email: row.email,
+        full_name: row.full_name,
+        created_at: row.created_at,
+        verification_request: {
+          graduation_year:     row.graduation_year,
+          major:               row.major,
+          memorable_tradition: row.memorable_tradition,
+          connection_to_tamu:  row.connection_to_tamu,
+          status:              'pending',
+        },
+      }))
 
       setUsers(mapped)
     } catch (e) {

@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { verifyUserSchema } from '@/lib/validations'
+import type { FlairType } from '@/lib/types'
+
+const AFFILIATION_TO_FLAIR: Record<string, FlairType> = {
+  'Student':        'Student',
+  'Former Student': 'Former Student',
+  'Faculty':        'Faculty',
+  'Parent':         'Parent',
+  'BCS Local':      'BCS Local',
+}
 
 // POST /api/admin/verify-user
 // Body: { userId: string, action: 'approve' | 'reject', rejectionReasons?: string[] }
@@ -32,28 +41,47 @@ export async function POST(request: Request) {
   }
 
   const { userId, action, rejectionReasons } = parsed.data
-
-  // Use service client for all operations on OTHER users' data —
-  // the session client is blocked by RLS from writing to profiles it doesn't own.
   const service = createServiceClient()
-
   const now = new Date().toISOString()
 
-  if (action === 'approve') {
-    // Update profile → active + stamp who approved
-    const { error, data: updated } = await service
-      .from('profiles')
-      .update({
-        account_status: 'active',
-        is_verified: true,
-        approved_by: user.id,
-        approved_at: now,
-      })
-      .eq('id', userId)
-      .select('id')
+  // Fetch the verification request — needed by both approve and reject paths
+  const { data: vr } = await service
+    .from('verification_requests')
+    .select('email, full_name, graduation_year, major, affiliation')
+    .eq('user_id', userId)
+    .single()
 
-    if (error) return NextResponse.json({ error: 'Failed to approve user' }, { status: 500 })
-    if (!updated || updated.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  if (action === 'approve') {
+    // Fetch avatar_url from auth metadata
+    const { data: { user: authUser } } = await service.auth.admin.getUserById(userId)
+    const avatarUrl =
+      authUser?.user_metadata?.avatar_url ||
+      authUser?.user_metadata?.picture ||
+      null
+
+    const flair = vr?.affiliation ? (AFFILIATION_TO_FLAIR[vr.affiliation] ?? null) : null
+
+    // Create the profile now that the user is approved
+    const { error: insertError } = await service
+      .from('profiles')
+      .insert({
+        id:             userId,
+        email:          vr?.email ?? '',
+        full_name:      vr?.full_name ?? '',
+        avatar_url:     avatarUrl,
+        flair:          flair ?? 'Student',
+        graduation_year: vr?.graduation_year ?? null,
+        major:          vr?.major ?? null,
+        account_status: 'active',
+        is_verified:    true,
+        approved_by:    user.id,
+        approved_at:    now,
+      })
+
+    if (insertError) {
+      console.error('Profile insert error:', insertError)
+      return NextResponse.json({ error: 'Failed to approve user' }, { status: 500 })
+    }
 
     // Delete the verification request
     await service.from('verification_requests').delete().eq('user_id', userId)
@@ -63,14 +91,7 @@ export async function POST(request: Request) {
 
   // action === 'reject'
 
-  // Fetch the rejected user's email (needed for rejection count lookup)
-  const { data: rejectedProfile } = await service
-    .from('profiles')
-    .select('email, full_name')
-    .eq('id', userId)
-    .single()
-
-  const rejectedEmail = rejectedProfile?.email ?? ''
+  const rejectedEmail = vr?.email ?? ''
 
   // Count prior rejections by EMAIL (user_id changes each time they re-register)
   const { count: priorRejectionCount } = await service
@@ -81,14 +102,13 @@ export async function POST(request: Request) {
   const isPermanentBan = (priorRejectionCount ?? 0) >= 1
 
   // Insert the rejection record BEFORE deleting the user.
-  // The FK user_id → auth.users ON DELETE SET NULL means the record survives
-  // after deletion with user_id = NULL, preserving email + reason + count.
+  // FK user_id → auth.users ON DELETE SET NULL keeps the record after deletion.
   const { error: insertError } = await service.from('rejected_accounts').insert({
-    user_id: userId,
-    email: rejectedEmail,
-    full_name: rejectedProfile?.full_name ?? '',
-    rejected_by: user.id,
-    rejected_at: now,
+    user_id:          userId,
+    email:            rejectedEmail,
+    full_name:        vr?.full_name ?? '',
+    rejected_by:      user.id,
+    rejected_at:      now,
     rejection_reason: rejectionReasons ? rejectionReasons.join(' | ') : null,
   })
 
@@ -97,10 +117,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save rejection record', detail: insertError.message }, { status: 500 })
   }
 
-  // Delete the auth user — this cascades:
-  //   auth.users → profiles (ON DELETE CASCADE)
-  //   profiles → verification_requests (ON DELETE CASCADE)
-  //   rejected_accounts.user_id → SET NULL (record kept)
+  // Delete the auth user — cascades: auth.users → verification_requests (CASCADE)
   const { error: deleteError } = await service.auth.admin.deleteUser(userId)
   if (deleteError) return NextResponse.json({ error: 'Failed to remove account' }, { status: 500 })
 
