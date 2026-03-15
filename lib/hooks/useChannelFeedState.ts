@@ -31,6 +31,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
   const [likeIdByPostId, setLikeIdByPostId] = useState<Map<string, string>>(new Map())
   const [pendingNewPosts, setPendingNewPosts] = useState<FeedPost[]>([])
   const postsRef = useRef<FeedPost[]>([])
+  const currentUserIdRef = useRef<string>('')
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const prefetchedPageRef = useRef<{
     offset: number
@@ -337,10 +338,14 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
     loadChannelData()
   }, [canonicalSlug, rawSlug, router, supabase, fetchChannelAnnouncement, fetchPostsPage, prefetchNextPage])
 
-  // Keep ref in sync so the Realtime callback can read current posts without a stale closure
+  // Keep refs in sync so Realtime callbacks always read current values without stale closures
   useEffect(() => {
     postsRef.current = posts
   }, [posts])
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId
+  }, [currentUserId])
 
   // Supabase Realtime: detect posts that become approved while the user is viewing the channel
   useEffect(() => {
@@ -367,10 +372,13 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
           }
 
           if (!updated.is_moderated) return
-          // The author already sees their own post — skip to avoid showing them the banner
-          if (updated.author_id === currentUserId) return
 
           const isAlreadyInFeed = postsRef.current.some(p => p.id === updated.id)
+
+          // The author already sees their own post when the channel doesn't require moderation
+          // (it was added immediately via onPostCreated). Skip only in that case.
+          // If the post is NOT in the feed, the author needs to see it too — it was just approved.
+          if (updated.author_id === currentUserIdRef.current && isAlreadyInFeed) return
 
           // On UPDATE, if the post is already visible in the feed, patch its images in-place.
           // Images are uploaded and linked after the initial INSERT, so the first Realtime

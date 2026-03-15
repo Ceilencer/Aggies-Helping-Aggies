@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react'
 import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
 
+// Max posts shown per channel section on the home page
+const HOME_SECTION_LIMIT = 3
+
 export type ChannelSection = {
   channel: Channel
   posts: FeedPost[]
@@ -38,11 +41,28 @@ export function useHomeFeedState({
     setSections(current =>
       current.map(section =>
         section.channel.id === newPost.channel_id
-          ? { ...section, posts: [hydratedPost, ...section.posts].slice(0, 3) }
+          ? { ...section, posts: [hydratedPost, ...section.posts].slice(0, HOME_SECTION_LIMIT) }
           : section
       )
     )
   }, [allChannels, profile])
+
+  // Called by Realtime when another user's post is inserted or updated
+  const handleRealtimePost = useCallback((post: FeedPost, isInsert: boolean) => {
+    setSections(current =>
+      current.map(section => {
+        if (section.channel.id !== post.channel_id) return section
+        const existingIndex = section.posts.findIndex(p => p.id === post.id)
+        if (existingIndex !== -1) {
+          // UPDATE: patch the existing post in place (e.g. images uploaded after insert)
+          const updated = section.posts.map((p, i) => i === existingIndex ? { ...p, ...post } : p)
+          return { ...section, posts: updated }
+        }
+        // INSERT or newly-approved UPDATE: prepend and keep section limit
+        return { ...section, posts: [post, ...section.posts].slice(0, HOME_SECTION_LIMIT) }
+      })
+    )
+  }, [])
 
   const handlePostDeleted = useCallback((postId: string) => {
     setSections(current =>
@@ -116,5 +136,6 @@ export function useHomeFeedState({
     handlePostUpdated,
     handlePostCommentChange,
     handleChannelAnnouncementChange,
+    handleRealtimePost,
   }
 }

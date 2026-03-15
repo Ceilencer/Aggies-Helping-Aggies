@@ -20,6 +20,7 @@ import PendingEditPreviewModal from '@/components/PendingEditPreviewModal'
 import { useFirstTimeAgreement } from '@/lib/hooks/useFirstTimeAgreement'
 import { useHomeFeedState, type ChannelSection } from '@/lib/hooks/useHomeFeedState'
 import { useAnnouncementRealtime } from '@/lib/hooks/useAnnouncementRealtime'
+import { useHomePostRealtime } from '@/lib/hooks/useHomePostRealtime'
 import { useModalState } from '@/lib/hooks/useModalState'
 import { getInitials } from '@/lib/utils'
 import { useToast } from '@/components/ui/toast'
@@ -86,6 +87,7 @@ export default function DashboardClient({
     handlePostUpdated,
     handlePostCommentChange,
     handleChannelAnnouncementChange,
+    handleRealtimePost,
   } = useHomeFeedState({ profile, channelSections, allChannels })
 
   const {
@@ -121,6 +123,13 @@ export default function DashboardClient({
         action: { label: 'View', onClick: () => setHomePopupTrigger(t => t + 1) },
       })
     },
+  })
+
+  useHomePostRealtime({
+    trackedChannelIds,
+    currentUserId: profile?.id,
+    onPostUpserted: handleRealtimePost,
+    onPostDeleted: handlePostDeleted,
   })
 
   const onPostUpdated = (updatedPost: Post) => {
