@@ -77,26 +77,39 @@ export default function AdminDashboardPage() {
   // Realtime: watch for new pending posts arriving while admin is on this page
   useEffect(() => {
     const supabase = createClient()
-    const channel = supabase
-      .channel(`admin-new-posts-${Math.random().toString(36).slice(2)}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'posts' },
-        (payload) => {
-          const status = (payload.new as { approval_status?: string }).approval_status
-          const id = (payload.new as { id?: string }).id
-          if (
-            (status === 'pending' || status === 'pending_edit') &&
-            id &&
-            !loadedPostIdsRef.current.has(id)
-          ) {
-            setNewPostsAvailable(true)
-          }
-        }
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let mounted = true
 
-    return () => { void supabase.removeChannel(channel) }
+    const setup = async () => {
+      await supabase.auth.getSession()
+      if (!mounted) return
+
+      channel = supabase
+        .channel(`admin-new-posts-${Math.random().toString(36).slice(2)}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'posts' },
+          (payload) => {
+            const status = (payload.new as { approval_status?: string }).approval_status
+            const id = (payload.new as { id?: string }).id
+            if (
+              (status === 'pending' || status === 'pending_edit') &&
+              id &&
+              !loadedPostIdsRef.current.has(id)
+            ) {
+              setNewPostsAvailable(true)
+            }
+          }
+        )
+        .subscribe()
+    }
+
+    void setup()
+
+    return () => {
+      mounted = false
+      if (channel) void supabase.removeChannel(channel)
+    }
   }, [])
 
   const loadMore = async () => {
