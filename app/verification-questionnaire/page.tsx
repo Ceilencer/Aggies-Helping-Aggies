@@ -149,7 +149,7 @@ export default function VerificationQuestionnairePage() {
           full_name:           formData.full_name,
           affiliation:         formData.affiliation || null,
           graduation_year:     formData.graduation_year,
-          major:               formData.major || 'N/A',
+          major:               formData.graduation_year !== null ? formData.major : null,
           memorable_tradition: formData.memorable_tradition,
           connection_to_tamu:  formData.connection_to_tamu,
           status:              'pending',
@@ -244,9 +244,10 @@ export default function VerificationQuestionnairePage() {
                   >
                     <option value="" disabled>Select an option…</option>
                     <option value="Student">Student</option>
-                    <option value="Former Student">Former Student / Alumni</option>
-                    <option value="Faculty">Faculty / Staff</option>
-                    <option value="Parent">Parent / Family Member</option>
+                    <option value="Former Student">Former Student</option>
+                    <option value="Faculty">Faculty</option>
+                    <option value="Family Member">Family Member</option>
+                    <option value="Aggie Mom">Aggie Mom</option>
                     <option value="BCS Local">Bryan-College Station Local</option>
                     <option value="Other">Other</option>
                   </select>
@@ -277,6 +278,7 @@ export default function VerificationQuestionnairePage() {
                         setFormData((prev) => ({
                           ...prev,
                           graduation_year: e.target.checked ? null : CURRENT_YEAR,
+                          ...(e.target.checked ? { major: '' } : {}),
                         }))
                       }
                     />
@@ -284,20 +286,20 @@ export default function VerificationQuestionnairePage() {
                   </label>
                 </div>
 
-                {/* Major */}
-                <div className="space-y-1">
-                  <Label htmlFor="major">
-                    Major / Field of Study{' '}
-                    <span className="text-muted-foreground text-xs">(if applicable)</span>
-                  </Label>
-                  <Input
-                    id="major"
-                    name="major"
-                    value={formData.major}
-                    onChange={handleChange}
-                    placeholder=""
-                  />
-                </div>
+                {/* Major — only shown when a graduation year is entered */}
+                {formData.graduation_year !== null && (
+                  <div className="space-y-1">
+                    <Label htmlFor="major">Major / Field of Study</Label>
+                    <Input
+                      id="major"
+                      name="major"
+                      required
+                      value={formData.major}
+                      onChange={handleChange}
+                      placeholder=""
+                    />
+                  </div>
+                )}
 
                 {/* Memorable tradition */}
                 <div className="space-y-1">

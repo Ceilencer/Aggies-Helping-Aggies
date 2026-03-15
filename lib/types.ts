@@ -1,5 +1,5 @@
 export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
-export type FlairType = 'Student' | 'Former Student' | 'Parent' | 'Faculty' | 'BCS Local'
+export type FlairType = 'Student' | 'Former Student' | 'Family Member' | 'Aggie Mom' | 'Faculty' | 'BCS Local'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
 export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'aggie_ring'
 export type ApprovalStatus = 'pending' | 'pending_edit' | 'approved' | 'rejected'
@@ -156,6 +156,7 @@ export interface AdminUserVerificationDTO {
   full_name: string
   created_at: string
   verification_request?: {
+    affiliation?: string | null
     graduation_year: number | null
     major: string | null
     memorable_tradition: string

@@ -223,7 +223,7 @@ export const adminRoleUpdateSchema = z.object({
 })
 
 export const adminFlairUpdateSchema = z.object({
-  flair: z.enum(['Student', 'Former Student', 'Parent', 'Faculty', 'BCS Local'], {
+  flair: z.enum(['Student', 'Former Student', 'Family Member', 'Aggie Mom', 'Faculty', 'BCS Local'], {
     errorMap: () => ({ message: 'Invalid flair value' }),
   }),
 })

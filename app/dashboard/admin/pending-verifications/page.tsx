@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -24,7 +25,6 @@ export default function PendingVerificationsPage() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [actioning, setActioning] = useState<string | null>(null)
   const [rejectTarget, setRejectTarget] = useState<PendingUser | null>(null)
-  const [questionnaireTarget, setQuestionnaireTarget] = useState<PendingUser | null>(null)
   const [rejectionReasons, setRejectionReasons] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -59,6 +59,7 @@ export default function PendingVerificationsPage() {
         full_name: row.full_name,
         created_at: row.created_at,
         verification_request: {
+          affiliation:         row.affiliation,
           graduation_year:     row.graduation_year,
           major:               row.major,
           memorable_tradition: row.memorable_tradition,
@@ -118,54 +119,6 @@ if (accessDenied) {
 
   return (
     <>
-      {/* Questionnaire answers modal */}
-      <Modal
-        isOpen={questionnaireTarget !== null}
-        onClose={() => setQuestionnaireTarget(null)}
-        title={`Questionnaire — ${questionnaireTarget?.full_name ?? ''}`}
-        size="md"
-      >
-        <div className="space-y-5">
-          {questionnaireTarget?.verification_request ? (
-            <>
-              <div className="space-y-4">
-                {[
-                  {
-                    question: 'What year did you (or will you) graduate from Texas A&M?',
-                    answer: questionnaireTarget.verification_request.graduation_year?.toString() ?? '—',
-                  },
-                  {
-                    question: 'What was your major at Texas A&M? (enter N/A if not applicable)',
-                    answer: questionnaireTarget.verification_request.major || '—',
-                  },
-                  {
-                    question: 'Describe a memorable Aggie tradition or experience.',
-                    answer: questionnaireTarget.verification_request.memorable_tradition || '—',
-                  },
-                  {
-                    question: 'How are you connected to Texas A&M University?',
-                    answer: questionnaireTarget.verification_request.connection_to_tamu || '—',
-                  },
-                ].map(({ question, answer }) => (
-                  <div key={question} className="rounded-md border border-border bg-muted/30 p-4 space-y-1">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{question}</p>
-                    <p className="text-sm text-foreground whitespace-pre-wrap break-words">{answer}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Submitted by {questionnaireTarget.full_name} ({questionnaireTarget.email}) on{' '}
-                {new Date(questionnaireTarget.created_at).toLocaleDateString('en-US', {
-                  year: 'numeric', month: 'long', day: 'numeric',
-                })}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">No questionnaire data available.</p>
-          )}
-        </div>
-      </Modal>
-
       {/* Reject confirmation modal */}
       <Modal
         isOpen={rejectTarget !== null}
@@ -256,13 +209,7 @@ if (accessDenied) {
                     <div className="flex flex-wrap gap-2 shrink-0 justify-end items-center">
                       <Button
                         size="sm"
-                        variant="outline"
-                        onClick={() => setQuestionnaireTarget(u)}
-                      >
-                        View Questionnaire
-                      </Button>
-                      <Button
-                        size="sm"
+                        className="bg-green-600 text-white hover:bg-green-700"
                         disabled={actioning === u.id}
                         onClick={() => handleAction(u.id, 'approve')}
                       >
@@ -282,6 +229,24 @@ if (accessDenied) {
                     </div>
                   </div>
                 </CardHeader>
+                {u.verification_request && (
+                  <CardContent className="pt-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { label: 'Affiliation', value: u.verification_request.affiliation },
+                        { label: 'Graduation Year', value: u.verification_request.graduation_year?.toString() },
+                        { label: 'Major', value: u.verification_request.major },
+                        { label: 'Traditions / Memories', value: u.verification_request.memorable_tradition },
+                        { label: 'Connection to TAMU', value: u.verification_request.connection_to_tamu },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="rounded-md border border-border bg-muted/30 p-3 space-y-0.5 last:sm:col-span-2">
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</p>
+                          <p className="text-sm text-foreground whitespace-pre-wrap break-words">{value || '—'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             ))}
           </div>

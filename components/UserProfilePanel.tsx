@@ -27,7 +27,8 @@ const ACCOUNT_TYPE_OPTIONS: Array<{ value: UserRole; label: string }> = [
 const FLAIR_OPTIONS: Array<{ value: FlairType; label: string }> = [
   { value: 'Student', label: 'Student' },
   { value: 'Former Student', label: 'Former Student' },
-  { value: 'Parent', label: 'Parent' },
+  { value: 'Family Member', label: 'Family Member' },
+  { value: 'Aggie Mom', label: 'Aggie Mom' },
   { value: 'Faculty', label: 'Faculty' },
   { value: 'BCS Local', label: 'BCS Local' },
 ]
