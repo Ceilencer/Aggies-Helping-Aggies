@@ -25,6 +25,19 @@ export default async function DashboardLayout({
     .single()
 
   if (!profile) {
+    // Check whether the user actually submitted a verification request.
+    // If they haven't (e.g. they abandoned the questionnaire mid-way), clear
+    // their session so they aren't incorrectly shown the pending-approval page.
+    const { data: existingVR } = await supabase
+      .from('verification_requests')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (!existingVR) {
+      redirect('/auth/signout')
+    }
+
     redirect('/pending-approval')
   }
 

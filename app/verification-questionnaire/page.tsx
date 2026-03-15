@@ -31,10 +31,17 @@ export default function VerificationQuestionnairePage() {
   const [error, setError] = useState('')
   const [priorRejectionReason, setPriorRejectionReason] = useState<string | null>(null)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    full_name: string
+    affiliation: string
+    graduation_year: number | null
+    major: string
+    memorable_tradition: string
+    connection_to_tamu: string
+  }>({
     full_name: '',
     affiliation: '',
-    graduation_year: CURRENT_YEAR,
+    graduation_year: null,
     major: '',
     memorable_tradition: '',
     connection_to_tamu: '',
@@ -189,7 +196,7 @@ export default function VerificationQuestionnairePage() {
                 Questionnaire submitted! Redirecting…
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
                 {priorRejectionReason && (
                   <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-4 text-sm space-y-1">
                     <p className="font-semibold text-amber-700 dark:text-amber-400">Your previous application was not approved</p>
@@ -247,15 +254,23 @@ export default function VerificationQuestionnairePage() {
                     Graduation Year{' '}
                     <span className="text-muted-foreground text-xs">(if applicable)</span>
                   </Label>
-                  <Input
+                  <select
                     id="graduation_year"
                     name="graduation_year"
-                    type="number"
-                    min={1876}
-                    max={CURRENT_YEAR + 6}
-                    value={formData.graduation_year}
-                    onChange={handleChange}
-                  />
+                    value={formData.graduation_year ?? 'na'}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        graduation_year: e.target.value === 'na' ? null : Number(e.target.value),
+                      }))
+                    }
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="na">N/A</option>
+                    {Array.from({ length: CURRENT_YEAR + 6 - 1876 + 1 }, (_, i) => CURRENT_YEAR + 6 - i).map((yr) => (
+                      <option key={yr} value={yr}>{yr}</option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Major */}
