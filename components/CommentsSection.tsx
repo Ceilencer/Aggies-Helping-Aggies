@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import CommentForm from '@/components/CommentForm'
 import CommentCard from '@/components/CommentCard'
 import { createClient } from '@/lib/supabase/client'
+import { ChevronUp } from 'lucide-react'
 import type { Comment, FeedAuthorDTO } from '@/lib/types'
 
 interface CommentsSectionProps {
@@ -27,6 +27,8 @@ export default function CommentsSection({
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Tracks which top-level comment threads have their replies expanded
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   // Track IDs that were optimistically added by the current user so Realtime doesn't duplicate them
   const optimisticIds = useRef<Set<string>>(new Set())
 
@@ -111,9 +113,7 @@ export default function CommentsSection({
       setLoading(true)
       const response = await fetch(`/api/posts/${postId}/comments`)
 
-      if (!response.ok) {
-        throw new Error('Failed to load comments')
-      }
+      if (!response.ok) throw new Error('Failed to load comments')
 
       const data = await response.json()
       setComments(data)
@@ -132,7 +132,6 @@ export default function CommentsSection({
 
   const handleCommentCreated = (realComment: Comment, tempId?: string) => {
     if (tempId) {
-      // Replace the optimistic placeholder with the real comment
       optimisticIds.current.delete(tempId)
       optimisticIds.current.add(realComment.id)
       setComments(prev => prev.map(c => c.id === tempId ? realComment : c))
@@ -158,23 +157,40 @@ export default function CommentsSection({
       if (prev.some(c => c.id === reply.id)) return prev
       return [reply, ...prev]
     })
+    // Auto-expand the parent thread so the new reply is immediately visible
+    if (reply.parent_comment_id) {
+      setExpandedReplies(prev => new Set([...prev, reply.parent_comment_id!]))
+    }
+  }
+
+  const toggleReplies = (commentId: string) => {
+    setExpandedReplies(prev => {
+      const next = new Set(prev)
+      if (next.has(commentId)) {
+        next.delete(commentId)
+      } else {
+        next.add(commentId)
+      }
+      return next
+    })
   }
 
   // Organize comments and replies
   const topLevelComments = comments.filter(c => !c.parent_comment_id)
-  const getReplies = (parentCommentId: string) => {
-    return comments.filter(c => c.parent_comment_id === parentCommentId)
-  }
+  const getReplies = (parentCommentId: string) =>
+    comments.filter(c => c.parent_comment_id === parentCommentId)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">
+    <div>
+      {/* Section heading */}
+      <div className="pb-3 mb-3 border-b border-border">
+        <h3 className="font-semibold text-base text-foreground">
           Comments ({comments.length})
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Comment Form */}
+        </h3>
+      </div>
+
+      {/* New comment form */}
+      <div className="pb-4 mb-2 border-b border-border">
         <CommentForm
           postId={postId}
           currentUserProfile={currentUserProfile}
@@ -182,24 +198,29 @@ export default function CommentsSection({
           onCommentCreated={handleCommentCreated}
           onOptimisticFailed={handleOptimisticFailed}
         />
+      </div>
 
-        {/* Comments List */}
-        {loading ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Loading comments...
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-500">
-            {error}
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No comments yet. Be the first to comment!
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {topLevelComments.map((comment) => (
-              <div key={comment.id}>
+      {/* Comments list */}
+      {loading ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          Loading comments…
+        </div>
+      ) : error ? (
+        <div className="text-center py-8 text-red-500 text-sm">{error}</div>
+      ) : topLevelComments.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          No comments yet. Be the first to comment!
+        </div>
+      ) : (
+        <div>
+          {topLevelComments.map((comment) => {
+            const replies = getReplies(comment.id)
+            const isExpanded = expandedReplies.has(comment.id)
+
+            return (
+              // Border wraps the whole group (parent + replies) so no line splits them
+              // Border wraps the whole group (parent + replies) so no line splits them
+              <div key={comment.id} className="border-b border-border last:border-b-0">
                 <CommentCard
                   comment={comment}
                   currentUserId={currentUserId}
@@ -208,10 +229,14 @@ export default function CommentsSection({
                   onCommentDeleted={handleCommentDeleted}
                   onReplyCreated={handleReplyCreated}
                   onProfileClick={onProfileClick}
-                  replyCount={getReplies(comment.id).length}
+                  replyCount={replies.length}
+                  repliesExpanded={isExpanded}
+                  onToggleReplies={() => toggleReplies(comment.id)}
+                  showThreadLine={isExpanded && replies.length > 0}
                 />
-                {/* Replies */}
-                {getReplies(comment.id).map((reply, idx) => (
+
+                {/* Replies — only shown when expanded, each gets the L-curve connector */}
+                {isExpanded && replies.map((reply, index) => (
                   <CommentCard
                     key={reply.id}
                     comment={reply}
@@ -221,15 +246,24 @@ export default function CommentsSection({
                     onCommentDeleted={handleCommentDeleted}
                     isReply={true}
                     onProfileClick={onProfileClick}
-                    replyIndex={idx}
-                    replyCount={getReplies(comment.id).length}
+                    showCurvedConnector={true}
+                    isLastReply={index === replies.length - 1}
                   />
                 ))}
+
+                {isExpanded && replies.length > 0 && (
+                  <button
+                    onClick={() => toggleReplies(comment.id)}
+                    className="mb-3 ml-10 flex items-center gap-1 text-xs font-semibold text-brand-maroon dark:text-slate-400 hover:opacity-75 transition-opacity"
+                  >
+                    <ChevronUp size={13} />Hide replies
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
