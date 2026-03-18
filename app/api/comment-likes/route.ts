@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { commentIdRequestSchema } from '@/lib/validations'
+import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,13 +18,9 @@ export async function POST(request: NextRequest) {
     const { comment_id } = validation.data
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) return auth.error
+    const { user } = auth
 
     // Check if user already liked this comment
     const { data: existingLike } = await supabase

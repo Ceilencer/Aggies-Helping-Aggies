@@ -301,7 +301,7 @@ CREATE INDEX idx_posts_pinned_created ON posts(created_at DESC) WHERE is_pinned 
 CREATE INDEX idx_posts_author_created ON posts(author_id, created_at DESC);
 CREATE INDEX idx_posts_channel_author ON posts(channel_id, author_id) WHERE is_moderated = TRUE;
 CREATE INDEX idx_posts_channel_moderated ON posts(channel_id, is_moderated) WHERE is_moderated = TRUE;
-CREATE INDEX idx_posts_channel_moderated_created ON posts(channel_id, is_moderated, created_at DESC) WHERE is_moderated = TRUE;
+-- idx_posts_channel_moderated_created removed: superseded by idx_posts_feed_query (same columns + INCLUDE clause)
 CREATE INDEX idx_posts_moderated_created ON posts(is_moderated, created_at DESC) WHERE is_moderated = FALSE;
 CREATE INDEX idx_posts_moderated_created_author ON posts(is_moderated, created_at DESC, author_id) WHERE is_moderated = FALSE;
 CREATE INDEX idx_posts_unmoderated ON posts(created_at DESC, author_id) WHERE is_moderated = FALSE;
@@ -340,6 +340,10 @@ CREATE INDEX idx_admin_notes_created ON admin_notes(created_at DESC);
 
 -- channel_announcements
 CREATE INDEX channel_announcements_channel_id_idx ON channel_announcements(channel_id);
+
+-- reports
+CREATE INDEX idx_reports_resolved_type ON reports(is_resolved, report_type);
+CREATE INDEX idx_reports_reported_by ON reports(reported_by);
 
 -- =============================================
 -- FUNCTIONS

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { postIdRequestSchema } from '@/lib/validations'
+import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,13 +18,9 @@ export async function POST(request: NextRequest) {
     const { post_id } = validation.data
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) return auth.error
+    const { user } = auth
 
     // Check if user already liked this post
     const { data: existingLike } = await supabase
@@ -34,7 +31,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (existingLike) {
-      return NextResponse.json(existingLike, { status: 200 })
+      return NextResponse.json({ error: 'Already liked this post' }, { status: 409 })
     }
 
     // Create like
@@ -77,13 +74,9 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) return auth.error
+    const { user } = auth
 
     const { data: like, error: fetchError } = await supabase
       .from('post_likes')

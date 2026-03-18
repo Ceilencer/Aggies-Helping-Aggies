@@ -410,7 +410,7 @@ export default function ChannelPage() {
           onPostUpdated={(updatedPost) => {
             setPosts(current => current.map(item => item.id === updatedPost.id ? { ...item, ...updatedPost } : item))
             setEditingPostId(null)
-            if ((updatedPost as any)._pendingEdit) {
+            if (updatedPost._pendingEdit) {
               showToast({ message: '✏️ Edit submitted — awaiting admin review', type: 'info', duration: 5000 })
             }
           }}

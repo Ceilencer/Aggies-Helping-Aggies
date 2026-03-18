@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, NextRequest } from 'next/server'
+import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
+import { validateReportInput, checkReportRateLimit } from '@/lib/utils/reports'
 
 export async function POST(
   request: NextRequest,
@@ -10,41 +12,14 @@ export async function POST(
     const supabase = await createClient()
 
     // Get current user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) return auth.error
+    const { user } = auth
 
     const { reason, description } = await request.json()
 
-    if (!reason || typeof reason !== 'string') {
-      return NextResponse.json(
-        { error: 'Reason is required' },
-        { status: 400 }
-      )
-    }
-
-    if (reason.length < 5 || reason.length > 100) {
-      return NextResponse.json(
-        { error: 'Reason must be between 5 and 100 characters' },
-        { status: 400 }
-      )
-    }
-
-    if (description !== undefined && description !== null) {
-      if (typeof description !== 'string') {
-        return NextResponse.json({ error: 'Description must be a string' }, { status: 400 })
-      }
-      if (description.length > 500) {
-        return NextResponse.json(
-          { error: 'Description must be 500 characters or fewer' },
-          { status: 400 }
-        )
-      }
-    }
+    const inputError = validateReportInput(reason, description)
+    if (inputError) return inputError
 
     // Check if post exists
     const { data: post, error: postError } = await supabase
@@ -57,20 +32,8 @@ export async function POST(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    // Rate limit: max 5 reports per user per hour
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
-    const { count: recentCount } = await supabase
-      .from('reports')
-      .select('id', { count: 'exact', head: true })
-      .eq('reported_by', user.id)
-      .gte('created_at', oneHourAgo)
-
-    if ((recentCount ?? 0) >= 5) {
-      return NextResponse.json(
-        { error: 'You are submitting reports too quickly. Please wait before reporting again.' },
-        { status: 429 }
-      )
-    }
+    const rateLimitError = await checkReportRateLimit(supabase, user.id)
+    if (rateLimitError) return rateLimitError
 
     // Check if user already reported this post
     const { data: existingReport } = await supabase

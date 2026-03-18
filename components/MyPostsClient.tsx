@@ -65,7 +65,7 @@ export default function MyPostsClient({
       current.map(post => post.id === updatedPost.id ? hydratedPost : post)
     )
     setEditingPostId(null)
-    if ((updatedPost as any)._pendingEdit) {
+    if (updatedPost._pendingEdit) {
       showToast({ message: '✏️ Edit submitted — awaiting admin review', type: 'info', duration: 5000 })
     }
   }

@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { createCommentRequestSchema } from '@/lib/validations'
+import { censorProfanity } from '@/lib/profanity-filter'
+import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,16 +18,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    const { post_id, content, parent_comment_id } = validation.data
+    const { post_id, parent_comment_id } = validation.data
+    const content = censorProfanity(validation.data.content)
 
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    const auth = await requireAuthenticatedUser(supabase)
+    if ('error' in auth) return auth.error
+    const { user } = auth
 
     // Verify the account is active and verified before allowing comments
     const { data: profile, error: profileError } = await supabase

@@ -21,20 +21,6 @@ export function hydratePost(
 }
 
 /**
- * Batch hydrate multiple posts
- */
-export function hydratePosts(
-  posts: Post[],
-  author: Profile,
-  channels: Channel[]
-): FeedPost[] {
-  return posts.map(post => {
-    const channel = channels.find(c => c.id === post.channel_id)
-    return hydratePost(post, author, channel)
-  })
-}
-
-/**
  * Update a post's like status
  */
 export function updatePostLikeStatus(

@@ -145,6 +145,7 @@ export default function DashboardClient({
 
   useCommentCountRealtime({
     postIds: allPostIds,
+    currentUserId: profile?.id,
     onCommentInserted: (postId) => {
       const post = sectionsRef.current.flatMap(s => s.posts).find(p => p.id === postId)
       if (post) handlePostCommentChange(postId, (post.comment_count ?? 0) + 1)
@@ -154,7 +155,7 @@ export default function DashboardClient({
   const onPostUpdated = (updatedPost: Post) => {
     handlePostUpdated(updatedPost)
     setEditingPostId(null)
-    if ((updatedPost as any)._pendingEdit) {
+    if (updatedPost._pendingEdit) {
       showToast({ message: '✏️ Edit submitted — awaiting admin review', type: 'info', duration: 5000 })
     }
   }
@@ -280,6 +281,9 @@ export default function DashboardClient({
                               likeCount={post.like_count || 0}
                               userHasLiked={post.user_has_liked || false}
                               likeId={post.like_id || null}
+                              onLikeChange={(newCount, newLikeStatus) =>
+                                handlePostLikeChange(post.id, newCount, newLikeStatus)
+                              }
                             />
                             <CommentCountButton
                               postId={post.id}

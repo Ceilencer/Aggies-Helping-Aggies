@@ -114,6 +114,8 @@ export interface Post {
   user_has_liked?: boolean
   like_id?: string | null
   pending_edit?: { proposed_title: string; proposed_content: string } | null
+  /** Signals to the client that the update created a pending edit awaiting admin review */
+  _pendingEdit?: boolean
 }
 
 export type FeedAuthorDTO = Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'>
@@ -242,6 +244,8 @@ export interface FeedPost {
   user_has_liked?: boolean
   like_id?: string | null
   pending_edit?: FeedPendingEditDTO | null
+  /** Signals to the client that the update created a pending edit awaiting admin review */
+  _pendingEdit?: boolean
 }
 
 export interface Comment {

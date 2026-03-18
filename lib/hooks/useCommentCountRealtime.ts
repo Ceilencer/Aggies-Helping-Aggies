@@ -6,6 +6,7 @@ import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 
 interface UseCommentCountRealtimeArgs {
   postIds: string[]
+  currentUserId?: string
   onCommentInserted: (postId: string) => void
 }
 
@@ -13,6 +14,7 @@ const CHANNEL_KEY = 'comment-counts'
 
 export function useCommentCountRealtime({
   postIds,
+  currentUserId,
   onCommentInserted,
 }: UseCommentCountRealtimeArgs) {
   const supabase = createClient()
@@ -24,6 +26,8 @@ export function useCommentCountRealtime({
   onCommentInsertedRef.current = onCommentInserted
   const postIdsRef = useRef(new Set(postIds))
   postIdsRef.current = new Set(postIds)
+  const currentUserIdRef = useRef(currentUserId)
+  currentUserIdRef.current = currentUserId
 
   useEffect(() => {
     if (postIds.length === 0) return
@@ -34,7 +38,12 @@ export function useCommentCountRealtime({
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'comments' },
         (payload) => {
-          const postId = (payload.new as { post_id?: string }).post_id
+          const row = payload.new as { post_id?: string; author_id?: string }
+          // Skip comments posted by the current user — their count is already
+          // updated via onPostCommentChange from the detail panel, so applying
+          // this event would result in a double increment.
+          if (row.author_id && row.author_id === currentUserIdRef.current) return
+          const postId = row.post_id
           if (postId && postIdsRef.current.has(postId)) {
             onCommentInsertedRef.current(postId)
           }

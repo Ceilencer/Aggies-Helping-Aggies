@@ -70,8 +70,12 @@ export function useHomeFeedState({
               ? {
                   ...p,
                   ...post,
+                  // comment_count is tracked via useCommentCountRealtime — the incoming
+                  // feedPost always has comment_count: 0 (not selected), so preserve ours.
                   comment_count: p.comment_count,
-                  like_count: p.like_count,
+                  // like_count comes from posts.likes_count (updated by DB trigger on every
+                  // like insert/delete) — use the incoming value so likes update live.
+                  // user_has_liked / like_id are not known by the realtime hook; preserve them.
                   user_has_liked: p.user_has_liked,
                   like_id: p.like_id,
                 }
