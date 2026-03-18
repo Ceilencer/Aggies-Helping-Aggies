@@ -12,7 +12,7 @@ export function NewPostsBubble({ count, onLoad, onDismiss }: NewPostsBubbleProps
   if (count === 0) return null
 
   return (
-    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium shadow-lg shadow-primary/25 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+    <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex items-center rounded-full bg-primary text-primary-foreground text-sm font-medium ring-2 ring-white/90 shadow-xl shadow-black/40 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
       <button
         onClick={onLoad}
         className="flex items-center gap-2 px-4 py-2.5 hover:bg-white/10 transition-colors"

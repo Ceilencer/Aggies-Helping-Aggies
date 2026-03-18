@@ -377,10 +377,9 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
 
           const isAlreadyInFeed = postsRef.current.some(p => p.id === updated.id)
 
-          // The author already sees their own post when the channel doesn't require moderation
-          // (it was added immediately via onPostCreated). Skip only in that case.
-          // If the post is NOT in the feed, the author needs to see it too — it was just approved.
-          if (updated.author_id === currentUserIdRef.current && isAlreadyInFeed) return
+          // The author already sees their own post via onPostCreated — skip the INSERT event
+          // entirely to prevent a false "new posts" bubble regardless of any state-update race.
+          if (payload.eventType === 'INSERT' && updated.author_id === currentUserIdRef.current) return
 
           // On UPDATE, if the post is already visible in the feed, patch its images in-place.
           // Images are uploaded and linked after the initial INSERT, so the first Realtime
@@ -400,6 +399,25 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
           }
 
           if (isAlreadyInFeed) return
+
+          // Only queue genuine INSERT events. UPDATE events on non-feed posts are almost
+          // always the comment_count DB trigger firing on an older/paginated post — not
+          // a truly new post. Queuing those would show a false "new posts" bubble.
+          // Exception: if the post is already pending, patch its images (uploaded after INSERT).
+          if (payload.eventType !== 'INSERT') {
+            const { data: imgData } = await supabase
+              .from('posts')
+              .select('images')
+              .eq('id', updated.id)
+              .single()
+            if (imgData?.images) {
+              setPendingNewPosts(prev => {
+                if (!prev.some(p => p.id === updated.id)) return prev
+                return prev.map(p => p.id === updated.id ? { ...p, images: imgData.images } : p)
+              })
+            }
+            return
+          }
 
           const { data } = await supabase
             .from('posts')

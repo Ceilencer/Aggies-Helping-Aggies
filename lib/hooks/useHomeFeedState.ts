@@ -61,18 +61,40 @@ export function useHomeFeedState({
         const existingIndex = section.posts.findIndex(p => p.id === post.id)
         if (existingIndex !== -1) {
           isAlreadyVisible = true
-          // UPDATE: patch the existing post in place (e.g. images uploaded after insert)
-          const updated = section.posts.map((p, i) => i === existingIndex ? { ...p, ...post } : p)
+          // UPDATE: patch in place but preserve live-tracked counts. The post UPDATE
+          // may have been triggered by the comment_count DB trigger, which means the
+          // fetched feedPost has comment_count: 0 (not selected). Spreading post over
+          // the existing entry would reset those counts, so we keep the current values.
+          const updated = section.posts.map((p, i) =>
+            i === existingIndex
+              ? {
+                  ...p,
+                  ...post,
+                  comment_count: p.comment_count,
+                  like_count: p.like_count,
+                  user_has_liked: p.user_has_liked,
+                  like_id: p.like_id,
+                }
+              : p
+          )
           return { ...section, posts: updated }
         }
         return section
       })
     )
-    // Queue new/newly-approved posts instead of inserting immediately
-    if (!isAlreadyVisible) {
+    // Only queue genuine INSERT events. UPDATE events on non-visible posts are almost
+    // always the comment_count DB trigger firing on an older post — not a new post.
+    if (!isAlreadyVisible && _isInsert) {
       setPendingNewPosts(prev => {
         if (prev.some(p => p.id === post.id)) return prev.map(p => p.id === post.id ? post : p)
         return [post, ...prev]
+      })
+    } else if (!isAlreadyVisible && !_isInsert) {
+      // UPDATE on a non-visible post — may be images uploading after the initial INSERT.
+      // Patch images on any matching pending post without triggering a false bubble.
+      setPendingNewPosts(prev => {
+        if (!prev.some(p => p.id === post.id)) return prev
+        return prev.map(p => p.id === post.id ? { ...p, images: post.images } : p)
       })
     }
   }, [])

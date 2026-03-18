@@ -7,12 +7,14 @@ import type { FeedPost } from '@/lib/types'
 
 interface UseHomePostRealtimeArgs {
   trackedChannelIds: string[]
+  currentUserId?: string
   onPostUpserted: (post: FeedPost, isInsert: boolean) => void
   onPostDeleted: (postId: string) => void
 }
 
 export function useHomePostRealtime({
   trackedChannelIds,
+  currentUserId,
   onPostUpserted,
   onPostDeleted,
 }: UseHomePostRealtimeArgs) {
@@ -23,6 +25,8 @@ export function useHomePostRealtime({
   onPostUpsertedRef.current = onPostUpserted
   const onPostDeletedRef = useRef(onPostDeleted)
   onPostDeletedRef.current = onPostDeleted
+  const currentUserIdRef = useRef(currentUserId)
+  currentUserIdRef.current = currentUserId
 
 
   useEffect(() => {
@@ -59,6 +63,10 @@ export function useHomePostRealtime({
 
             // Only show approved/moderated posts
             if (!updated.is_moderated) return
+
+            // Author already sees their own post via onPostCreated — skip the INSERT event
+            // to prevent a false "new posts" bubble regardless of any state-update race.
+            if (payload.eventType === 'INSERT' && updated.author_id === currentUserIdRef.current) return
 
             const { data } = await supabase
               .from('posts')
