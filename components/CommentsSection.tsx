@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import CommentForm from '@/components/CommentForm'
 import CommentCard from '@/components/CommentCard'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import { ChevronUp } from 'lucide-react'
 import type { Comment, FeedAuthorDTO } from '@/lib/types'
 
@@ -27,10 +28,12 @@ export default function CommentsSection({
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [realtimeOk, setRealtimeOk] = useState(true)
   // Tracks which top-level comment threads have their replies expanded
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   // Track IDs that were optimistically added by the current user so Realtime doesn't duplicate them
   const optimisticIds = useRef<Set<string>>(new Set())
+  const { reportStatus } = useRealtimeStatus()
 
   useEffect(() => {
     loadComments()
@@ -101,12 +104,25 @@ export default function CommentsSection({
           setComments(prev => prev.filter(c => c.id !== deletedId))
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        reportStatus(`comments-${postId}`, status)
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
+        else if (status === 'SUBSCRIBED') setRealtimeOk(true)
+      })
 
     return () => {
       void supabase.removeChannel(subscription)
     }
-  }, [postId, currentUserId])
+  }, [postId, currentUserId, reportStatus])
+
+  // Fallback: poll every 30s if the realtime channel failed to connect
+  useEffect(() => {
+    if (realtimeOk) return
+    const id = setInterval(() => void loadComments(), 30_000)
+    return () => clearInterval(id)
+  // loadComments is stable — defined below, eslint can't verify but it is
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeOk])
 
   const loadComments = async () => {
     try {

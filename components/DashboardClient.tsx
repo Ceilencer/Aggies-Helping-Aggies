@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import Link from 'next/link'
+import { useCommentCountRealtime } from '@/lib/hooks/useCommentCountRealtime'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import CommentCountButton from '@/components/CommentCountButton'
 import PostCardHeader from '@/components/PostCardHeader'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
+import { NewPostsBubble } from '@/components/NewPostsBubble'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
@@ -88,6 +90,9 @@ export default function DashboardClient({
     handlePostCommentChange,
     handleChannelAnnouncementChange,
     handleRealtimePost,
+    pendingNewPostsCount,
+    flushPendingPosts,
+    dismissPendingPosts,
   } = useHomeFeedState({ profile, channelSections, allChannels })
 
   const {
@@ -131,6 +136,20 @@ export default function DashboardClient({
     onPostDeleted: handlePostDeleted,
   })
 
+  // Live comment counts on feed cards — increment when a new comment arrives
+  // for any post currently visible in the home feed.
+  const sectionsRef = useRef(sections)
+  sectionsRef.current = sections
+  const allPostIds = useMemo(() => sections.flatMap(s => s.posts.map(p => p.id)), [sections])
+
+  useCommentCountRealtime({
+    postIds: allPostIds,
+    onCommentInserted: (postId) => {
+      const post = sectionsRef.current.flatMap(s => s.posts).find(p => p.id === postId)
+      if (post) handlePostCommentChange(postId, (post.comment_count ?? 0) + 1)
+    },
+  })
+
   const onPostUpdated = (updatedPost: Post) => {
     handlePostUpdated(updatedPost)
     setEditingPostId(null)
@@ -146,6 +165,12 @@ export default function DashboardClient({
 
   return (
     <>
+      <NewPostsBubble
+        count={pendingNewPostsCount}
+        onLoad={flushPendingPosts}
+        onDismiss={dismissPendingPosts}
+      />
+
       <UserAgreementModal
         isOpen={agreementState.isOpen}
         onAgree={agreementState.handleAgree}

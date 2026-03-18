@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
 import { AdminCountProvider } from '@/components/AdminCountProvider'
-import LegalModal from '@/components/LegalModal'
+import { RealtimeStatusProvider } from '@/lib/realtime/RealtimeStatusContext'
+import { RealtimeStatusBanner } from '@/components/RealtimeStatusBanner'
+import LegalModal from '@/components/LegalModalClient'
 import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
 import { PRIVACY_SECTIONS, PRIVACY_EFFECTIVE_DATE } from '@/lib/legal/privacy'
 
@@ -56,6 +58,7 @@ export default async function DashboardLayout({
   const isAdmin = profile?.role === 'Admin'
 
   return (
+    <RealtimeStatusProvider>
     <AdminCountProvider isAdmin={isAdmin}>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
@@ -65,6 +68,8 @@ export default async function DashboardLayout({
         isAdmin={isAdmin}
         signOutAction={handleSignOut}
       />
+
+      <RealtimeStatusBanner />
 
       {/* Main Content */}
       <main className="container mx-auto flex-1 px-4 py-8">
@@ -89,5 +94,6 @@ export default async function DashboardLayout({
       </footer>
     </div>
     </AdminCountProvider>
+    </RealtimeStatusProvider>
   )
 }

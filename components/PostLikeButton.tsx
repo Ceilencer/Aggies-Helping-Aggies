@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Heart } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 
 interface PostLikeButtonProps {
   postId: string
@@ -21,11 +22,13 @@ export default function PostLikeButton({
   onLikeChange,
 }: PostLikeButtonProps) {
   const supabase = createClient()
+  const { reportStatus } = useRealtimeStatus()
   const [loading, setLoading] = useState(false)
   const [liked, setLiked] = useState(userHasLiked)
   const [count, setCount] = useState(likeCount)
   const [likeId, setLikeId] = useState<string | null>(initialLikeId)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [realtimeOk, setRealtimeOk] = useState(true)
 
   const refreshFromDatabase = async (userIdOverride?: string | null) => {
     const userId = userIdOverride ?? currentUserId
@@ -94,7 +97,11 @@ export default function PostLikeButton({
             await refreshFromDatabase(userId)
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          reportStatus(`post-likes-${postId}`, status)
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
+          else if (status === 'SUBSCRIBED') setRealtimeOk(true)
+        })
 
       return channel
     }
@@ -112,7 +119,16 @@ export default function PostLikeButton({
         supabase.removeChannel(activeChannel)
       }
     }
-  }, [postId])
+  }, [postId, reportStatus])
+
+  // Fallback: poll every 30s if the realtime channel failed to connect
+  useEffect(() => {
+    if (realtimeOk) return
+    const id = setInterval(() => void refreshFromDatabase(), 30_000)
+    return () => clearInterval(id)
+  // refreshFromDatabase reads currentUserId from state — it's stable enough for this use
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeOk])
 
   const handleLike = async () => {
     setLoading(true)

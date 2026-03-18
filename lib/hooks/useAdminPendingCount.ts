@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 
 export interface AdminPendingCounts {
   total: number
@@ -27,43 +28,47 @@ export function notifyAdminCountChanged() {
 
 export function useAdminPendingCount(enabled = true): AdminPendingCounts {
   const [counts, setCounts] = useState<AdminPendingCounts>(DEFAULT_COUNTS)
+  const [realtimeOk, setRealtimeOk] = useState(true)
   const supabase = createClient()
+  const { reportStatus } = useRealtimeStatus()
   const mountedRef = useRef(true)
   const channelNameRef = useRef(`admin-pending-count-${Math.random().toString(36).slice(2)}`)
+
+  const fetchCounts = useCallback(async () => {
+    const [postsResult, vrResult, reportsResult] = await Promise.all([
+      supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .in('approval_status', ['pending', 'pending_edit']),
+      supabase
+        .from('verification_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
+      supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_resolved', false),
+    ])
+
+    if (!mountedRef.current) return
+
+    const pendingPosts = postsResult.count ?? 0
+    const pendingUsers = vrResult.count ?? 0
+    const unresolvedReports = reportsResult.count ?? 0
+
+    setCounts({
+      pendingPosts,
+      pendingUsers,
+      unresolvedReports,
+      total: pendingPosts + pendingUsers + unresolvedReports,
+    })
+  // supabase is stable — created once per component mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!enabled) return
     mountedRef.current = true
-
-    const fetchCounts = async () => {
-      const [postsResult, vrResult, reportsResult] = await Promise.all([
-        supabase
-          .from('posts')
-          .select('*', { count: 'exact', head: true })
-          .in('approval_status', ['pending', 'pending_edit']),
-        supabase
-          .from('verification_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending'),
-        supabase
-          .from('reports')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_resolved', false),
-      ])
-
-      if (!mountedRef.current) return
-
-      const pendingPosts = postsResult.count ?? 0
-      const pendingUsers = vrResult.count ?? 0
-      const unresolvedReports = reportsResult.count ?? 0
-
-      setCounts({
-        pendingPosts,
-        pendingUsers,
-        unresolvedReports,
-        total: pendingPosts + pendingUsers + unresolvedReports,
-      })
-    }
 
     const handleAdminAction = () => void fetchCounts()
     let channel: ReturnType<typeof supabase.channel> | null = null
@@ -92,7 +97,11 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
           void fetchCounts()
         })
-        .subscribe()
+        .subscribe((status) => {
+          reportStatus(channelNameRef.current, status)
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
+          else if (status === 'SUBSCRIBED') setRealtimeOk(true)
+        })
     }
 
     void setup()
@@ -102,7 +111,14 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
       window.removeEventListener('admin-count-changed', handleAdminAction)
       if (channel) void supabase.removeChannel(channel)
     }
-  }, [enabled])
+  }, [enabled, fetchCounts])
+
+  // Fallback: poll every 30s if the realtime channel failed to connect
+  useEffect(() => {
+    if (!enabled || realtimeOk) return
+    const id = setInterval(() => void fetchCounts(), 30_000)
+    return () => clearInterval(id)
+  }, [enabled, realtimeOk, fetchCounts])
 
   return counts
 }

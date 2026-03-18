@@ -4,6 +4,8 @@ import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/li
 // Max posts shown per channel section on the home page
 const HOME_SECTION_LIMIT = 3
 
+
+
 export type ChannelSection = {
   channel: Channel
   posts: FeedPost[]
@@ -22,6 +24,7 @@ export function useHomeFeedState({
   allChannels,
 }: UseHomeFeedStateArgs) {
   const [sections, setSections] = useState<ChannelSection[]>(initialSections)
+  const [pendingNewPosts, setPendingNewPosts] = useState<FeedPost[]>([])
 
   const handlePostCreated = useCallback((newPost: Post, channel: Channel | null) => {
     const isApproved = newPost.approval_status === 'approved' || newPost.is_moderated === true
@@ -47,21 +50,49 @@ export function useHomeFeedState({
     )
   }, [allChannels, profile])
 
-  // Called by Realtime when another user's post is inserted or updated
-  const handleRealtimePost = useCallback((post: FeedPost, isInsert: boolean) => {
+  // Called by Realtime when another user's post is inserted or updated.
+  // UPDATEs of already-visible posts are patched immediately (e.g. image upload).
+  // New posts are held in a pending queue so they don't disrupt reading.
+  const handleRealtimePost = useCallback((post: FeedPost, _isInsert: boolean) => {
+    let isAlreadyVisible = false
     setSections(current =>
       current.map(section => {
         if (section.channel.id !== post.channel_id) return section
         const existingIndex = section.posts.findIndex(p => p.id === post.id)
         if (existingIndex !== -1) {
+          isAlreadyVisible = true
           // UPDATE: patch the existing post in place (e.g. images uploaded after insert)
           const updated = section.posts.map((p, i) => i === existingIndex ? { ...p, ...post } : p)
           return { ...section, posts: updated }
         }
-        // INSERT or newly-approved UPDATE: prepend and keep section limit
-        return { ...section, posts: [post, ...section.posts].slice(0, HOME_SECTION_LIMIT) }
+        return section
       })
     )
+    // Queue new/newly-approved posts instead of inserting immediately
+    if (!isAlreadyVisible) {
+      setPendingNewPosts(prev => {
+        if (prev.some(p => p.id === post.id)) return prev.map(p => p.id === post.id ? post : p)
+        return [post, ...prev]
+      })
+    }
+  }, [])
+
+  const flushPendingPosts = useCallback(() => {
+    if (pendingNewPosts.length === 0) return
+    setSections(current =>
+      current.map(section => {
+        const newForSection = pendingNewPosts.filter(p => p.channel_id === section.channel.id)
+        if (newForSection.length === 0) return section
+        const existingIds = new Set(section.posts.map(p => p.id))
+        const unique = newForSection.filter(p => !existingIds.has(p.id))
+        return { ...section, posts: [...unique, ...section.posts].slice(0, HOME_SECTION_LIMIT) }
+      })
+    )
+    setPendingNewPosts([])
+  }, [pendingNewPosts])
+
+  const dismissPendingPosts = useCallback(() => {
+    setPendingNewPosts([])
   }, [])
 
   const handlePostDeleted = useCallback((postId: string) => {
@@ -137,5 +168,8 @@ export function useHomeFeedState({
     handlePostCommentChange,
     handleChannelAnnouncementChange,
     handleRealtimePost,
+    pendingNewPostsCount: pendingNewPosts.length,
+    flushPendingPosts,
+    dismissPendingPosts,
   }
 }

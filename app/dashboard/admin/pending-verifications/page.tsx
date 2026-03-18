@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -19,6 +20,7 @@ type PendingUser = AdminUserVerificationDTO
 
 export default function PendingVerificationsPage() {
   const supabase = createClient()
+  const { reportStatus } = useRealtimeStatus()
 
   const [users, setUsers] = useState<PendingUser[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,6 +30,7 @@ export default function PendingVerificationsPage() {
   const [rejectionReasons, setRejectionReasons] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [duplicateEmails, setDuplicateEmails] = useState<Set<string>>(new Set())
+  const [realtimeOk, setRealtimeOk] = useState(true)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -105,7 +108,11 @@ export default function PendingVerificationsPage() {
           { event: 'INSERT', schema: 'public', table: 'verification_requests' },
           () => { void loadUsers() }
         )
-        .subscribe()
+        .subscribe((status) => {
+          reportStatus('pending-verifications', status)
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
+          else if (status === 'SUBSCRIBED') setRealtimeOk(true)
+        })
     }
 
     void setup()
@@ -113,7 +120,16 @@ export default function PendingVerificationsPage() {
     return () => {
       if (channel) void supabase.removeChannel(channel)
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportStatus])
+
+  // Fallback: poll every 30s if realtime failed
+  useEffect(() => {
+    if (realtimeOk) return
+    const id = setInterval(() => void loadUsers(), 30_000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeOk])
 
   const handleAction = async (userId: string, action: 'approve' | 'reject') => {
     setActioning(userId)

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import type { ChannelAnnouncement } from '@/lib/types'
 
 interface UseAnnouncementRealtimeArgs {
@@ -22,6 +23,7 @@ export function useAnnouncementRealtime({
   onNewHomeAnnouncement,
 }: UseAnnouncementRealtimeArgs) {
   const supabase = createClient()
+  const { reportStatus } = useRealtimeStatus()
 
   useEffect(() => {
     const subscription = supabase
@@ -83,7 +85,9 @@ export function useAnnouncementRealtime({
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        reportStatus('announcement-realtime', status)
+      })
 
     return () => {
       void supabase.removeChannel(subscription)

@@ -10,6 +10,7 @@ import CommentCountButton from '@/components/CommentCountButton'
 import PostCardHeader from '@/components/PostCardHeader'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import FloatingCreatePostButton from '@/components/FloatingCreatePostButton'
+import { NewPostsBubble } from '@/components/NewPostsBubble'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
@@ -122,6 +123,7 @@ export default function ChannelPage() {
     loadMoreTriggerRef,
     pendingNewPostsCount,
     flushPendingPosts,
+    dismissPendingPosts,
   } = useChannelFeedState({
     rawSlug,
     canonicalSlug,
@@ -199,6 +201,12 @@ export default function ChannelPage() {
   }
 
   return (
+    <>
+    <NewPostsBubble
+      count={pendingNewPostsCount}
+      onLoad={flushPendingPosts}
+      onDismiss={dismissPendingPosts}
+    />
     <div className="space-y-6">
       {/* Header */}
       <Card>
@@ -247,14 +255,6 @@ export default function ChannelPage() {
 
       {/* Posts */}
       <div className="space-y-4">
-        {pendingNewPostsCount > 0 && (
-          <button
-            onClick={flushPendingPosts}
-            className="w-full rounded-lg border border-primary/30 bg-primary/10 py-2 px-4 text-sm font-medium text-primary hover:bg-primary/20 transition-colors"
-          >
-            ↑ {pendingNewPostsCount} new {pendingNewPostsCount === 1 ? 'post' : 'posts'} — click to load
-          </button>
-        )}
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
             <Card key={post.id} className="hover:shadow-md transition-shadow">
@@ -510,5 +510,6 @@ export default function ChannelPage() {
 
       <ToastContainer />
     </div>
+    </>
   )
 }

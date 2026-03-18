@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import type { ChannelAnnouncement, ChannelListDTO, FeedAuthorDTO, FeedPost, FeedPostQueryRowDTO, UserRole } from '@/lib/types'
 
 const POSTS_PAGE_SIZE = 10
@@ -14,6 +15,7 @@ type UseChannelFeedStateArgs = {
 export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnouncement }: UseChannelFeedStateArgs) {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
+  const { reportStatus } = useRealtimeStatus()
 
   const [channel, setChannel] = useState<ChannelListDTO | null>(null)
   const [channelAnnouncement, setChannelAnnouncement] = useState<ChannelAnnouncement | null>(null)
@@ -443,12 +445,14 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
           })
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        reportStatus(`channel-${channelId}-new-posts`, status)
+      })
 
     return () => {
       void supabase.removeChannel(subscription)
     }
-  }, [channel?.id, supabase])
+  }, [channel?.id, supabase, reportStatus])
 
   // Keep a stable ref to the callback so it never invalidates the subscription effect
   const onRealtimeAnnouncementRef = useRef(onRealtimeAnnouncement)
@@ -509,12 +513,48 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
           onRealtimeAnnouncementRef.current?.(normalized)
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        reportStatus(`channel-${channel?.id}-announcement`, status)
+      })
 
     return () => {
       void supabase.removeChannel(subscription)
     }
-  }, [channel?.id, supabase])
+  }, [channel?.id, supabase, reportStatus])
+
+  // Supabase Realtime: live comment count increments for cards in the feed.
+  // On INSERT we have payload.new.post_id so we can increment precisely.
+  // DELETE events don't include post_id with DEFAULT replica identity, so we
+  // leave the card count as-is; CommentsSection keeps the detail view accurate.
+  useEffect(() => {
+    if (!channel?.id) return
+
+    const channelKey = `channel-${channel.id}-comment-counts`
+    const subscription = supabase
+      .channel(channelKey)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'comments' },
+        (payload) => {
+          const postId = (payload.new as { post_id?: string }).post_id
+          if (!postId) return
+          const isTracked = postsRef.current.some(p => p.id === postId)
+          if (!isTracked) return
+          setPosts(current =>
+            current.map(p =>
+              p.id === postId ? { ...p, comment_count: (p.comment_count ?? 0) + 1 } : p
+            )
+          )
+        }
+      )
+      .subscribe((status) => {
+        reportStatus(channelKey, status)
+      })
+
+    return () => {
+      void supabase.removeChannel(subscription)
+    }
+  }, [channel?.id, supabase, reportStatus])
 
   const flushPendingPosts = useCallback(() => {
     if (pendingNewPosts.length === 0) return
@@ -526,6 +566,10 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
     setPostOffset(o => o + pendingNewPosts.length)
     setPendingNewPosts([])
   }, [pendingNewPosts])
+
+  const dismissPendingPosts = useCallback(() => {
+    setPendingNewPosts([])
+  }, [])
 
   useEffect(() => {
     if (!channel?.id || loading || !hasMorePosts) {
@@ -571,5 +615,6 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
     loadMoreTriggerRef,
     pendingNewPostsCount: pendingNewPosts.length,
     flushPendingPosts,
+    dismissPendingPosts,
   }
 }

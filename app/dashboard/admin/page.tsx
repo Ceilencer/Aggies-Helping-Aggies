@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import type { AdminPendingPostDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
@@ -23,6 +24,8 @@ export default function AdminDashboardPage() {
   const [accessDenied, setAccessDenied] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [newPostsAvailable, setNewPostsAvailable] = useState(false)
+  const [realtimeOk, setRealtimeOk] = useState(true)
+  const { reportStatus } = useRealtimeStatus()
 
   const loadedPostIdsRef = useRef<Set<string>>(new Set())
 
@@ -84,8 +87,9 @@ export default function AdminDashboardPage() {
       await supabase.auth.getSession()
       if (!mounted) return
 
+      const channelName = `admin-new-posts-${Math.random().toString(36).slice(2)}`
       channel = supabase
-        .channel(`admin-new-posts-${Math.random().toString(36).slice(2)}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'posts' },
@@ -101,7 +105,11 @@ export default function AdminDashboardPage() {
             }
           }
         )
-        .subscribe()
+        .subscribe((status) => {
+          reportStatus(channelName, status)
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
+          else if (status === 'SUBSCRIBED') setRealtimeOk(true)
+        })
     }
 
     void setup()
@@ -110,7 +118,16 @@ export default function AdminDashboardPage() {
       mounted = false
       if (channel) void supabase.removeChannel(channel)
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportStatus])
+
+  // Fallback: silently reload every 30s if realtime failed
+  useEffect(() => {
+    if (realtimeOk) return
+    const id = setInterval(() => void load(true), 30_000)
+    return () => clearInterval(id)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [realtimeOk])
 
   const loadMore = async () => {
     if (accessDenied) return

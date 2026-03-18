@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import type { FeedPost } from '@/lib/types'
 
 interface UseHomePostRealtimeArgs {
@@ -16,6 +17,7 @@ export function useHomePostRealtime({
   onPostDeleted,
 }: UseHomePostRealtimeArgs) {
   const supabase = createClient()
+  const { reportStatus } = useRealtimeStatus()
 
   const onPostUpsertedRef = useRef(onPostUpserted)
   onPostUpsertedRef.current = onPostUpserted
@@ -29,9 +31,10 @@ export function useHomePostRealtime({
     // Create one filtered subscription per channel — filtered postgres_changes
     // subscriptions work reliably with RLS, whereas a single unfiltered
     // subscription does not deliver full payloads when RLS is enabled.
-    const subscriptions = trackedChannelIds.map((channelId) =>
-      supabase
-        .channel(`home-posts-realtime-${channelId}`)
+    const subscriptions = trackedChannelIds.map((channelId) => {
+      const channelKey = `home-posts-realtime-${channelId}`
+      return supabase
+        .channel(channelKey)
         .on(
           'postgres_changes',
           {
@@ -95,8 +98,10 @@ export function useHomePostRealtime({
             onPostUpsertedRef.current(feedPost, payload.eventType === 'INSERT')
           }
         )
-        .subscribe()
-    )
+        .subscribe((status) => {
+          reportStatus(channelKey, status)
+        })
+    })
 
     return () => {
       subscriptions.forEach((sub) => void supabase.removeChannel(sub))
