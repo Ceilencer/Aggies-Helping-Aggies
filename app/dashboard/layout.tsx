@@ -114,7 +114,7 @@ export default async function DashboardLayout({
     <RealtimeStatusProvider>
     <AdminCountProvider isAdmin={isAdmin}>
     <NotificationCountProvider userId={user.id} initialUnreadCount={unreadCount ?? 0}>
-    <AuthGuard />
+    <AuthGuard userId={user.id} />
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
       <Header
