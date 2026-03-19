@@ -55,6 +55,7 @@ export async function GET(request: Request) {
   // --- Existing approved/suspended user --------------------------------
   if (preLoginStatus !== null) {
     if (preLoginStatus === 'suspended') {
+      await supabase.auth.signOut()
       return NextResponse.redirect(`${origin}/?suspended=true`)
     }
 
