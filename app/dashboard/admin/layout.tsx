@@ -12,6 +12,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const navItems = [
     { href: '/dashboard/admin', label: 'Pending Posts', count: pendingPosts },
     { href: '/dashboard/admin/users', label: 'User Management', count: null },
+    { href: '/dashboard/admin/suspended-users', label: 'Suspended Users', count: null },
     { href: '/dashboard/admin/pending-verifications', label: 'Pending New Users', count: pendingUsers },
     { href: '/dashboard/admin/reported-posts', label: 'Reported Posts & Comments', count: unresolvedReports },
   ]

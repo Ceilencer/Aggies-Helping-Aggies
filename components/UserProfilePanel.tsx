@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { UserRole, FlairType } from '@/lib/types'
+import { UserRole, FlairType, UserBan } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
@@ -70,6 +70,35 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
 
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [showSuspensionForm, setShowSuspensionForm] = React.useState(false)
+  const [suspensionType, setSuspensionType] = React.useState<'temporary' | 'permanent'>('temporary')
+  const [suspensionHours, setSuspensionHours] = React.useState<string>('24')
+  const [suspensionReason, setSuspensionReason] = React.useState('')
+  const [isSuspending, setIsSuspending] = React.useState(false)
+  const [activeBan, setActiveBan] = React.useState<UserBan | null>(null)
+  const [isLoadingBan, setIsLoadingBan] = React.useState(false)
+  const [isUnbanning, setIsUnbanning] = React.useState(false)
+
+  React.useEffect(() => {
+    const fetchActiveBan = async () => {
+      setIsLoadingBan(true)
+      try {
+        const response = await fetch(`/api/admin/users/${userId}/ban`)
+        if (response.ok) {
+          const { data } = await response.json()
+          setActiveBan(data || null)
+        }
+      } catch (error) {
+        console.error('Failed to fetch ban info:', error)
+      } finally {
+        setIsLoadingBan(false)
+      }
+    }
+
+    if (userId && isAdmin) {
+      void fetchActiveBan()
+    }
+  }, [userId, isAdmin])
 
   const handleDeleteAccount = async () => {
     setIsDeleting(true)
@@ -91,6 +120,93 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
       })
       setIsDeleting(false)
       setShowDeleteConfirm(false)
+    }
+  }
+
+  const handleSuspendUser = async () => {
+    if (!suspensionReason.trim()) {
+      showToast({
+        message: 'Please provide a reason for suspension',
+        type: 'error',
+      })
+      return
+    }
+
+    if (suspensionType === 'temporary' && (!suspensionHours || parseInt(suspensionHours) <= 0)) {
+      showToast({
+        message: 'Please enter a valid number of hours',
+        type: 'error',
+      })
+      return
+    }
+
+    setIsSuspending(true)
+    try {
+      const res = await fetch('/api/admin/users/suspend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          banType: suspensionType,
+          durationHours: suspensionType === 'temporary' ? parseInt(suspensionHours) : undefined,
+          reason: suspensionReason.trim(),
+        }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || 'Failed to suspend user')
+      }
+      showToast({
+        message: `User ${suspensionType === 'temporary' ? `suspended for ${suspensionHours} hours` : 'permanently banned'}`,
+        type: 'success',
+      })
+      setShowSuspensionForm(false)
+      setSuspensionReason('')
+      setSuspensionHours('24')
+      setSuspensionType('temporary')
+      fetchData()
+      // Refresh ban status
+      const banResponse = await fetch(`/api/admin/users/${userId}/ban`)
+      if (banResponse.ok) {
+        const { data } = await banResponse.json()
+        setActiveBan(data || null)
+      }
+    } catch (err) {
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to suspend user',
+        type: 'error',
+      })
+      setIsSuspending(false)
+    }
+  }
+
+  const handleUnsuspendUser = async () => {
+    if (!activeBan) return
+    
+    setIsUnbanning(true)
+    try {
+      const res = await fetch('/api/admin/users/unsuspend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, banId: activeBan.id }),
+      })
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error || 'Failed to unsuspend user')
+      }
+      showToast({
+        message: 'User unsuspended successfully',
+        type: 'success',
+      })
+      setActiveBan(null)
+      fetchData()
+    } catch (err) {
+      showToast({
+        message: err instanceof Error ? err.message : 'Failed to unsuspend user',
+        type: 'error',
+      })
+    } finally {
+      setIsUnbanning(false)
     }
   }
 
@@ -346,9 +462,149 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
               </Button>
             </div>
 
+            {/* Suspension Status */}
+            {!isLoadingBan && activeBan && (
+              <div className="mt-6 rounded-lg border border-orange-200 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-950/20 p-4">
+                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 mb-2">Suspension Status</h4>
+                <dl className="space-y-2 text-sm mb-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-muted-foreground">Type:</dt>
+                    <dd className="font-medium capitalize">{activeBan.ban_type}</dd>
+                  </div>
+                  {activeBan.ban_type === 'temporary' && activeBan.expires_at && (
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-muted-foreground">Expires:</dt>
+                      <dd className="font-medium">{new Date(activeBan.expires_at).toLocaleString()}</dd>
+                    </div>
+                  )}
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-muted-foreground">Reason:</dt>
+                    <dd className="font-medium text-right">{activeBan.reason}</dd>
+                  </div>
+                </dl>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleUnsuspendUser}
+                  disabled={isUnbanning}
+                  className="w-full"
+                >
+                  {isUnbanning ? 'Unsuspending...' : 'Unsuspend User'}
+                </Button>
+              </div>
+            )}
+
             {/* Danger Zone */}
             <div className="mt-6 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4">
               <h4 className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">Danger Zone</h4>
+
+              {/* Suspension/Ban Section */}
+              <div className="mb-4 pb-4 border-b border-red-200 dark:border-red-900/40">
+                {showSuspensionForm ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Suspend or ban this user. They will be restricted from accessing the dashboard.
+                    </p>
+                    <div className="space-y-2">
+                      <Label htmlFor="suspension-type" className="text-sm">Action Type</Label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="suspension-type"
+                            value="temporary"
+                            checked={suspensionType === 'temporary'}
+                            onChange={(e) => setSuspensionType(e.target.value as 'temporary' | 'permanent')}
+                            className="rounded"
+                          />
+                          <span>Temporary Suspension</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name="suspension-type"
+                            value="permanent"
+                            checked={suspensionType === 'permanent'}
+                            onChange={(e) => setSuspensionType(e.target.value as 'temporary' | 'permanent')}
+                            className="rounded"
+                          />
+                          <span>Permanent Ban</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {suspensionType === 'temporary' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="suspension-hours" className="text-sm">Duration (hours)</Label>
+                        <input
+                          id="suspension-hours"
+                          type="number"
+                          min="1"
+                          value={suspensionHours}
+                          onChange={(e) => setSuspensionHours(e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          placeholder="e.g., 24"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="suspension-reason" className="text-sm">Reason</Label>
+                      <textarea
+                        id="suspension-reason"
+                        value={suspensionReason}
+                        onChange={(e) => setSuspensionReason(e.target.value)}
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="Enter reason for suspension/ban..."
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleSuspendUser}
+                        disabled={isSuspending}
+                      >
+                        {isSuspending ? 'Processing...' : `${suspensionType === 'temporary' ? 'Suspend' : 'Ban'} User`}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowSuspensionForm(false)
+                          setSuspensionReason('')
+                          setSuspensionHours('24')
+                          setSuspensionType('temporary')
+                        }}
+                        disabled={isSuspending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Temporarily suspend or permanently ban this user from accessing the dashboard.
+                    </p>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => setShowSuspensionForm(true)}
+                    >
+                      Suspend or Ban User
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Delete Account Section */}
               <p className="text-xs text-muted-foreground mb-3">
                 Permanently delete this account and all associated data. This cannot be undone.
               </p>

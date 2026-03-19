@@ -30,7 +30,7 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, avatar_url')
+    .select('full_name, role, avatar_url, account_status')
     .eq('id', user.id)
     .single()
 
@@ -49,6 +49,42 @@ export default async function DashboardLayout({
     }
 
     redirect('/pending-approval')
+  }
+
+  // Check if user is suspended or has active bans
+  if (profile.account_status === 'suspended') {
+    // Check if there are active bans for this user
+    const { data: activeBans } = await supabase
+      .from('user_bans')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (activeBans) {
+      const expiresAt = activeBans.expires_at ? new Date(activeBans.expires_at) : null
+      const now = new Date()
+
+      // Check if ban is still active (permanent or expiry hasn't passed)
+      const isStillActive = activeBans.ban_type === 'permanent' || (expiresAt && expiresAt > now)
+
+      if (isStillActive) {
+        // Redirect to landing page
+        redirect('/?suspended=true')
+      } else if (expiresAt && expiresAt <= now) {
+        // Suspension has expired, update account status back to active
+        await supabase
+          .from('profiles')
+          .update({ account_status: 'active' })
+          .eq('id', user.id)
+
+        // Mark ban as inactive
+        await supabase
+          .from('user_bans')
+          .update({ is_active: false })
+          .eq('id', activeBans.id)
+      }
+    }
   }
 
   const displayName = profile.full_name || 'User'

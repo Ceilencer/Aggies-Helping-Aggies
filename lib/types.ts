@@ -50,6 +50,19 @@ export interface AdminNote {
   creator?: Profile
 }
 
+export interface UserBan {
+  id: string
+  user_id: string
+  banned_by: string | null
+  ban_type: 'temporary' | 'permanent'
+  duration_days: number | null
+  reason: string
+  is_active: boolean
+  expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface VerificationRequest {
   id: string
   user_id: string
