@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   // --- Existing approved/suspended user --------------------------------
   if (preLoginStatus !== null) {
     if (preLoginStatus === 'suspended') {
-      return NextResponse.redirect(`${origin}/login`)
+      return NextResponse.redirect(`${origin}/?suspended=true`)
     }
 
     // Active returning user — update last_login via RPC and go to dashboard.

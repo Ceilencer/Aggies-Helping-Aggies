@@ -171,7 +171,7 @@ export default function SuspendedUsersPage() {
             ) : (
               <div className="space-y-3">
                 {filteredUsers.map((ban) => {
-                  const profile = ban.profile?.[0] || ban.profile
+                  const profile = ban.profile
                   const expired = isExpired(ban)
                   return (
                     <div

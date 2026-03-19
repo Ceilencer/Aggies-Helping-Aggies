@@ -38,6 +38,17 @@ export async function POST(request: Request) {
   try {
     const adminId = admin.user.id
 
+    // Prevent banning other admins
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single()
+
+    if (targetProfile?.role === 'admin') {
+      return NextResponse.json({ error: 'Cannot suspend an admin account' }, { status: 403 })
+    }
+
     // Calculate expiration time for temporary bans
     const expiresAt =
       banType === 'temporary' && durationHours
@@ -45,14 +56,14 @@ export async function POST(request: Request) {
         : null
 
     // Create ban record
-    const { error: banError } = await supabase.from('user_bans').insert({
+    const { data: banData, error: banError } = await supabase.from('user_bans').insert({
       user_id: userId,
       banned_by: adminId,
       ban_type: banType,
       reason: reason.trim(),
       is_active: true,
       expires_at: expiresAt,
-    })
+    }).select('id').single()
 
     if (banError) {
       console.error('Ban creation error:', banError)
@@ -67,10 +78,9 @@ export async function POST(request: Request) {
 
     if (updateError) {
       console.error('Profile update error:', updateError)
-      return NextResponse.json(
-        { error: 'Ban created but failed to update account status' },
-        { status: 500 }
-      )
+      // Roll back the ban record to avoid inconsistent state
+      await supabase.from('user_bans').delete().eq('id', banData.id)
+      return NextResponse.json({ error: 'Failed to update account status' }, { status: 500 })
     }
 
     return NextResponse.json({

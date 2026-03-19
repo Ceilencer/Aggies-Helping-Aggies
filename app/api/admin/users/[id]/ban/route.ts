@@ -4,18 +4,14 @@ import { requireAdminUser } from '@/lib/utils/api-auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createClient()
 
   const admin = await requireAdminUser(supabase)
   if ('error' in admin) return admin.error
 
-  const userId = params.id
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
-  }
+  const { id: userId } = await params
 
   try {
     const { data: ban, error } = await supabase

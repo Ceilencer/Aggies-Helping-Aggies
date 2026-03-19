@@ -92,7 +92,7 @@ export async function proxy(request: NextRequest) {
     return redirectResponse
   }
 
-  if (pathname === '/' && user) {
+  if (pathname === '/' && user && !request.nextUrl.searchParams.has('suspended')) {
     const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
     redirectResponse.headers.set('Content-Security-Policy', csp)
     return redirectResponse

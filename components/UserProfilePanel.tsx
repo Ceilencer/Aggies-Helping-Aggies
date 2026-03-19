@@ -176,6 +176,7 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
         message: err instanceof Error ? err.message : 'Failed to suspend user',
         type: 'error',
       })
+    } finally {
       setIsSuspending(false)
     }
   }

@@ -55,7 +55,6 @@ export interface UserBan {
   user_id: string
   banned_by: string | null
   ban_type: 'temporary' | 'permanent'
-  duration_days: number | null
   reason: string
   is_active: boolean
   expires_at: string | null
