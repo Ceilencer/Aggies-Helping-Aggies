@@ -30,7 +30,8 @@
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -type f -name *toast* -o -name *notif*)",
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -type f \\\\\\(-name *sql -o -name *schema* \\\\\\))",
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components -type f -name *PostAdmin* -o -name *AdminPost* -o -name *PendingPost*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(ls /c/Users/cobyr/Capstone/Howdy-Helps-Capstone/*.ts)"
     ]
   }
 }

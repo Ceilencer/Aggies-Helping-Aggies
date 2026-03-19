@@ -69,8 +69,8 @@ export default async function DashboardLayout({
       const isStillActive = activeBans.ban_type === 'permanent' || (expiresAt && expiresAt > now)
 
       if (isStillActive) {
-        // Redirect to landing page
-        redirect('/?suspended=true')
+        // Route through signout to clear the session before showing the suspended page
+        redirect('/auth/signout?reason=suspended')
       } else if (expiresAt && expiresAt <= now) {
         // Suspension has expired, update account status back to active
         await supabase
