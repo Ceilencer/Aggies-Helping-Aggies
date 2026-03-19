@@ -105,7 +105,7 @@ export default function CreatePostForm({
                 <option value="">Select a channel...</option>
                 {channels.map((channel) => (
                   <option key={channel.id} value={channel.id}>
-                    {channel.icon} {channel.name}
+                    {channel.name}
                   </option>
                 ))}
               </select>

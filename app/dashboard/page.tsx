@@ -45,7 +45,7 @@ export default async function DashboardPage() {
 
   const homeChannel = allChannels.find((channel) => channel.slug === 'home')
   const displayChannels = sortChannelsByDisplayOrder(
-    allChannels.filter((channel) => channel.slug !== 'home')
+    allChannels.filter((channel) => channel.slug !== 'home' && channel.slug !== 'announcements')
   )
 
   // --- WAVE 3: Fetch posts per channel + channel announcements + home announcement in parallel ---

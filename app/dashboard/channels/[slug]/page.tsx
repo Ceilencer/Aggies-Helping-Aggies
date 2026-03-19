@@ -20,6 +20,7 @@ import AnnouncementCard from '@/components/AnnouncementCard'
 import UserAvatar from '@/components/UserAvatar'
 import { useChannelFeedState } from '@/lib/hooks/useChannelFeedState'
 import { formatRelativeTime } from '@/lib/utils'
+import ChannelIcon from '@/components/ChannelIcon'
 import { useToast } from '@/components/ui/toast'
 import type { Profile, Post, Channel, ChannelAnnouncement } from '@/lib/types'
 
@@ -212,7 +213,7 @@ export default function ChannelPage() {
       <Card>
         <CardHeader className="bg-dash-header-bg text-dash-header-text">
           <div className="flex items-center space-x-3">
-            <span className="text-3xl">{channel.icon}</span>
+            <ChannelIcon slug={channel.slug} size={28} />
             <div>
               <h1 className="text-2xl font-bold text-dash-header-text">{channel.name}</h1>
               <p className="text-dash-header-text/80">{channel.description}</p>

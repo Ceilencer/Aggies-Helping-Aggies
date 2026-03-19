@@ -104,10 +104,10 @@ export function getInitials(name: string): string {
  */
 export const CHANNEL_DISPLAY_ORDER = [
   'general',
-  'fundraising',
-  'football-tickets',
-  'jobs-networking',
+  'aggie-ring',
+  'jobs',
   'promotions',
+  'tickets',
 ]
 
 export function sortChannelsByDisplayOrder<T extends { slug: string }>(channels: T[]): T[] {

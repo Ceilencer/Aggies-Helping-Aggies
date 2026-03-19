@@ -25,6 +25,7 @@ import { useAnnouncementRealtime } from '@/lib/hooks/useAnnouncementRealtime'
 import { useHomePostRealtime } from '@/lib/hooks/useHomePostRealtime'
 import { useModalState } from '@/lib/hooks/useModalState'
 import { getInitials } from '@/lib/utils'
+import ChannelIcon from '@/components/ChannelIcon'
 import { useToast } from '@/components/ui/toast'
 import type { Channel, ChannelAnnouncement, FeedPost, Post, Profile } from '@/lib/types'
 
@@ -233,7 +234,7 @@ export default function DashboardClient({
               <div key={channel.id} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-bold text-page-heading-text flex items-center gap-2">
-                    {channel.icon && <span aria-hidden="true">{channel.icon}</span>}
+                    <ChannelIcon slug={channel.slug} size={20} aria-hidden="true" />
                     <span>Latest from {channel.name}</span>
                   </h2>
                   <Link

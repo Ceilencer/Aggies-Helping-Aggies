@@ -6,12 +6,12 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import {
   Briefcase,
-  Gem,
   Home,
   Megaphone,
-  MessageCircle,
+  MessagesSquare,
   Ticket,
 } from "lucide-react";
+import AggieRingIcon from "@/components/AggieRingIcon";
 import { getInitials } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { AdminShieldLink } from "@/components/AdminShieldLink";
@@ -27,19 +27,13 @@ const CHANNELS = [
     id: "general",
     label: "General Discussion",
     href: "/dashboard/channels/general",
-    icon: MessageCircle,
+    icon: MessagesSquare,
   },
   {
     id: "aggie-ring",
     label: "Ring Fundraising",
     href: "/dashboard/channels/aggie-ring",
-    icon: Gem,
-  },
-  {
-    id: "tickets",
-    label: "Tickets",
-    href: "/dashboard/channels/tickets",
-    icon: Ticket,
+    icon: AggieRingIcon,
   },
   {
     id: "jobs",
@@ -52,6 +46,12 @@ const CHANNELS = [
     label: "Promotions & Events",
     href: "/dashboard/channels/promotions",
     icon: Megaphone,
+  },
+  {
+    id: "tickets",
+    label: "Tickets",
+    href: "/dashboard/channels/tickets",
+    icon: Ticket,
   },
 ];
 

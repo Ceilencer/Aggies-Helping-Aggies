@@ -1,12 +1,15 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Header from '@/components/Header'
+import LeftSidebar from '@/components/LeftSidebar'
 import { AdminCountProvider } from '@/components/AdminCountProvider'
 import { RealtimeStatusProvider } from '@/lib/realtime/RealtimeStatusContext'
 import { RealtimeStatusBanner } from '@/components/RealtimeStatusBanner'
 import LegalModal from '@/components/LegalModalClient'
 import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
 import { PRIVACY_SECTIONS, PRIVACY_EFFECTIVE_DATE } from '@/lib/legal/privacy'
+import { getCachedAllChannels } from '@/lib/supabase/cached-queries'
+import { sortChannelsByDisplayOrder } from '@/lib/utils'
 
 export default async function DashboardLayout({
   children,
@@ -57,6 +60,11 @@ export default async function DashboardLayout({
 
   const isAdmin = profile?.role === 'Admin'
 
+  const allChannels = await getCachedAllChannels(supabase)
+  const sidebarChannels = sortChannelsByDisplayOrder(
+    allChannels.filter((c) => c.slug !== 'home')
+  )
+
   return (
     <RealtimeStatusProvider>
     <AdminCountProvider isAdmin={isAdmin}>
@@ -72,8 +80,16 @@ export default async function DashboardLayout({
       <RealtimeStatusBanner />
 
       {/* Main Content */}
-      <main className="container mx-auto flex-1 px-4 py-8">
-        {children}
+      <main className="flex-1">
+        <div className="flex">
+          <div className="hidden lg:flex flex-1 justify-start pl-4">
+            <LeftSidebar channels={sidebarChannels} isAdmin={isAdmin} />
+          </div>
+          <div className="w-full lg:max-w-2xl px-4 lg:px-0 py-8">
+            {children}
+          </div>
+          <div className="hidden lg:block flex-1" />
+        </div>
       </main>
 
       {/* Footer */}

@@ -8,6 +8,7 @@ import { getRoleBadgeColor } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Edit2 } from 'lucide-react'
 import type { ChannelListDTO } from '@/lib/types'
+import ChannelIcon from '@/components/ChannelIcon'
 
 interface PostCardHeaderProps {
   post: any
@@ -77,7 +78,12 @@ export default function PostCardHeader({
             </span>
           </div>
           <div className="flex items-center space-x-2 text-sm text-card-subtext">
-            <span>{post.channel?.icon} {post.channel?.name}</span>
+            {post.channel?.slug && (
+              <span className="flex items-center gap-1">
+                <ChannelIcon slug={post.channel.slug} size={13} />
+                {post.channel.name}
+              </span>
+            )}
             <span>•</span>
             <span>{formattedDate || '—'}</span>
             {expiryLabel && (

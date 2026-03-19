@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { MoreVertical, Flag } from 'lucide-react'
 import ReportModal from '@/components/ReportModal'
 import type { ChannelListDTO } from '@/lib/types'
+import ChannelIcon from '@/components/ChannelIcon'
 
 interface PostAdminMenuProps {
   postId: string
@@ -154,7 +155,7 @@ export default function PostAdminMenu({
                         channel.id === postChannelId ? 'font-semibold' : ''
                       }`}
                     >
-                      {channel.icon && <span className="mr-2">{channel.icon}</span>}
+                      <ChannelIcon slug={channel.slug} size={14} className="mr-2 inline-block shrink-0" />
                       {channel.name}
                     </button>
                   ))}
