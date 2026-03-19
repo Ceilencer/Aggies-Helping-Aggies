@@ -1,6 +1,6 @@
 export default function ChannelLoading() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="mx-auto w-full max-w-2xl space-y-6 animate-pulse">
       {/* Header Card */}
       <div className="rounded-lg border bg-card">
         <div className="bg-muted p-6">

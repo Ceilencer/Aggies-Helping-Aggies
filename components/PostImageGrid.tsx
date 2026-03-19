@@ -6,9 +6,10 @@ import { useState } from 'react'
 interface PostImageGridProps {
   images: string[]
   postTitle: string
+  className?: string
 }
 
-export function PostImageGrid({ images, postTitle }: PostImageGridProps) {
+export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hidden rounded-lg border border-border' }: PostImageGridProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   if (!images || images.length === 0) return null
@@ -52,11 +53,20 @@ export function PostImageGrid({ images, postTitle }: PostImageGridProps) {
   let grid: React.ReactNode
 
   if (count === 1) {
-    // Single image: full width, natural height
+    // Single image: full width, natural aspect ratio capped at 480px tall
     grid = (
-      <div className="h-72 sm:h-96">
-        <Tile index={0} className="w-full h-full" sizes="(max-width: 768px) 100vw, 700px" />
-      </div>
+      <button
+        onClick={() => setSelectedIndex(0)}
+        className="flex items-center w-full overflow-hidden max-h-[480px] group bg-muted"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={images[0]}
+          alt={`${postTitle} — image 1`}
+          className="w-full h-auto block transition-opacity duration-200 group-hover:opacity-90"
+          loading="lazy"
+        />
+      </button>
     )
   } else if (count === 2) {
     // Two images: side by side, equal width
@@ -106,7 +116,7 @@ export function PostImageGrid({ images, postTitle }: PostImageGridProps) {
 
   return (
     <>
-      <div className="mt-3 rounded-lg overflow-hidden border border-border">
+      <div className={className}>
         {grid}
       </div>
 

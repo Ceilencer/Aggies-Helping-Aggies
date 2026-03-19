@@ -184,7 +184,7 @@ export default function DashboardClient({
         onClose={() => setSelectedUserId(null)}
       />
 
-      <div className="space-y-6">
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         <Card>
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
             <CardTitle className="text-2xl text-dash-header-text">
@@ -253,7 +253,7 @@ export default function DashboardClient({
 
                 <div className="space-y-4">
                   {posts.map((post: FeedPost) => (
-                    <Card key={post.id} className="hover:shadow-md transition-shadow">
+                    <Card key={post.id} className="hover:shadow-md transition-shadow overflow-hidden">
                       <CardHeader>
                         <PostCardHeader
                           post={post}
@@ -272,7 +272,9 @@ export default function DashboardClient({
                           {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
                         </p>
                         {post.images && post.images.length > 0 && (
-                          <PostImageGrid images={post.images} postTitle={post.title} />
+                          <div className="-mx-6 mt-3">
+                            <PostImageGrid images={post.images} postTitle={post.title} className="overflow-hidden" />
+                          </div>
                         )}
                         <div className="flex items-center justify-between space-x-4 py-4 border-t">
                           <div className="flex items-center space-x-4">

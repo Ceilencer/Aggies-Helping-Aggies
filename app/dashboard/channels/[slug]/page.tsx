@@ -25,7 +25,7 @@ import type { Profile, Post, Channel, ChannelAnnouncement } from '@/lib/types'
 
 function ChannelLoadingSkeleton() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="mx-auto w-full max-w-2xl space-y-6 animate-pulse">
       {/* Header Card */}
       <div className="rounded-lg border bg-card">
         <div className="bg-muted p-6">
@@ -207,7 +207,7 @@ export default function ChannelPage() {
       onLoad={flushPendingPosts}
       onDismiss={dismissPendingPosts}
     />
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-6">
       {/* Header */}
       <Card>
         <CardHeader className="bg-dash-header-bg text-dash-header-text">
@@ -257,7 +257,7 @@ export default function ChannelPage() {
       <div className="space-y-4">
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
-            <Card key={post.id} className="hover:shadow-md transition-shadow">
+            <Card key={post.id} className="hover:shadow-md transition-shadow overflow-hidden">
               <CardHeader>
                 <PostCardHeader
                   post={post}
@@ -286,7 +286,9 @@ export default function ChannelPage() {
                 </p>
 
                 {post.images && post.images.length > 0 && (
-                  <PostImageGrid images={post.images} postTitle={post.title} />
+                  <div className="-mx-6 mt-3">
+                    <PostImageGrid images={post.images} postTitle={post.title} className="overflow-hidden" />
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between space-x-4 py-4 border-t">

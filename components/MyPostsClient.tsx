@@ -103,7 +103,7 @@ export default function MyPostsClient({
 
   return (
     <>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="mx-auto w-full max-w-2xl space-y-6">
         <Card>
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
             <CardTitle className="text-2xl text-dash-header-text">My Posts</CardTitle>
