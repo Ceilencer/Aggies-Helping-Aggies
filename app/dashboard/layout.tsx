@@ -12,6 +12,7 @@ import { getCachedAllChannels } from '@/lib/supabase/cached-queries'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
 import ContentWrapper from '@/components/ContentWrapper'
 import { NotificationCountProvider } from '@/components/NotificationCountProvider'
+import AuthGuard from '@/components/AuthGuard'
 
 export default async function DashboardLayout({
   children,
@@ -113,6 +114,7 @@ export default async function DashboardLayout({
     <RealtimeStatusProvider>
     <AdminCountProvider isAdmin={isAdmin}>
     <NotificationCountProvider userId={user.id} initialUnreadCount={unreadCount ?? 0}>
+    <AuthGuard />
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
       <Header

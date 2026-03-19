@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { requireAdminUser } from '@/lib/utils/api-auth'
 
 export async function POST(request: Request) {
@@ -82,6 +83,10 @@ export async function POST(request: Request) {
       await supabase.from('user_bans').delete().eq('id', banData.id)
       return NextResponse.json({ error: 'Failed to update account status' }, { status: 500 })
     }
+
+    // Immediately invalidate all active sessions for the banned user
+    const service = createServiceClient()
+    await service.auth.admin.signOut(userId)
 
     return NextResponse.json({
       success: true,
