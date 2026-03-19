@@ -41,6 +41,23 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=banned`)
   }
 
+  // --- Suspended account check by email --------------------------------
+  // Guards against a banned user signing in with a different OAuth provider
+  // (e.g. Google banned → tries Facebook with same email). Identity linking
+  // gives the same user.id in most cases, but an email-based check ensures
+  // the ban holds even if Supabase creates a new auth identity.
+  const { data: suspendedByEmail } = await service
+    .from('profiles')
+    .select('account_status')
+    .eq('email', email)
+    .eq('account_status', 'suspended')
+    .maybeSingle()
+
+  if (suspendedByEmail) {
+    await supabase.auth.signOut()
+    return NextResponse.redirect(`${origin}/?suspended=true`)
+  }
+
   // --- Check for an existing profile -----------------------------------
   // Profiles only exist for approved users (and TAMU fast-track users).
   // Pending/unverified users have no profile row.
