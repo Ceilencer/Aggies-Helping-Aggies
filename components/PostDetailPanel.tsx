@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import PostLikeButton from '@/components/PostLikeButton'
 import CommentsSection from '@/components/CommentsSection'
-import PostHistory from '@/components/PostHistory'
 import PostAdminMenu from '@/components/PostAdminMenu'
 import { PostImageGrid } from '@/components/PostImageGrid'
+import ChannelIcon from '@/components/ChannelIcon'
 import { formatRelativeTime, getRoleBadgeColor, getInitials } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeft, Trash2 } from 'lucide-react'
@@ -142,6 +142,10 @@ export default function PostDetailPanel({
     loadPost()
   }, [postId, supabase])
 
+  const handleChannelUpdated = (newChannelId: string) => {
+    setPost((current) => current ? { ...current, channel_id: newChannelId } : current)
+  }
+
   const handlePostDeleted = (deletedPostId: string) => {
     onPostDeleted?.(deletedPostId)
 
@@ -240,8 +244,9 @@ export default function PostDetailPanel({
             {postChannel && (
               <>
                 <span className="text-muted-foreground/40 select-none">·</span>
-                <span className="font-medium text-brand-maroon dark:text-slate-400">
-                  {postChannel.icon ? `${postChannel.icon} ` : '#'}{postChannel.name}
+                <span className="flex items-center gap-1 font-medium text-brand-maroon dark:text-slate-400">
+                  <ChannelIcon slug={postChannel.slug} size={13} />
+                  {postChannel.name}
                 </span>
               </>
             )}
@@ -268,6 +273,7 @@ export default function PostDetailPanel({
             isAdmin={true}
             channels={channels}
             onPostDeleted={handlePostDeleted}
+            onChannelUpdated={handleChannelUpdated}
           />
         )}
       </div>
@@ -286,23 +292,6 @@ export default function PostDetailPanel({
           return { ...currentPost, like_count: newCount, user_has_liked: newLikeStatus }
         })
         onPostLikeChange?.(post.id, newCount, newLikeStatus)
-      }}
-    />
-  )
-
-  const commentsSection = (
-    <CommentsSection
-      postId={post.id}
-      currentUserId={currentUserId}
-      currentUserRole={currentUserRole}
-      currentUserProfile={currentUserProfile}
-      onProfileClick={onProfileClick}
-      onCommentCountChange={(newCount) => {
-        setPost((currentPost) => {
-          if (!currentPost) return currentPost
-          return { ...currentPost, comment_count: newCount }
-        })
-        onPostCommentChange?.(post.id, newCount)
       }}
     />
   )
@@ -330,22 +319,31 @@ export default function PostDetailPanel({
             {post.images && post.images.length > 0 && (
               <PostImageGrid images={post.images} postTitle={post.title} />
             )}
-            <div className="flex items-center space-x-4 pt-4 border-t">{likeButton}</div>
+            <div className="flex items-center justify-between pt-4 border-t">
+              {likeButton}
+              <span className="font-semibold text-base text-foreground">
+                Comments ({post.comment_count ?? 0})
+              </span>
+            </div>
           </CardContent>
         </Card>
 
-        {commentsSection}
+        <CommentsSection
+          postId={post.id}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+          currentUserProfile={currentUserProfile}
+          onProfileClick={onProfileClick}
+          hideHeader
+          onCommentCountChange={(newCount) => {
+            setPost((currentPost) => {
+              if (!currentPost) return currentPost
+              return { ...currentPost, comment_count: newCount }
+            })
+            onPostCommentChange?.(post.id, newCount)
+          }}
+        />
 
-        {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-                Post History
-              </h3>
-              <PostHistory postId={post.id} />
-            </CardContent>
-          </Card>
-        )}
       </div>
     )
   }
@@ -372,19 +370,30 @@ export default function PostDetailPanel({
       )}
 
       {/* Bottom padded section: likes, comments, history */}
-      <div className="px-6 pb-6 pt-4 space-y-4">
-        <div className="flex items-center border-t border-border pt-1">{likeButton}</div>
+      <div className="px-6 pt-4 space-y-4">
+        <div className="flex items-center justify-between border-t border-border pt-1">
+          {likeButton}
+          <span className="font-semibold text-base text-foreground">
+            Comments ({post.comment_count ?? 0})
+          </span>
+        </div>
 
-        {commentsSection}
+        <CommentsSection
+          postId={post.id}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+          currentUserProfile={currentUserProfile}
+          onProfileClick={onProfileClick}
+          hideHeader
+          onCommentCountChange={(newCount) => {
+            setPost((currentPost) => {
+              if (!currentPost) return currentPost
+              return { ...currentPost, comment_count: newCount }
+            })
+            onPostCommentChange?.(post.id, newCount)
+          }}
+        />
 
-        {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
-          <div className="border-t border-border pt-4">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
-              Post History
-            </h3>
-            <PostHistory postId={post.id} />
-          </div>
-        )}
       </div>
     </>
   )

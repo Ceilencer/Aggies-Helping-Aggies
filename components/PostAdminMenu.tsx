@@ -2,8 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { MoreVertical, Flag } from 'lucide-react'
+import { MoreVertical, Flag, History } from 'lucide-react'
 import ReportModal from '@/components/ReportModal'
+import Modal from '@/components/Modal'
+import PostHistory from '@/components/PostHistory'
 import type { ChannelListDTO } from '@/lib/types'
 import ChannelIcon from '@/components/ChannelIcon'
 
@@ -30,6 +32,7 @@ export default function PostAdminMenu({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Close menu when clicking outside
@@ -111,6 +114,15 @@ export default function PostAdminMenu({
         onReportSubmitted={onReported}
       />
 
+      <Modal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        title="Post History"
+        size="md"
+      >
+        <PostHistory postId={postId} />
+      </Modal>
+
       <Button
         variant="ghost"
         size="sm"
@@ -146,21 +158,30 @@ export default function PostAdminMenu({
                   Move to Channel
                 </div>
                 <div className="max-h-48 overflow-y-auto">
-                  {channels.map((channel) => (
-                    <button
-                      key={channel.id}
-                      onClick={() => handleChangeChannel(channel.id)}
-                      disabled={isUpdating || channel.id === postChannelId}
-                      className={`block w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed ${
-                        channel.id === postChannelId ? 'font-semibold' : ''
-                      }`}
-                    >
-                      <ChannelIcon slug={channel.slug} size={14} className="mr-2 inline-block shrink-0" />
-                      {channel.name}
-                    </button>
-                  ))}
+                  {channels
+                    .filter((c) => c.id !== postChannelId && c.slug !== 'announcements' && c.slug !== 'home')
+                    .map((channel) => (
+                      <button
+                        key={channel.id}
+                        onClick={() => handleChangeChannel(channel.id)}
+                        disabled={isUpdating}
+                        className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <ChannelIcon slug={channel.slug} size={14} className="shrink-0" />
+                        {channel.name}
+                      </button>
+                    ))}
                 </div>
               </div>
+
+              {/* View History Button */}
+              <button
+                onClick={() => { setIsHistoryOpen(true); setIsOpen(false) }}
+                className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent"
+              >
+                <History size={14} />
+                View History
+              </button>
 
               {/* Delete Button */}
               <button

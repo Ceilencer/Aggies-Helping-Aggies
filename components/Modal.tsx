@@ -57,7 +57,7 @@ export default function Modal({
       aria-modal="true"
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-lg bg-background shadow-xl`}
+        className={`relative w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden rounded-lg bg-background shadow-xl flex flex-col`}
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -69,7 +69,7 @@ export default function Modal({
           <X className="h-4 w-4" />
         </button>
         {title && (
-          <div className="border-b border-border px-6 py-4">
+          <div className="border-b border-border px-6 py-4 flex-shrink-0">
             <div className="flex items-center justify-between gap-3 pr-12">
               <h2 className="text-lg font-semibold text-card-header-text">
                 {title}
@@ -79,7 +79,7 @@ export default function Modal({
           </div>
         )}
         <div
-          className={`modal-scroll ${title ? 'max-h-[82vh]' : 'max-h-[90vh]'} ${contentClassName ?? 'p-6'}`}
+          className={`modal-scroll flex-1 min-h-0 ${contentClassName ?? 'p-6'}`}
         >
           {children}
         </div>

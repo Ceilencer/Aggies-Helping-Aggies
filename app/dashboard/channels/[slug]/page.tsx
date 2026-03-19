@@ -269,6 +269,10 @@ export default function ChannelPage() {
                     setPosts(current => current.filter(item => item.id !== postId))
                     setPostOffset(current => Math.max(current - 1, 0))
                   }}
+                  onChannelUpdated={() => {
+                    setPosts(current => current.filter(item => item.id !== post.id))
+                    setPostOffset(current => Math.max(current - 1, 0))
+                  }}
                   onEditClick={post.approval_status === 'pending_edit' && post.author_id === currentUserId ? undefined : () => setEditingPostId(post.id)}
                   onProfileClick={setSelectedUserId}
                   onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === currentUserId && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
@@ -299,6 +303,13 @@ export default function ChannelPage() {
                       likeCount={post.like_count || 0}
                       userHasLiked={post.user_has_liked || false}
                       likeId={post.like_id || null}
+                      onLikeChange={(newCount, newLikeStatus) =>
+                        setPosts(current => current.map(p =>
+                          p.id === post.id
+                            ? { ...p, like_count: newCount, user_has_liked: newLikeStatus }
+                            : p
+                        ))
+                      }
                     />
                     <CommentCountButton
                       postId={post.id}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { ArrowUp } from 'lucide-react'
 import type { Comment, FeedAuthorDTO } from '@/lib/types'
 
 interface CommentFormProps {
@@ -110,19 +111,29 @@ export default function CommentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-3 ${isReply ? 'ml-8 mt-3' : ''}`}>
-      <Textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder={placeholder}
-        className="min-h-[80px] resize-none"
-        disabled={loading}
-      />
+    <form onSubmit={handleSubmit} className={`space-y-2 ${isReply ? 'ml-8 mt-3' : ''}`}>
+      <div className="relative">
+        <Textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          placeholder={placeholder}
+          className="min-h-[80px] resize-none pr-12 pb-10"
+          disabled={loading}
+        />
+        <button
+          type="submit"
+          disabled={loading || !content.trim()}
+          className="absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-30 hover:opacity-80"
+          aria-label={isReply ? 'Post reply' : 'Post comment'}
+        >
+          <ArrowUp size={16} strokeWidth={2.5} />
+        </button>
+      </div>
       {error && (
         <p className="text-sm text-red-500">{error}</p>
       )}
-      <div className="flex gap-2 justify-end">
-        {isReply && (
+      {isReply && (
+        <div className="flex justify-end">
           <Button
             type="button"
             variant="outline"
@@ -132,15 +143,8 @@ export default function CommentForm({
           >
             Cancel
           </Button>
-        )}
-        <Button
-          type="submit"
-          size="sm"
-          disabled={loading || !content.trim()}
-        >
-          {loading ? 'Posting...' : isReply ? 'Reply' : 'Comment'}
-        </Button>
-      </div>
+        </div>
+      )}
     </form>
   )
 }

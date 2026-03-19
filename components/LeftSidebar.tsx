@@ -31,7 +31,7 @@ export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
     }`
 
   return (
-    <aside className="w-56 shrink-0 hidden lg:block">
+    <aside className="w-64 shrink-0 hidden lg:block">
       <div className="sticky top-16 pt-6 space-y-5">
 
         <nav className="space-y-1">

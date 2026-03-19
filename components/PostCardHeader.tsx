@@ -16,6 +16,7 @@ interface PostCardHeaderProps {
   channels: ChannelListDTO[]
   currentUserId?: string
   onPostDeleted?: (postId: string) => void
+  onChannelUpdated?: (channelId: string) => void
   onEditClick?: () => void
   onProfileClick?: (userId: string) => void
   onViewPendingEdit?: () => void
@@ -27,6 +28,7 @@ export default function PostCardHeader({
   channels,
   currentUserId,
   onPostDeleted,
+  onChannelUpdated,
   onEditClick,
   onProfileClick,
   onViewPendingEdit,
@@ -141,6 +143,7 @@ export default function PostCardHeader({
             isAdmin={isAdmin}
             channels={channels}
             onPostDeleted={onPostDeleted}
+            onChannelUpdated={onChannelUpdated}
           />
         )}
       </div>

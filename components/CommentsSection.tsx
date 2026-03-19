@@ -15,6 +15,7 @@ interface CommentsSectionProps {
   currentUserProfile?: FeedAuthorDTO | null
   onProfileClick?: (userId: string) => void
   onCommentCountChange?: (newCount: number) => void
+  hideHeader?: boolean
 }
 
 export default function CommentsSection({
@@ -24,6 +25,7 @@ export default function CommentsSection({
   currentUserProfile,
   onProfileClick,
   onCommentCountChange,
+  hideHeader = false,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -199,22 +201,13 @@ export default function CommentsSection({
   return (
     <div>
       {/* Section heading */}
-      <div className="pb-3 mb-3 border-b border-border">
-        <h3 className="font-semibold text-base text-foreground">
-          Comments ({comments.length})
-        </h3>
-      </div>
-
-      {/* New comment form */}
-      <div className="pb-4 mb-2 border-b border-border">
-        <CommentForm
-          postId={postId}
-          currentUserProfile={currentUserProfile}
-          onOptimisticComment={handleOptimisticComment}
-          onCommentCreated={handleCommentCreated}
-          onOptimisticFailed={handleOptimisticFailed}
-        />
-      </div>
+      {!hideHeader && (
+        <div className="pb-3 mb-3 border-b border-border">
+          <h3 className="font-semibold text-base text-foreground">
+            Comments ({comments.length})
+          </h3>
+        </div>
+      )}
 
       {/* Comments list */}
       {loading ? (
@@ -236,7 +229,7 @@ export default function CommentsSection({
             return (
               // Border wraps the whole group (parent + replies) so no line splits them
               // Border wraps the whole group (parent + replies) so no line splits them
-              <div key={comment.id} className="border-b border-border last:border-b-0">
+              <div key={comment.id}>
                 <CommentCard
                   comment={comment}
                   currentUserId={currentUserId}
@@ -280,6 +273,17 @@ export default function CommentsSection({
           })}
         </div>
       )}
+
+      {/* Sticky comment form — stays visible at the bottom while scrolling */}
+      <div className="sticky bottom-0 z-10 bg-background pt-3 pb-4 border-t border-border shadow-[0_-6px_12px_-2px_rgba(0,0,0,0.1)] dark:shadow-[0_-6px_12px_-2px_rgba(0,0,0,0.4)]">
+        <CommentForm
+          postId={postId}
+          currentUserProfile={currentUserProfile}
+          onOptimisticComment={handleOptimisticComment}
+          onCommentCreated={handleCommentCreated}
+          onOptimisticFailed={handleOptimisticFailed}
+        />
+      </div>
     </div>
   )
 }

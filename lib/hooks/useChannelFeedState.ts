@@ -387,12 +387,16 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
           if (payload.eventType === 'UPDATE' && isAlreadyInFeed) {
             const { data } = await supabase
               .from('posts')
-              .select('images')
+              .select('images, likes_count')
               .eq('id', updated.id)
               .single()
             if (data) {
               setPosts(current =>
-                current.map(p => p.id === updated.id ? { ...p, images: data.images ?? p.images } : p)
+                current.map(p => p.id === updated.id ? {
+                  ...p,
+                  images: data.images ?? p.images,
+                  like_count: data.likes_count ?? p.like_count,
+                } : p)
               )
             }
             return

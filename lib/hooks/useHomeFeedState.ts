@@ -185,6 +185,20 @@ export function useHomeFeedState({
     )
   }, [])
 
+  const handlePostChannelMoved = useCallback((postId: string, newChannelId: string) => {
+    const newChannel = allChannels.find(c => c.id === newChannelId)
+    setSections(current =>
+      current.map(section => ({
+        ...section,
+        posts: section.posts.map(post =>
+          post.id === postId
+            ? { ...post, channel_id: newChannelId, channel: newChannel }
+            : post
+        ),
+      }))
+    )
+  }, [allChannels])
+
   return {
     sections,
     handlePostCreated,
@@ -193,6 +207,7 @@ export function useHomeFeedState({
     handlePostUpdated,
     handlePostCommentChange,
     handleChannelAnnouncementChange,
+    handlePostChannelMoved,
     handleRealtimePost,
     pendingNewPostsCount: pendingNewPosts.length,
     flushPendingPosts,

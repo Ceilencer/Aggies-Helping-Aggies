@@ -90,6 +90,7 @@ export default function DashboardClient({
     handlePostUpdated,
     handlePostCommentChange,
     handleChannelAnnouncementChange,
+    handlePostChannelMoved,
     handleRealtimePost,
     pendingNewPostsCount,
     flushPendingPosts,
@@ -262,6 +263,7 @@ export default function DashboardClient({
                           channels={allChannels}
                           currentUserId={profile?.id}
                           onPostDeleted={handlePostDeleted}
+                          onChannelUpdated={(channelId) => handlePostChannelMoved(post.id, channelId)}
                           onEditClick={post.approval_status === 'pending_edit' && post.author_id === profile?.id ? undefined : () => setEditingPostId(post.id)}
                           onProfileClick={setSelectedUserId}
                           onViewPendingEdit={post.approval_status === 'pending_edit' && post.author_id === profile?.id && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
