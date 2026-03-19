@@ -103,7 +103,15 @@ export function useHomePostRealtime({
               pending_edit: null,
             }
 
-            onPostUpsertedRef.current(feedPost, payload.eventType === 'INSERT')
+            // Treat as a "new" post if:
+            // 1. It's a genuine INSERT (admin post, approved on creation), or
+            // 2. It's an UPDATE where is_moderated just flipped false→true (pending post approved).
+            //    payload.old.is_moderated is available when the posts table has REPLICA IDENTITY FULL,
+            //    which Supabase sets automatically when Realtime is enabled on the table.
+            const isNewPost =
+              payload.eventType === 'INSERT' ||
+              (payload.eventType === 'UPDATE' && (payload.old as any)?.is_moderated === false)
+            onPostUpsertedRef.current(feedPost, isNewPost)
           }
         )
         .subscribe((status) => {

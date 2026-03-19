@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Modal from '@/components/Modal'
 import PostDetailPanel from '@/components/PostDetailPanel'
 
@@ -22,10 +23,12 @@ export default function PostDetailModal({
   onPostLikeChange,
   onPostCommentChange,
 }: PostDetailModalProps) {
+  const [modalTitle, setModalTitle] = useState<string>('')
+
   if (!postId) return null
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" title={modalTitle || undefined} contentClassName="">
       <PostDetailPanel
         postId={postId}
         onClose={onClose}
@@ -33,6 +36,7 @@ export default function PostDetailModal({
         onProfileClick={onProfileClick}
         onPostLikeChange={onPostLikeChange}
         onPostCommentChange={onPostCommentChange}
+        onTitleChange={setModalTitle}
       />
     </Modal>
   )

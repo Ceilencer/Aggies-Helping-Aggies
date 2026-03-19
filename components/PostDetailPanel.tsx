@@ -24,6 +24,7 @@ interface PostDetailPanelProps {
   onProfileClick?: (userId: string) => void
   onPostLikeChange?: (postId: string, likeCount: number, userHasLiked: boolean) => void
   onPostCommentChange?: (postId: string, commentCount: number) => void
+  onTitleChange?: (title: string) => void
 }
 
 export default function PostDetailPanel({
@@ -34,6 +35,7 @@ export default function PostDetailPanel({
   onProfileClick,
   onPostLikeChange,
   onPostCommentChange,
+  onTitleChange,
 }: PostDetailPanelProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -129,6 +131,7 @@ export default function PostDetailPanel({
           user_has_liked,
           like_id,
         })
+        onTitleChange?.(`${postData.author?.full_name ?? 'Unknown'}'s Post`)
       } catch (error) {
         console.error('Error:', error)
       } finally {
@@ -203,142 +206,186 @@ export default function PostDetailPanel({
     )
   }
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-6 p-6">
-      {showBackButton && (
+  // ── Shared sub-sections ──────────────────────────────────────────────────────
+
+  const postChannel = channels.find((c) => c.id === post.channel_id)
+
+  const authorRow = (
+    <div className="flex items-start justify-between">
+      <div className="flex items-start gap-3">
+        {post.author?.avatar_url ? (
+          <div className="relative h-10 w-10 overflow-hidden rounded-full flex-shrink-0">
+            <Image
+              src={post.author.avatar_url}
+              alt={`${post.author?.full_name} avatar`}
+              fill
+              sizes="40px"
+              className="object-cover"
+            />
+          </div>
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold flex-shrink-0">
+            {getInitials(post.author?.full_name || 'Unknown')}
+          </div>
+        )}
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="font-semibold text-card-header-text">{post.author?.full_name}</p>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role || 'Personal')}`}>
+              {post.author?.role}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <span>{formatRelativeTime(post.created_at)}</span>
+            {postChannel && (
+              <>
+                <span className="text-muted-foreground/40 select-none">·</span>
+                <span className="font-medium text-brand-maroon dark:text-slate-400">
+                  {postChannel.icon ? `${postChannel.icon} ` : '#'}{postChannel.name}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 flex-shrink-0">
+        {currentUserId === post.author_id && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+          >
+            <Trash2 size={16} />
+          </Button>
+        )}
+        {currentUserRole === 'Admin' && (
+          <PostAdminMenu
+            postId={post.id}
+            postChannelId={post.channel_id}
+            isAdmin={true}
+            channels={channels}
+            onPostDeleted={handlePostDeleted}
+          />
+        )}
+      </div>
+    </div>
+  )
+
+  const likeButton = (
+    <PostLikeButton
+      postId={post.id}
+      likeCount={post.like_count || 0}
+      userHasLiked={post.user_has_liked || false}
+      likeId={post.like_id || null}
+      onLikeChange={(newCount, newLikeStatus) => {
+        setPost((currentPost) => {
+          if (!currentPost) return currentPost
+          return { ...currentPost, like_count: newCount, user_has_liked: newLikeStatus }
+        })
+        onPostLikeChange?.(post.id, newCount, newLikeStatus)
+      }}
+    />
+  )
+
+  const commentsSection = (
+    <CommentsSection
+      postId={post.id}
+      currentUserId={currentUserId}
+      currentUserRole={currentUserRole}
+      currentUserProfile={currentUserProfile}
+      onProfileClick={onProfileClick}
+      onCommentCountChange={(newCount) => {
+        setPost((currentPost) => {
+          if (!currentPost) return currentPost
+          return { ...currentPost, comment_count: newCount }
+        })
+        onPostCommentChange?.(post.id, newCount)
+      }}
+    />
+  )
+
+  // ── Standalone page layout (with back button) — keeps Card wrapper ──────────
+  if (showBackButton) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 p-6">
         <Link href="/dashboard">
           <Button variant="outline" size="sm">
             <ArrowLeft size={16} className="mr-2" />
             Back to Dashboard
           </Button>
         </Link>
+
+        <Card>
+          <CardHeader>{authorRow}</CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h1 className="text-3xl font-bold text-card-header-text mb-4">{post.title}</h1>
+              <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                {post.content}
+              </p>
+            </div>
+            {post.images && post.images.length > 0 && (
+              <PostImageGrid images={post.images} postTitle={post.title} />
+            )}
+            <div className="flex items-center space-x-4 pt-4 border-t">{likeButton}</div>
+          </CardContent>
+        </Card>
+
+        {commentsSection}
+
+        {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
+                Post History
+              </h3>
+              <PostHistory postId={post.id} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    )
+  }
+
+  // ── Modal layout — flat, no Card, fills the modal ─────────────────────────
+  // The scroll container has no padding (contentClassName=""), so we manage
+  // padding in sections here. Images sit between sections to go edge-to-edge.
+  return (
+    <>
+      {/* Top padded section: author + post text */}
+      <div className="px-6 pt-6 space-y-4">
+        {authorRow}
+        <div>
+          <h1 className="text-2xl font-bold text-card-header-text mb-2">{post.title}</h1>
+          <p className="text-foreground whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+            {post.content}
+          </p>
+        </div>
+      </div>
+
+      {/* Full-bleed image — no horizontal padding */}
+      {post.images && post.images.length > 0 && (
+        <PostImageGrid images={post.images} postTitle={post.title} />
       )}
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3 flex-1">
-              {post.author?.avatar_url ? (
-                <div className="relative h-10 w-10 overflow-hidden rounded-full flex-shrink-0">
-                  <Image
-                    src={post.author.avatar_url}
-                    alt={`${post.author?.full_name} avatar`}
-                    fill
-                    sizes="40px"
-                    className="object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold flex-shrink-0">
-                  {getInitials(post.author?.full_name || 'Unknown')}
-                </div>
-              )}
+      {/* Bottom padded section: likes, comments, history */}
+      <div className="px-6 pb-6 pt-4 space-y-4">
+        <div className="flex items-center border-t border-border pt-1">{likeButton}</div>
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2 flex-wrap">
-                  <p className="font-semibold text-card-header-text">
-                    {post.author?.full_name}
-                  </p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role || 'Personal')}`}>
-                    {post.author?.role}
-                  </span>
-                </div>
-                <p className="text-sm text-card-subtext">
-                  {formatRelativeTime(post.created_at)}
-                </p>
-              </div>
-            </div>
+        {commentsSection}
 
-            {currentUserId === post.author_id && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-              >
-                <Trash2 size={16} />
-              </Button>
-            )}
-            {currentUserRole === 'Admin' && (
-              <PostAdminMenu
-                postId={post.id}
-                postChannelId={post.channel_id}
-                isAdmin={true}
-                channels={channels}
-                onPostDeleted={handlePostDeleted}
-              />
-            )}
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          <div>
-            <h1 className="text-3xl font-bold text-card-header-text mb-4">
-              {post.title}
-            </h1>
-            <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-              {post.content}
-            </p>
-          </div>
-
-          {post.images && post.images.length > 0 && (
-            <PostImageGrid images={post.images} postTitle={post.title} />
-          )}
-
-          <div className="flex items-center space-x-4 pt-4 border-t">
-            <PostLikeButton
-              postId={post.id}
-              likeCount={post.like_count || 0}
-              userHasLiked={post.user_has_liked || false}
-              likeId={post.like_id || null}
-              onLikeChange={(newCount, newLikeStatus) => {
-                setPost((currentPost) => {
-                  if (!currentPost) return currentPost
-                  return {
-                    ...currentPost,
-                    like_count: newCount,
-                    user_has_liked: newLikeStatus,
-                  }
-                })
-                onPostLikeChange?.(post.id, newCount, newLikeStatus)
-              }}
-            />
-            <span className="text-sm text-card-subtext">
-              {/* view_count removed */}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <CommentsSection
-        postId={post.id}
-        currentUserId={currentUserId}
-        currentUserRole={currentUserRole}
-        currentUserProfile={currentUserProfile}
-        onProfileClick={onProfileClick}
-        onCommentCountChange={(newCount) => {
-          setPost((currentPost) => {
-            if (!currentPost) return currentPost
-            return {
-              ...currentPost,
-              comment_count: newCount,
-            }
-          })
-          onPostCommentChange?.(post.id, newCount)
-        }}
-      />
-
-      {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
-        <Card>
-          <CardContent className="pt-6">
+        {(currentUserId === post.author_id || currentUserRole === 'Admin') && (
+          <div className="border-t border-border pt-4">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">
               Post History
             </h3>
             <PostHistory postId={post.id} />
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+    </>
   )
 }

@@ -111,7 +111,7 @@ export default function CommentCard({
 
   // Shared bubble markup
   const bubble = (
-    <div className="flex items-start gap-1">
+    <div className="flex items-center gap-1 group w-fit">
       <div className="bg-muted rounded-2xl px-3 py-2 w-fit max-w-full">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <button
@@ -130,7 +130,7 @@ export default function CommentCard({
           {updatedComment.content}
         </p>
       </div>
-      <div className="flex-shrink-0 mt-1">
+      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         <CommentAdminMenu
           commentId={comment.id}
           isAdmin={currentUserRole === 'Admin'}

@@ -96,20 +96,23 @@ export default function PendingVerificationsPage() {
 
   useEffect(() => {
     let channel: ReturnType<typeof supabase.channel> | null = null
+    let mounted = true
 
     const setup = async () => {
       await supabase.auth.getSession()
+      if (!mounted) return
       void loadUsers()
 
+      const channelName = `pending-verifications-${Math.random().toString(36).slice(2)}`
       channel = supabase
-        .channel('pending-verifications')
+        .channel(channelName)
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'verification_requests' },
           () => { void loadUsers() }
         )
         .subscribe((status) => {
-          reportStatus('pending-verifications', status)
+          reportStatus(channelName, status)
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
           else if (status === 'SUBSCRIBED') setRealtimeOk(true)
         })
@@ -118,6 +121,7 @@ export default function PendingVerificationsPage() {
     void setup()
 
     return () => {
+      mounted = false
       if (channel) void supabase.removeChannel(channel)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

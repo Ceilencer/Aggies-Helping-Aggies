@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
@@ -11,6 +11,7 @@ interface ModalProps {
   title?: string
   headerExtra?: React.ReactNode
   size?: 'md' | 'lg' | 'xl'
+  contentClassName?: string
 }
 
 const sizeClasses: Record<NonNullable<ModalProps['size']>, string> = {
@@ -26,8 +27,10 @@ export default function Modal({
   title,
   headerExtra,
   size = 'lg',
+  contentClassName,
 }: ModalProps) {
   const [isMounted, setIsMounted] = useState(false)
+  const mouseDownTargetRef = useRef<EventTarget | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -48,7 +51,8 @@ export default function Modal({
   return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
-      onClick={onClose}
+      onMouseDown={(e) => { mouseDownTargetRef.current = e.target }}
+      onClick={(e) => { if (e.target === e.currentTarget && mouseDownTargetRef.current === e.currentTarget) onClose() }}
       role="dialog"
       aria-modal="true"
     >
@@ -74,7 +78,9 @@ export default function Modal({
             </div>
           </div>
         )}
-        <div className={title ? 'max-h-[82vh] overflow-y-auto p-6' : 'max-h-[90vh] overflow-y-auto p-6'}>
+        <div
+          className={`modal-scroll ${title ? 'max-h-[82vh]' : 'max-h-[90vh]'} ${contentClassName ?? 'p-6'}`}
+        >
           {children}
         </div>
       </div>

@@ -248,3 +248,12 @@
     @apply bg-primary;
   }
 }
+
+/* Modal scroll area — native scrollbar hidden, replaced by custom JS thumb */
+.modal-scroll {
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.modal-scroll::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Edge */
+}
