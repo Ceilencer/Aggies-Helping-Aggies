@@ -37,6 +37,8 @@ CREATE TABLE profiles (
     rules_acknowledged_at TIMESTAMPTZ,
     approved_by UUID REFERENCES profiles(id),
     approved_at TIMESTAMPTZ,
+    posts_approved INTEGER DEFAULT 0 NOT NULL,
+    posts_denied INTEGER DEFAULT 0 NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -519,6 +521,26 @@ CREATE TRIGGER verification_requests_updated_at
 CREATE TRIGGER reports_updated_at
     BEFORE UPDATE ON reports
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Track approved/denied post counts on the author's profile
+CREATE OR REPLACE FUNCTION increment_post_decision_counts()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Only count original new-post decisions, not edit reviews
+    IF OLD.approval_status = 'pending' THEN
+        IF NEW.approval_status = 'approved' THEN
+            UPDATE profiles SET posts_approved = posts_approved + 1 WHERE id = NEW.author_id;
+        ELSIF NEW.approval_status = 'rejected' THEN
+            UPDATE profiles SET posts_denied = posts_denied + 1 WHERE id = NEW.author_id;
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_post_decision_counts
+    AFTER UPDATE OF approval_status ON posts
+    FOR EACH ROW EXECUTE FUNCTION increment_post_decision_counts();
 
 CREATE TRIGGER set_channel_announcements_updated_at
     BEFORE UPDATE ON channel_announcements

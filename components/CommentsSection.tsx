@@ -35,6 +35,7 @@ export default function CommentsSection({
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
   // Track IDs that were optimistically added by the current user so Realtime doesn't duplicate them
   const optimisticIds = useRef<Set<string>>(new Set())
+  const commentRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const { reportStatus } = useRealtimeStatus()
 
   useEffect(() => {
@@ -188,6 +189,10 @@ export default function CommentsSection({
         next.delete(commentId)
       } else {
         next.add(commentId)
+        // Scroll the comment to the top so replies are visible below it
+        setTimeout(() => {
+          commentRefs.current[commentId]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 50)
       }
       return next
     })
@@ -229,7 +234,7 @@ export default function CommentsSection({
             return (
               // Border wraps the whole group (parent + replies) so no line splits them
               // Border wraps the whole group (parent + replies) so no line splits them
-              <div key={comment.id}>
+              <div key={comment.id} ref={(el) => { commentRefs.current[comment.id] = el }}>
                 <CommentCard
                   comment={comment}
                   currentUserId={currentUserId}
@@ -275,7 +280,7 @@ export default function CommentsSection({
       )}
 
       {/* Sticky comment form — stays visible at the bottom while scrolling */}
-      <div className="sticky bottom-0 z-10 bg-background pt-3 pb-4 border-t border-border shadow-[0_-6px_12px_-2px_rgba(0,0,0,0.1)] dark:shadow-[0_-6px_12px_-2px_rgba(0,0,0,0.4)]">
+      <div className="sticky bottom-0 z-10 bg-background pb-4">
         <CommentForm
           postId={postId}
           currentUserProfile={currentUserProfile}

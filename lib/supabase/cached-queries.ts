@@ -190,7 +190,7 @@ export const getCachedPendingPosts = cache(async function getCachedPendingPosts(
         images,
         created_at,
         approval_status,
-        author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+        author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role, posts_approved, posts_denied),
         channel:channels!inner(id, name, slug),
         pending_edit:post_edits(proposed_title, proposed_content)
       `)

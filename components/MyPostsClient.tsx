@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import CommentCountButton from '@/components/CommentCountButton'
@@ -14,17 +15,61 @@ import { useToast } from '@/components/ui/toast'
 import type { ChannelListDTO, FeedPost, Post, Profile } from '@/lib/types'
 
 interface MyPostsClientProps {
+  userId: string
   profile: Profile
   posts: FeedPost[]
   channels: ChannelListDTO[]
 }
 
 export default function MyPostsClient({
+  userId,
   profile,
   posts,
   channels,
 }: MyPostsClientProps) {
   const [postsState, setPostsState] = useState<FeedPost[]>(posts)
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`my-posts-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts',
+          filter: `author_id=eq.${userId}`,
+        },
+        (payload) => {
+          const updated = payload.new as {
+            id: string
+            title: string
+            content: string
+            approval_status: string
+            is_moderated: boolean
+            moderation_reason: string | null
+          }
+          setPostsState((prev) =>
+            prev.map((p) => {
+              if (p.id !== updated.id) return p
+              return {
+                ...p,
+                title: updated.title,
+                content: updated.content,
+                approval_status: updated.approval_status as FeedPost['approval_status'],
+                is_moderated: updated.is_moderated,
+                moderation_reason: updated.moderation_reason,
+                // If the post is no longer pending_edit, the edit was resolved
+                pending_edit: updated.approval_status === 'pending_edit' ? p.pending_edit : null,
+              }
+            })
+          )
+        }
+      )
+      .subscribe()
+    return () => { void supabase.removeChannel(channel) }
+  }, [userId])
   const [activePostId, setActivePostId] = useState<string | null>(null)
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)

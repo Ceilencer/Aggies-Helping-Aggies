@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, FileText, User, Shield,
-  MessagesSquare, Megaphone, Briefcase, Ticket,
+  MessagesSquare, Megaphone, Briefcase, Ticket, Bell,
 } from 'lucide-react'
 import type { Channel } from '@/lib/types'
 import AggieRingIcon from '@/components/AggieRingIcon'
+import { useNotificationCount } from '@/components/NotificationCountProvider'
+import { useAdminCounts } from '@/components/AdminCountProvider'
 
 interface LeftSidebarProps {
   channels: Channel[]
@@ -15,8 +17,19 @@ interface LeftSidebarProps {
 }
 
 
+function Badge({ count }: { count: number }) {
+  if (count <= 0) return null
+  return (
+    <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+
 export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
   const pathname = usePathname()
+  const { unreadCount } = useNotificationCount()
+  const adminCounts = useAdminCounts()
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard'
@@ -79,6 +92,11 @@ export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 pb-2">
             Account
           </p>
+          <Link href="/dashboard/notifications" className={linkClass('/dashboard/notifications')}>
+            <Bell size={17} />
+            Notifications
+            <Badge count={unreadCount} />
+          </Link>
           <Link href="/dashboard/my-posts" className={linkClass('/dashboard/my-posts')}>
             <FileText size={17} />
             My Posts
@@ -91,6 +109,7 @@ export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
             <Link href="/dashboard/admin" className={linkClass('/dashboard/admin')}>
               <Shield size={17} />
               Admin Panel
+              <Badge count={adminCounts.total} />
             </Link>
           )}
         </div>

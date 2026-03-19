@@ -26,7 +26,10 @@
       "Bash(grep -r upsert_profile_on_login /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone --include=*.sql --include=*.ts --include=*.tsx)",
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -name *.sql -type f)",
       "Bash(grep -r \"created_at.*24\\\\|delete.*old\\\\|cleanup.*post\" c:UsersCeilencerCapstoneHowdy-Helps-Capstone --include=*.ts --include=*.tsx)",
-      "Bash(git check-ignore:*)"
+      "Bash(git check-ignore:*)",
+      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -type f -name *toast* -o -name *notif*)",
+      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -type f \\\\\\(-name *sql -o -name *schema* \\\\\\))",
+      "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components -type f -name *PostAdmin* -o -name *AdminPost* -o -name *PendingPost*)"
     ]
   }
 }

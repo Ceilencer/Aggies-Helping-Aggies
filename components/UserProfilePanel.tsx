@@ -258,6 +258,14 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
                     <dt className="text-muted-foreground">Current Flair</dt>
                     <dd className="font-medium text-right">{profile.flair}</dd>
                   </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-muted-foreground">Posts Approved</dt>
+                    <dd className="font-medium text-right text-green-700 dark:text-green-400">{profile.posts_approved ?? 0}</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-muted-foreground">Posts Denied</dt>
+                    <dd className="font-medium text-right text-red-600 dark:text-red-400">{profile.posts_denied ?? 0}</dd>
+                  </div>
                 </dl>
               </div>
               <div className="rounded-lg border bg-muted/30 p-4">

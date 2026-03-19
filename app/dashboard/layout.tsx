@@ -10,6 +10,8 @@ import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
 import { PRIVACY_SECTIONS, PRIVACY_EFFECTIVE_DATE } from '@/lib/legal/privacy'
 import { getCachedAllChannels } from '@/lib/supabase/cached-queries'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
+import ContentWrapper from '@/components/ContentWrapper'
+import { NotificationCountProvider } from '@/components/NotificationCountProvider'
 
 export default async function DashboardLayout({
   children,
@@ -65,15 +67,23 @@ export default async function DashboardLayout({
     allChannels.filter((c) => c.slug !== 'home')
   )
 
+  const { count: unreadCount } = await supabase
+    .from('notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('is_read', false)
+
   return (
     <RealtimeStatusProvider>
     <AdminCountProvider isAdmin={isAdmin}>
+    <NotificationCountProvider userId={user.id} initialUnreadCount={unreadCount ?? 0}>
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top Navigation */}
       <Header
         displayName={displayName}
         avatarUrl={profile?.avatar_url ?? null}
         isAdmin={isAdmin}
+        userId={user.id}
         signOutAction={handleSignOut}
       />
 
@@ -85,9 +95,9 @@ export default async function DashboardLayout({
           <div className="hidden lg:flex flex-1 justify-start pl-4">
             <LeftSidebar channels={sidebarChannels} isAdmin={isAdmin} />
           </div>
-          <div className="w-full lg:max-w-2xl px-4 lg:px-0 py-8">
+          <ContentWrapper>
             {children}
-          </div>
+          </ContentWrapper>
           <div className="hidden lg:block flex-1" />
         </div>
       </main>
@@ -109,6 +119,7 @@ export default async function DashboardLayout({
         </div>
       </footer>
     </div>
+    </NotificationCountProvider>
     </AdminCountProvider>
     </RealtimeStatusProvider>
   )

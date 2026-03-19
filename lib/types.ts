@@ -19,6 +19,8 @@ export interface Profile {
   account_status: AccountStatus
   approved_by?: string | null
   approved_at?: string | null
+  posts_approved?: number
+  posts_denied?: number
   created_at: string
   updated_at: string
   graduation_year?: number
@@ -135,7 +137,7 @@ export interface AdminPendingPostDTO {
   images: string[] | null
   created_at: string
   approval_status: ApprovalStatus
-  author: FeedAuthorDTO | null
+  author: (FeedAuthorDTO & { posts_approved?: number; posts_denied?: number }) | null
   channel: FeedChannelDTO | null
   pending_edit: FeedPendingEditDTO | null
 }

@@ -15,6 +15,7 @@ import AggieRingIcon from "@/components/AggieRingIcon";
 import { getInitials } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { AdminShieldLink } from "@/components/AdminShieldLink";
+import NotificationBell from "@/components/NotificationBell";
 
 const CHANNELS = [
   {
@@ -60,6 +61,7 @@ type HeaderProps = {
   activeChannelId?: string;
   displayName?: string;
   avatarUrl?: string | null;
+  userId?: string;
   signOutAction?: (formData: FormData) => void | Promise<void>;
 };
 
@@ -68,6 +70,7 @@ export default function Header({
   activeChannelId,
   displayName = "User",
   avatarUrl,
+  userId,
   signOutAction,
 }: HeaderProps) {
   const pathname = usePathname();
@@ -147,6 +150,9 @@ export default function Header({
           >
             Donate
           </a>
+          {userId && (
+            <NotificationBell />
+          )}
           {isAdmin ? <AdminShieldLink /> : null}
           {signOutAction ? (
             <UserMenu

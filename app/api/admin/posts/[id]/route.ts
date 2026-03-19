@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { NextResponse, NextRequest } from 'next/server'
 import { requireAdminUser } from '@/lib/utils/api-auth'
 import { adminPostReviewSchema } from '@/lib/validations'
@@ -23,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Determine whether this is a new-post review or an edit review
     const { data: post, error: postFetchError } = await supabase
       .from('posts')
-      .select('approval_status')
+      .select('approval_status, author_id, title')
       .eq('id', id)
       .single()
 
@@ -32,6 +33,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const isPendingEdit = post.approval_status === 'pending_edit'
+    const serviceClient = createServiceClient()
 
     // ── PENDING EDIT REVIEW ──────────────────────────────────────────────────
     // Fetch current admin name once for history entries
@@ -78,6 +80,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           actor_id: admin.user.id,
           actor_name: adminName,
         })
+
+        await serviceClient.from('notifications').insert({
+          user_id: post.author_id,
+          type: 'edit_approved',
+          title: 'Your edit was approved',
+          message: `Your changes to "${post.title}" are now live.`,
+          link: '/dashboard/my-posts',
+        })
       } else {
         // Reject: discard proposed changes, restore post to approved (original content untouched)
         const { error: rejectStatusError } = await supabase
@@ -96,6 +106,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           actor_id: admin.user.id,
           actor_name: adminName,
           note: reason || null,
+        })
+
+        await serviceClient.from('notifications').insert({
+          user_id: post.author_id,
+          type: 'edit_rejected',
+          title: 'Your edit was not approved',
+          message: reason
+            ? `Your edit to "${post.title}" was not approved. Reason: ${reason}`
+            : `Your edit to "${post.title}" was not approved.`,
+          link: '/dashboard/my-posts',
         })
       }
 
@@ -124,6 +144,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         actor_name: adminName,
       })
 
+      await serviceClient.from('notifications').insert({
+        user_id: post.author_id,
+        type: 'post_approved',
+        title: 'Your post was approved',
+        message: `"${post.title}" is now live and visible to the community.`,
+        link: '/dashboard/my-posts',
+      })
+
       return NextResponse.json({ success: true })
     } else {
       const rejectionNote = reason || 'Post did not meet community guidelines'
@@ -147,6 +175,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         actor_id: admin.user.id,
         actor_name: adminName,
         note: rejectionNote,
+      })
+
+      await serviceClient.from('notifications').insert({
+        user_id: post.author_id,
+        type: 'post_rejected',
+        title: 'Your post was not approved',
+        message: `"${post.title}" was not approved. Reason: ${rejectionNote}`,
+        link: '/dashboard/my-posts',
       })
 
       return NextResponse.json({ success: true })

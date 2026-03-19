@@ -7,9 +7,27 @@ import { PostImageGrid } from '@/components/PostImageGrid'
 import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
+import { getInitials } from '@/lib/utils'
 import type { AdminPendingPostDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
+
+const CANNED_REASONS = [
+  'Violates community guidelines',
+  'Inappropriate or offensive content',
+  'Spam or self-promotion',
+  'Misleading or false information',
+  'Off-topic for this channel',
+  'Duplicate post',
+  'Political content',
+  'Other',
+] as const
+
+interface DenyState {
+  open: boolean
+  selected: Set<string>
+  custom: string
+}
 
 const POSTS_PER_PAGE = 15
 
@@ -25,6 +43,7 @@ export default function AdminDashboardPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [newPostsAvailable, setNewPostsAvailable] = useState(false)
   const [realtimeOk, setRealtimeOk] = useState(true)
+  const [denyState, setDenyState] = useState<Record<string, DenyState>>({})
   const { reportStatus } = useRealtimeStatus()
 
   const loadedPostIdsRef = useRef<Set<string>>(new Set())
@@ -34,9 +53,7 @@ export default function AdminDashboardPage() {
     try {
       setAccessDenied(false)
       setLoadError(null)
-      const offset = 0
-      const limit = POSTS_PER_PAGE
-      const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${limit}`, { credentials: 'include' })
+      const res = await fetch(`/api/admin/posts?offset=0&limit=${POSTS_PER_PAGE}`, { credentials: 'include' })
 
       if (res.status === 401 || res.status === 403) {
         setAccessDenied(true)
@@ -46,15 +63,13 @@ export default function AdminDashboardPage() {
         return
       }
 
-      if (!res.ok) {
-        throw new Error('Failed to load admin posts')
-      }
+      if (!res.ok) throw new Error('Failed to load admin posts')
 
       const { data, total } = await res.json()
       const fetched: PostItem[] = data || []
       setPosts(fetched)
       setTotalCount(total)
-      setHasMore(fetched.length >= limit)
+      setHasMore(fetched.length >= POSTS_PER_PAGE)
       setPage(0)
       setNewPostsAvailable(false)
       loadedPostIdsRef.current = new Set(fetched.map((p) => p.id))
@@ -77,7 +92,7 @@ export default function AdminDashboardPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Realtime: watch for new pending posts arriving while admin is on this page
+  // Realtime: watch for new pending posts
   useEffect(() => {
     const supabase = createClient()
     let channel: ReturnType<typeof supabase.channel> | null = null
@@ -90,21 +105,20 @@ export default function AdminDashboardPage() {
       const channelName = `admin-new-posts-${Math.random().toString(36).slice(2)}`
       channel = supabase
         .channel(channelName)
-        .on(
-          'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'posts' },
-          (payload) => {
-            const status = (payload.new as { approval_status?: string }).approval_status
-            const id = (payload.new as { id?: string }).id
-            if (
-              (status === 'pending' || status === 'pending_edit') &&
-              id &&
-              !loadedPostIdsRef.current.has(id)
-            ) {
-              setNewPostsAvailable(true)
-            }
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+          const status = (payload.new as { approval_status?: string }).approval_status
+          const id = (payload.new as { id?: string }).id
+          if ((status === 'pending' || status === 'pending_edit') && id && !loadedPostIdsRef.current.has(id)) {
+            setNewPostsAvailable(true)
           }
-        )
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+          const status = (payload.new as { approval_status?: string }).approval_status
+          const id = (payload.new as { id?: string }).id
+          if (status === 'pending_edit' && id && !loadedPostIdsRef.current.has(id)) {
+            setNewPostsAvailable(true)
+          }
+        })
         .subscribe((status) => {
           reportStatus(channelName, status)
           if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
@@ -113,7 +127,6 @@ export default function AdminDashboardPage() {
     }
 
     void setup()
-
     return () => {
       mounted = false
       if (channel) void supabase.removeChannel(channel)
@@ -131,33 +144,31 @@ export default function AdminDashboardPage() {
 
   const loadMore = async () => {
     if (accessDenied) return
-
     setLoadingMore(true)
     try {
       const nextPage = page + 1
       const offset = nextPage * POSTS_PER_PAGE
-      const limit = POSTS_PER_PAGE
-      const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${limit}`, { credentials: 'include' })
-
-      if (res.status === 401 || res.status === 403) {
-        setAccessDenied(true)
-        setHasMore(false)
-        return
-      }
-
+      const res = await fetch(`/api/admin/posts?offset=${offset}&limit=${POSTS_PER_PAGE}`, { credentials: 'include' })
+      if (res.status === 401 || res.status === 403) { setAccessDenied(true); setHasMore(false); return }
       if (!res.ok) throw new Error('Failed to load admin posts')
-
       const { data } = await res.json()
       const fetched: PostItem[] = data || []
       setPosts((prev) => [...prev, ...fetched])
       setPage(nextPage)
-      setHasMore(fetched.length >= limit)
+      setHasMore(fetched.length >= POSTS_PER_PAGE)
       fetched.forEach((p) => loadedPostIdsRef.current.add(p.id))
     } catch (e) {
       console.error(e)
     } finally {
       setLoadingMore(false)
     }
+  }
+
+  const removePost = (id: string) => {
+    setPosts((p) => p.filter((x) => x.id !== id))
+    loadedPostIdsRef.current.delete(id)
+    setTotalCount((c) => Math.max(0, c - 1))
+    notifyAdminCountChanged()
   }
 
   const approve = async (id: string) => {
@@ -170,10 +181,7 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ approve: true }),
       })
       if (!res.ok) throw new Error('Failed')
-      setPosts((p) => p.filter((x) => x.id !== id))
-      loadedPostIdsRef.current.delete(id)
-      setTotalCount((count) => Math.max(0, count - 1))
-      notifyAdminCountChanged()
+      removePost(id)
     } catch (e) {
       console.error(e)
     } finally {
@@ -182,19 +190,24 @@ export default function AdminDashboardPage() {
   }
 
   const deny = async (id: string) => {
+    const state = denyState[id]
+    const parts: string[] = []
+    if (state?.selected) {
+      state.selected.forEach((r) => { if (r !== 'Other') parts.push(r) })
+    }
+    const custom = state?.custom?.trim()
+    if (custom) parts.push(custom)
+    const reason = parts.length > 0 ? parts.join('; ') : undefined
     setActioning(id)
     try {
       const res = await fetch(`/api/admin/posts/${id}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approve: false }),
+        body: JSON.stringify({ approve: false, reason }),
       })
       if (!res.ok) throw new Error('Failed')
-      setPosts((p) => p.filter((x) => x.id !== id))
-      loadedPostIdsRef.current.delete(id)
-      setTotalCount((count) => Math.max(0, count - 1))
-      notifyAdminCountChanged()
+      removePost(id)
     } catch (e) {
       console.error(e)
     } finally {
@@ -202,14 +215,36 @@ export default function AdminDashboardPage() {
     }
   }
 
+  const toggleDeny = (id: string) => {
+    setDenyState((prev) => ({
+      ...prev,
+      [id]: { open: !prev[id]?.open, selected: prev[id]?.selected ?? new Set(), custom: prev[id]?.custom ?? '' },
+    }))
+  }
+
+  const toggleDenyReason = (id: string, reason: string) => {
+    setDenyState((prev) => {
+      const current = prev[id] ?? { open: true, selected: new Set<string>(), custom: '' }
+      const next = new Set(current.selected)
+      if (next.has(reason)) next.delete(reason)
+      else next.add(reason)
+      return { ...prev, [id]: { ...current, selected: next } }
+    })
+  }
+
+  const setDenyCustom = (id: string, custom: string) => {
+    setDenyState((prev) => ({
+      ...prev,
+      [id]: { ...(prev[id] ?? { open: true, selected: new Set<string>() }), custom },
+    }))
+  }
+
   return (
     <div className="space-y-6">
 
       {accessDenied && (
         <div className="rounded-md border p-4">
-          <p className="text-sm text-muted-foreground">
-            You no longer have admin access.
-          </p>
+          <p className="text-sm text-muted-foreground">You no longer have admin access.</p>
           <Link href="/dashboard" className="text-sm font-medium text-primary hover:underline">
             Return to dashboard
           </Link>
@@ -246,75 +281,165 @@ export default function AdminDashboardPage() {
             <ul className="space-y-4">
               {posts.map((post) => {
                 const isEditReview = post.approval_status === 'pending_edit'
-                return (
-                  <li key={post.id} className="rounded-md border p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          {isEditReview ? (
-                            <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-                              ✏️ Edit Pending Review
-                            </span>
-                          ) : (
-                            <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
-                              🆕 New Post
-                            </span>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {post.author?.full_name || 'Unknown'} · {post.channel?.name || 'Channel'} · {new Date(post.created_at).toLocaleString()}
-                          </span>
-                        </div>
+                const busy = actioning === post.id
+                const deny_ = denyState[post.id]
 
+                return (
+                  <li key={post.id} className="flex gap-4 items-start">
+
+                    {/* ── Left: post card ───────────────────────────────── */}
+                    <div className="flex-1 min-w-0 rounded-lg border bg-card shadow-sm overflow-hidden">
+                      {/* Post header */}
+                      <div className="px-4 pt-4 pb-3 flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                          {getInitials(post.author?.full_name || 'U')}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium leading-none truncate">
+                            {post.author?.full_name || 'Unknown'}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {post.channel?.name || 'Channel'} · {new Date(post.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Post content */}
+                      <div className="px-4 pb-4 space-y-2">
                         {isEditReview && post.pending_edit ? (
                           <div className="space-y-3">
                             <div className="rounded border border-muted bg-muted/30 p-3">
                               <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wide">Current</p>
-                              <p className="font-medium text-sm">{post.title}</p>
-                              <p className="text-sm text-card-subtext mt-1 line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
+                              <p className="font-semibold text-sm">{post.title}</p>
+                              <p className="text-sm text-card-subtext mt-1 line-clamp-4 break-words [overflow-wrap:anywhere]">{post.content}</p>
                             </div>
                             <div className="rounded border border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 p-3">
                               <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1 uppercase tracking-wide">Proposed</p>
-                              <p className="font-medium text-sm">{post.pending_edit.proposed_title}</p>
-                              <p className="text-sm text-card-subtext mt-1 line-clamp-3 break-words [overflow-wrap:anywhere]">{post.pending_edit.proposed_content}</p>
+                              <p className="font-semibold text-sm">{post.pending_edit.proposed_title}</p>
+                              <p className="text-sm text-card-subtext mt-1 line-clamp-4 break-words [overflow-wrap:anywhere]">{post.pending_edit.proposed_content}</p>
                             </div>
-                            {post.images && post.images.length > 0 && (
-                              <PostImageGrid images={post.images} postTitle={post.title} />
-                            )}
                           </div>
                         ) : (
                           <>
-                            <h3 className="text-base font-medium mb-1">{post.title}</h3>
-                            <p className="text-sm text-card-subtext line-clamp-3 break-words [overflow-wrap:anywhere]">{post.content}</p>
-                            {post.images && post.images.length > 0 && (
-                              <PostImageGrid images={post.images} postTitle={post.title} />
+                            <h3 className="font-semibold text-card-header-text">{post.title}</h3>
+                            <p className="text-sm text-card-subtext line-clamp-4 break-words [overflow-wrap:anywhere]">{post.content}</p>
+                          </>
+                        )}
+
+                        {post.images && post.images.length > 0 && (
+                          <div className="-mx-4 mt-2">
+                            <PostImageGrid images={post.images} postTitle={post.title} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Right: admin action panel ─────────────────────── */}
+                    <div className="w-56 shrink-0 rounded-lg border bg-card shadow-sm p-4 flex flex-col gap-3">
+                      {/* Badge */}
+                      <div>
+                        {isEditReview ? (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                            ✏️ Edit Review
+                          </span>
+                        ) : (
+                          <span className="inline-block px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
+                            🆕 New Post
+                          </span>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1.5">
+                          {new Date(post.created_at).toLocaleString()}
+                        </p>
+                      </div>
+
+                      {/* Author post stats */}
+                      <div className="rounded-md bg-muted/40 px-3 py-2 flex justify-between text-xs">
+                        <span className="text-green-700 dark:text-green-400 font-medium">
+                          ✓ {post.author?.posts_approved ?? 0} approved
+                        </span>
+                        <span className="text-red-600 dark:text-red-400 font-medium">
+                          ✕ {post.author?.posts_denied ?? 0} denied
+                        </span>
+                      </div>
+
+                      {/* Approve */}
+                      <Button
+                        size="sm"
+                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => approve(post.id)}
+                        disabled={busy}
+                      >
+                        {isEditReview ? 'Apply Edit' : 'Approve'}
+                      </Button>
+
+                      {/* Deny section */}
+                      <div className="space-y-2">
+                        {!deny_?.open ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full border-red-300 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30"
+                            onClick={() => toggleDeny(post.id)}
+                            disabled={busy}
+                          >
+                            {isEditReview ? 'Discard Edit' : 'Deny'} ↓
+                          </Button>
+                        ) : (
+                          <>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Reason (select all that apply)</p>
+                            <div className="space-y-1.5">
+                              {CANNED_REASONS.map((reason) => (
+                                <label key={reason} className="flex items-start gap-2 cursor-pointer group">
+                                  <input
+                                    type="checkbox"
+                                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-input accent-red-600"
+                                    checked={deny_?.selected?.has(reason) ?? false}
+                                    onChange={() => toggleDenyReason(post.id, reason)}
+                                    disabled={busy}
+                                  />
+                                  <span className="text-xs text-muted-foreground group-hover:text-foreground leading-snug">{reason}</span>
+                                </label>
+                              ))}
+                            </div>
+                            {deny_?.selected?.has('Other') && (
+                              <textarea
+                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                                rows={2}
+                                placeholder="Custom reason…"
+                                value={deny_?.custom ?? ''}
+                                onChange={(e) => setDenyCustom(post.id, e.target.value)}
+                                disabled={busy}
+                              />
                             )}
+                            <div className="flex gap-2 pt-1">
+                              <Button
+                                size="sm"
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                onClick={() => deny(post.id)}
+                                disabled={busy}
+                              >
+                                {isEditReview ? 'Discard' : 'Deny'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="px-2"
+                                onClick={() => toggleDeny(post.id)}
+                                disabled={busy}
+                              >
+                                ✕
+                              </Button>
+                            </div>
                           </>
                         )}
                       </div>
-
-                      <div className="flex-shrink-0 flex flex-col gap-2">
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => approve(post.id)}
-                          disabled={actioning === post.id}
-                        >
-                          {isEditReview ? 'Apply Edit' : 'Approve'}
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="bg-red-600 hover:bg-red-700 text-white"
-                          onClick={() => deny(post.id)}
-                          disabled={actioning === post.id}
-                        >
-                          {isEditReview ? 'Discard Edit' : 'Deny'}
-                        </Button>
-                      </div>
                     </div>
+
                   </li>
                 )
               })}
             </ul>
+
             {hasMore && (
               <div className="mt-6 text-center">
                 <Button onClick={loadMore} disabled={loadingMore} variant="outline">

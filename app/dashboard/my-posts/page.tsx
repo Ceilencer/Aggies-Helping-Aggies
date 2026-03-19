@@ -113,6 +113,7 @@ export default async function MyPostsPage() {
 
   return (
     <MyPostsClient
+      userId={user.id}
       profile={profile}
       posts={posts}
       channels={channels}
