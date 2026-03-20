@@ -77,7 +77,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
       .select(`
         id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-        channel:channels(id, name, slug, description, icon),
+        channel:channels(id, name, slug, description),
         pending_edit:post_edits(proposed_title, proposed_content)
       `, { count: 'exact' })
       .eq('channel_id', channelId)
@@ -261,11 +261,11 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
             .single(),
           supabase
             .from('channels')
-            .select('id, name, slug, description, icon, is_read_only')
+            .select('id, name, slug, description, is_read_only')
             .order('name'),
           supabase
             .from('channels')
-            .select('id, name, slug, description, icon, is_read_only')
+            .select('id, name, slug, description, is_read_only')
             .in('slug', [canonicalSlug, rawSlug])
             .maybeSingle(),
         ])
@@ -429,7 +429,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
               id, title, content, images, is_pinned, created_at, updated_at,
               author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
               author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-              channel:channels(id, name, slug, description, icon)
+              channel:channels(id, name, slug, description)
             `)
             .eq('id', updated.id)
             .single()

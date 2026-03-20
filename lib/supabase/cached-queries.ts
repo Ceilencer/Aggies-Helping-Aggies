@@ -86,7 +86,7 @@ export const getCachedPostsByChannel = cache(async function getCachedPostsByChan
     .select(`
       id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
       author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-      channel:channels(id, name, slug, description, icon)
+      channel:channels(id, name, slug, description)
     `)
     .eq('channel_id', channelId)
     .eq('is_moderated', true)
@@ -132,7 +132,7 @@ export const getCachedPostsByChannels = cache(async function getCachedPostsByCha
     .select(`
       id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
       author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-      channel:channels!inner(id, name, slug, description, icon),
+      channel:channels!inner(id, name, slug, description),
       pending_edit:post_edits(proposed_title, proposed_content)
     `)
     .in('channel_id', channelIds)

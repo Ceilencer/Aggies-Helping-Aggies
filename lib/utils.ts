@@ -67,25 +67,6 @@ export function getRoleBadgeColor(role: string): string {
   }
 }
 
-/**
- * Get channel icon emoji
- */
-export function getChannelIcon(type: string): string {
-  switch (type) {
-    case 'general':
-      return '💬'
-    case 'jobs':
-      return '💼'
-    case 'tickets':
-      return '🎟️'
-    case 'promotions':
-      return '📢'
-    case 'aggie_ring':
-      return '💍'
-    default:
-      return '📁'
-  }
-}
 
 /**
  * Extract initials from full name

@@ -88,7 +88,6 @@ export interface Channel {
   type: ChannelType
   requires_mfa: boolean
   is_read_only: boolean
-  icon?: string
   color: string
   created_at: string
   updated_at: string
@@ -133,8 +132,8 @@ export interface Post {
 }
 
 export type FeedAuthorDTO = Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'>
-export type FeedChannelDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description' | 'icon'>
-export type ChannelListDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description' | 'icon' | 'is_read_only'>
+export type FeedChannelDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description'>
+export type ChannelListDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description' | 'is_read_only'>
 
 export interface FeedPendingEditDTO {
   proposed_title: string

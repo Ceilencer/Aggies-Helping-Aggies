@@ -24,7 +24,7 @@ export default async function MyPostsPage() {
   // Fetch all channels for admin menu (lightweight DTO)
   const { data: channelsData } = await supabase
     .from('channels')
-    .select('id, name, slug, description, icon, is_read_only')
+    .select('id, name, slug, description, is_read_only')
     .order('name')
   const channels = channelsData || []
 

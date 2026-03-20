@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-        channel:channels!inner(id, name, slug, description, icon),
+        channel:channels!inner(id, name, slug, description),
         pending_edit:post_edits(proposed_title, proposed_content),
         comments(count)
       `, { count: 'exact' })

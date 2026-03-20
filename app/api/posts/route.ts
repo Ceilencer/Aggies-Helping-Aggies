@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       .select(`
         *,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-        channel:channels!inner(id, name, slug, description, icon)
+        channel:channels!inner(id, name, slug, description)
       `)
       .single()
 
