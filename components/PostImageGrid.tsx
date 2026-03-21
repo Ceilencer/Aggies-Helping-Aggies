@@ -71,7 +71,7 @@ export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hi
   } else if (count === 2) {
     // Two images: side by side, equal width
     grid = (
-      <div className="flex gap-0.5 h-64">
+      <div className="flex gap-0.5 aspect-[16/9]">
         <Tile index={0} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
         <Tile index={1} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
       </div>
@@ -79,7 +79,7 @@ export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hi
   } else if (count === 3) {
     // Three images: large on left (2/3), two stacked on right (1/3)
     grid = (
-      <div className="flex gap-0.5 h-64">
+      <div className="flex gap-0.5 aspect-[16/9]">
         <Tile index={0} className="flex-[2] h-full" sizes="(max-width: 768px) 66vw, 460px" />
         <div className="flex-1 flex flex-col gap-0.5">
           <Tile index={1} className="flex-1 w-full" sizes="(max-width: 768px) 33vw, 230px" />
@@ -90,7 +90,7 @@ export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hi
   } else if (count === 4) {
     // Four images: 2×2 grid
     grid = (
-      <div className="grid grid-cols-2 grid-rows-2 gap-0.5 h-80">
+      <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-[4/3]">
         <Tile index={0} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
         <Tile index={1} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
         <Tile index={2} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
@@ -101,11 +101,11 @@ export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hi
     // 5+ images: two large on top, three smaller on bottom (5th tile gets "+N" overlay)
     grid = (
       <div className="flex flex-col gap-0.5">
-        <div className="flex gap-0.5 h-56">
+        <div className="flex gap-0.5 aspect-[3/1]">
           <Tile index={0} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
           <Tile index={1} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
         </div>
-        <div className="flex gap-0.5 h-40">
+        <div className="flex gap-0.5 aspect-[4/1]">
           <Tile index={2} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
           <Tile index={3} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
           <Tile index={4} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />

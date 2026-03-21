@@ -13,6 +13,7 @@ interface CommentFormProps {
   onOptimisticComment?: (tempComment: Comment) => void
   onCommentCreated?: (comment: Comment, tempId?: string) => void
   onOptimisticFailed?: (tempId: string) => void
+  onCancel?: () => void
   placeholder?: string
   isReply?: boolean
 }
@@ -24,12 +25,14 @@ export default function CommentForm({
   onOptimisticComment,
   onCommentCreated,
   onOptimisticFailed,
+  onCancel,
   placeholder = 'Add a comment...',
   isReply = false,
 }: CommentFormProps) {
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -116,8 +119,10 @@ export default function CommentForm({
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
-          className="min-h-[80px] resize-none pr-12 pb-10"
+          className={`resize-none pr-12 transition-all duration-150 ${isFocused || content || isReply ? 'min-h-[80px] pb-10' : 'min-h-[2.75rem] pb-2'}`}
           disabled={loading}
         />
         <button
@@ -138,7 +143,7 @@ export default function CommentForm({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setContent('')}
+            onClick={() => { setContent(''); onCancel?.() }}
             disabled={loading}
           >
             Cancel

@@ -8,6 +8,7 @@
    1. GLOBAL BASE
    (Backgrounds, Typography, & Borders)
    ========================================= */
+    --header-h: 4rem;                 /* Height of the sticky header — used by sidebar & bubble offsets */
     --background: 210 20% 96%;        /* Main app background */
     --radius: 0.5rem;                 /* Global corner rounding */
     
@@ -247,6 +248,14 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     @apply bg-primary;
   }
+}
+
+/* Left sidebar — scrollable at high zoom, scrollbar hidden */
+.sidebar-scroll {
+  scrollbar-width: none; /* Firefox */
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none; /* Chrome / Safari / Edge */
 }
 
 /* Modal scroll area — native scrollbar hidden, replaced by custom JS thumb */

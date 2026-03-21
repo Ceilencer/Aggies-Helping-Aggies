@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import CommentLikeButton from '@/components/CommentLikeButton'
 import CommentForm from '@/components/CommentForm'
@@ -55,6 +55,32 @@ export default function CommentCard({
 }: CommentCardProps) {
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
+  const replyFormRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (showReplyForm) {
+      setTimeout(() => {
+        const el = replyFormRef.current
+        if (!el) return
+
+        // Find the nearest scrollable ancestor (the modal-scroll container)
+        let scrollParent: HTMLElement | null = el.parentElement
+        while (scrollParent && scrollParent.scrollHeight <= scrollParent.clientHeight) {
+          scrollParent = scrollParent.parentElement
+        }
+        const container = scrollParent ?? document.documentElement
+
+        const containerRect = container.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        // ~100px accounts for the sticky comment form at the bottom of the panel
+        const stickyOffset = 100
+        const gap = elRect.bottom + 16 - (containerRect.bottom - stickyOffset)
+        if (gap > 0) {
+          container.scrollBy({ top: gap, behavior: 'smooth' })
+        }
+      }, 50)
+    }
+  }, [showReplyForm])
   const [deleting, setDeleting] = useState(false)
   const [updatedComment, setUpdatedComment] = useState(comment)
 
@@ -305,11 +331,12 @@ export default function CommentCard({
           </div>
 
           {showReplyForm && (
-            <div className="mt-2">
+            <div className="mt-2" ref={replyFormRef}>
               <CommentForm
                 postId={postId}
                 parentCommentId={comment.id}
                 onCommentCreated={handleReplyCreated}
+                onCancel={() => setShowReplyForm(false)}
                 placeholder={`Reply to ${comment.author?.full_name}…`}
                 isReply={true}
               />

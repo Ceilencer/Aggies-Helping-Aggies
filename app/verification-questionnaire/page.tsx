@@ -35,17 +35,19 @@ export default function VerificationQuestionnairePage() {
 
   const [showAlreadyHaveAccount, setShowAlreadyHaveAccount] = useState(false)
 
+  const [notAStudent, setNotAStudent] = useState(true)
+
   const [formData, setFormData] = useState<{
     full_name: string
     affiliation: string
-    graduation_year: number | null
+    graduation_year: string
     major: string
     memorable_tradition: string
     connection_to_tamu: string
   }>({
     full_name: '',
     affiliation: '',
-    graduation_year: null,
+    graduation_year: '',
     major: '',
     memorable_tradition: '',
     connection_to_tamu: '',
@@ -133,10 +135,7 @@ export default function VerificationQuestionnairePage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const value = e.target.name === 'graduation_year'
-      ? (e.target.value === '' ? null : Number(e.target.value))
-      : e.target.value
-    setFormData((prev) => ({ ...prev, [e.target.name]: value }))
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   // ── submit ─────────────────────────────────────────────────────────────────
@@ -144,6 +143,16 @@ export default function VerificationQuestionnairePage() {
     e.preventDefault()
     if (!userId) return
     setError('')
+
+    // Validate graduation year if provided
+    if (!notAStudent) {
+      const year = Number(formData.graduation_year)
+      if (!formData.graduation_year || isNaN(year) || !Number.isInteger(year) || year < 1876 || year > CURRENT_YEAR + 6) {
+        setError(`Please enter a valid graduation year between 1876 and ${CURRENT_YEAR + 6}.`)
+        return
+      }
+    }
+
     setLoading(true)
 
     try {
@@ -168,8 +177,8 @@ export default function VerificationQuestionnairePage() {
           email:               userEmail,
           full_name:           formData.full_name,
           affiliation:         formData.affiliation || null,
-          graduation_year:     formData.graduation_year,
-          major:               formData.graduation_year !== null ? formData.major : null,
+          graduation_year:     notAStudent || formData.graduation_year === '' ? null : Number(formData.graduation_year),
+          major:               notAStudent ? null : formData.major,
           memorable_tradition: formData.memorable_tradition,
           connection_to_tamu:  formData.connection_to_tamu,
           status:              'pending',
@@ -210,7 +219,7 @@ export default function VerificationQuestionnairePage() {
             <CardDescription>
               Please answer the questions below so our team can verify your
               connection to Texas A&amp;M. We&apos;ll review your submission
-              and notify you by email.
+              and notify you here.
             </CardDescription>
           </CardHeader>
 
@@ -253,6 +262,7 @@ export default function VerificationQuestionnairePage() {
                     id="full_name"
                     name="full_name"
                     required
+                    maxLength={100}
                     value={formData.full_name}
                     onChange={handleChange}
                     placeholder=""
@@ -297,35 +307,33 @@ export default function VerificationQuestionnairePage() {
                     type="number"
                     min={1876}
                     max={CURRENT_YEAR + 6}
-                    disabled={formData.graduation_year === null}
-                    value={formData.graduation_year ?? ''}
+                    disabled={notAStudent}
+                    value={formData.graduation_year}
                     onChange={handleChange}
                     placeholder="e.g. 2024"
                   />
                   <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.graduation_year === null}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          graduation_year: e.target.checked ? null : CURRENT_YEAR,
-                          ...(e.target.checked ? { major: '' } : {}),
-                        }))
-                      }
+                      checked={notAStudent}
+                      onChange={(e) => {
+                        setNotAStudent(e.target.checked)
+                        if (e.target.checked) setFormData((prev) => ({ ...prev, graduation_year: '', major: '' }))
+                      }}
                     />
                     N/A, not a student or former student
                   </label>
                 </div>
 
                 {/* Major — only shown when a graduation year is entered */}
-                {formData.graduation_year !== null && (
+                {!notAStudent && (
                   <div className="space-y-1">
                     <Label htmlFor="major">Major / Field of Study</Label>
                     <Input
                       id="major"
                       name="major"
                       required
+                      maxLength={100}
                       value={formData.major}
                       onChange={handleChange}
                       placeholder=""
@@ -336,17 +344,19 @@ export default function VerificationQuestionnairePage() {
                 {/* Memorable tradition */}
                 <div className="space-y-1">
                   <Label htmlFor="memorable_tradition">
-                    What are your favourite Texas A&amp;M traditions or memories?
+                    What are your favorite Texas A&amp;M traditions or memories?
                   </Label>
                   <Textarea
                     id="memorable_tradition"
                     name="memorable_tradition"
                     required
+                    maxLength={500}
                     rows={3}
                     value={formData.memorable_tradition}
                     onChange={handleChange}
                     placeholder=""
                   />
+                  <p className="text-xs text-muted-foreground text-right">{formData.memorable_tradition.length}/500</p>
                 </div>
 
                 {/* Connection */}
@@ -358,11 +368,13 @@ export default function VerificationQuestionnairePage() {
                     id="connection_to_tamu"
                     name="connection_to_tamu"
                     required
+                    maxLength={500}
                     rows={3}
                     value={formData.connection_to_tamu}
                     onChange={handleChange}
                     placeholder=""
                   />
+                  <p className="text-xs text-muted-foreground text-right">{formData.connection_to_tamu.length}/500</p>
                 </div>
 
                 {error && (

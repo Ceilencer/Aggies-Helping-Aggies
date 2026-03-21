@@ -31,7 +31,8 @@
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone -type f \\\\\\(-name *sql -o -name *schema* \\\\\\))",
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components -type f -name *PostAdmin* -o -name *AdminPost* -o -name *PendingPost*)",
       "Bash(git diff:*)",
-      "Bash(ls /c/Users/cobyr/Capstone/Howdy-Helps-Capstone/*.ts)"
+      "Bash(ls /c/Users/cobyr/Capstone/Howdy-Helps-Capstone/*.ts)",
+      "Bash(grep -r \"max-h-\\\\|sticky\\\\|position.*fixed\\\\|overflow.*hidden\" c:UsersCeilencerCapstoneHowdy-Helps-Capstonecomponents --include=*.tsx --include=*.ts)"
     ]
   }
 }
