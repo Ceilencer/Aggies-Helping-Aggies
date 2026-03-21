@@ -19,10 +19,10 @@ function timeAgo(dateStr: string): string {
 }
 
 const TYPE_STYLES: Record<string, { dot: string }> = {
-  post_approved: { dot: 'bg-green-500' },
-  post_rejected: { dot: 'bg-red-500' },
-  edit_approved: { dot: 'bg-blue-500' },
-  edit_rejected: { dot: 'bg-orange-500' },
+  post_approved:    { dot: 'bg-green-500' },
+  post_rejected:    { dot: 'bg-red-500' },
+  edit_approved:    { dot: 'bg-blue-500' },
+  edit_rejected:    { dot: 'bg-orange-500' },
 }
 
 function getTypeDot(type: string) {

@@ -32,7 +32,11 @@
       "Bash(find /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components -type f -name *PostAdmin* -o -name *AdminPost* -o -name *PendingPost*)",
       "Bash(git diff:*)",
       "Bash(ls /c/Users/cobyr/Capstone/Howdy-Helps-Capstone/*.ts)",
-      "Bash(grep -r \"max-h-\\\\|sticky\\\\|position.*fixed\\\\|overflow.*hidden\" c:UsersCeilencerCapstoneHowdy-Helps-Capstonecomponents --include=*.tsx --include=*.ts)"
+      "Bash(grep -r \"max-h-\\\\|sticky\\\\|position.*fixed\\\\|overflow.*hidden\" c:UsersCeilencerCapstoneHowdy-Helps-Capstonecomponents --include=*.tsx --include=*.ts)",
+      "Bash(rm \"c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/api/contact-requests/route.ts\" \"c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/api/contact-requests/[id]/route.ts\")",
+      "Bash(rmdir \"c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/api/contact-requests/[id]\")",
+      "Bash(rmdir \"c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/api/contact-requests\")",
+      "Bash(grep -l \"PostCard\\\\|post card\" c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components/*.tsx)"
     ]
   }
 }

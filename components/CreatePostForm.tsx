@@ -27,6 +27,7 @@ export default function CreatePostForm({
     channels,
     formData,
     setFormData,
+    availableContactFields,
     error,
     loading,
     uploading,
@@ -157,6 +158,66 @@ export default function CreatePostForm({
                 />
               )}
             </div>
+
+            {/* Post Duration */}
+            <div className="space-y-2">
+              <Label className="dark:text-white">Post Duration</Label>
+              <div className="flex gap-2 flex-wrap">
+                {([1, 3, 7, 14] as const).map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, duration_days: days })}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                      formData.duration_days === days
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background text-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {days === 1 ? '1 day' : days === 7 ? '1 week' : days === 14 ? '2 weeks' : `${days} days`}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground dark:text-white/60">
+                Post will be automatically removed after the selected duration.
+              </p>
+            </div>
+
+            {/* Contact Info */}
+            {availableContactFields.length > 0 && (
+              <div className="space-y-2">
+                <Label className="dark:text-white">Share Contact Info on This Post <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                <div className="rounded-lg border border-border p-3 space-y-2">
+                  {availableContactFields.map(({ key, label, value }) => {
+                    const checked = formData.selected_contact_keys.includes(key)
+                    return (
+                      <label key={key} className="flex items-center gap-3 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() =>
+                            setFormData({
+                              ...formData,
+                              selected_contact_keys: checked
+                                ? formData.selected_contact_keys.filter(k => k !== key)
+                                : [...formData.selected_contact_keys, key],
+                            })
+                          }
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        <span className="text-sm">
+                          <span className="font-medium text-foreground">{label}:</span>{' '}
+                          <span className="text-muted-foreground">{value}</span>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground dark:text-white/60">
+                  Selected info will be visible on this post and removed when the post expires.
+                </p>
+              </div>
+            )}
 
             <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-4">
               <h4 className="font-semibold text-blue-800 dark:text-white mb-2">Community Guidelines</h4>

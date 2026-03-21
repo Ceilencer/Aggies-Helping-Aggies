@@ -13,12 +13,12 @@ export async function GET(request: Request) {
 
   const service = createServiceClient()
 
-  const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
+  const now = new Date().toISOString()
 
   const { data, error } = await service
     .from('posts')
     .delete()
-    .lt('created_at', cutoff)
+    .lt('expires_at', now)
     .select('id')
 
   if (error) {

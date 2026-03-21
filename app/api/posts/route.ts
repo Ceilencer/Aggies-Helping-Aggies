@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    const { channel_id, title, content } = validation.data
+    const { channel_id, title, content, duration_days, post_contact } = validation.data
 
     // 3. Server-side profanity check
     const profanityCheck = validatePost(title, content)
@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Insert the post — approval status and moderation flag set server-side only
+    const expiresAt = new Date(Date.now() + duration_days * 24 * 60 * 60 * 1000).toISOString()
+
     const { data: newPost, error: insertError } = await supabase
       .from('posts')
       .insert({
@@ -116,6 +118,8 @@ export async function POST(request: NextRequest) {
         is_moderated: isAdmin,
         moderation_reason: null,
         approval_status: isAdmin ? 'approved' : 'pending',
+        expires_at: expiresAt,
+        post_contact: post_contact.length > 0 ? post_contact : null,
       })
       .select(`
         *,

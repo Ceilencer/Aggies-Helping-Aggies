@@ -40,7 +40,9 @@ export default function PostCardHeader({
   useEffect(() => {
     setFormattedDate(new Date(post.created_at).toLocaleDateString())
 
-    const expiresAt = new Date(post.created_at).getTime() + 14 * 24 * 60 * 60 * 1000
+    const expiresAt = post.expires_at
+      ? new Date(post.expires_at).getTime()
+      : new Date(post.created_at).getTime() + 14 * 24 * 60 * 60 * 1000
     const msLeft = expiresAt - Date.now()
     const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24))
 
@@ -54,7 +56,7 @@ export default function PostCardHeader({
       const expireDate = new Date(expiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
       setExpiryLabel({ text: `expires ${expireDate}`, className: 'text-muted-foreground' })
     }
-  }, [post.created_at])
+  }, [post.created_at, post.expires_at])
 
   return (
     <div className="flex items-start justify-between">

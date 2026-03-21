@@ -419,6 +419,7 @@ export function useUserProfilePanelState({ userId, showToast }: UseUserProfilePa
     adminNote,
     isLoading,
     isAdmin,
+    currentUserId,
     error,
     noteContent,
     setNoteContent,

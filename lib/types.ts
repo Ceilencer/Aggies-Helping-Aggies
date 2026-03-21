@@ -6,6 +6,9 @@ export type ApprovalStatus = 'pending' | 'pending_edit' | 'approved' | 'rejected
 /** User account lifecycle status stored on the profiles table. */
 export type AccountStatus = 'active' | 'pending_approval' | 'suspended'
 
+export type ContactVisibility = 'public' | 'on_request'
+export interface PostContactEntry { label: string; value: string }
+
 export interface Profile {
   id: string
   email: string
@@ -26,7 +29,25 @@ export interface Profile {
   graduation_year?: number
   major?: string
   last_login?: string
+  // Contact info
+  contact_email?: string | null
+  contact_email_visibility?: ContactVisibility
+  phone_number?: string | null
+  phone_number_visibility?: ContactVisibility
+  instagram_handle?: string | null
+  instagram_visibility?: ContactVisibility
+  discord_username?: string | null
+  discord_visibility?: ContactVisibility
+  facebook_url?: string | null
+  facebook_visibility?: ContactVisibility
+  linkedin_url?: string | null
+  linkedin_visibility?: ContactVisibility
+  twitter_handle?: string | null
+  twitter_visibility?: ContactVisibility
+  website_url?: string | null
+  website_visibility?: ContactVisibility
 }
+
 
 export interface RejectedAccount {
   id: string
@@ -117,6 +138,8 @@ export interface Post {
   moderation_reason?: string
   approval_status: ApprovalStatus
   // view_count removed
+  expires_at?: string
+  post_contact?: PostContactEntry[]
   created_at: string
   updated_at: string
   // Relations
@@ -147,6 +170,7 @@ export interface AdminPendingPostDTO {
   content: string
   images: string[] | null
   created_at: string
+  expires_at?: string | null
   approval_status: ApprovalStatus
   author: (FeedAuthorDTO & { posts_approved?: number; posts_denied?: number }) | null
   channel: FeedChannelDTO | null
@@ -159,6 +183,7 @@ export interface AdminPendingPostQueryRowDTO {
   content: string
   images: string[] | null
   created_at: string
+  expires_at?: string | null
   approval_status: ApprovalStatus
   author?: FeedAuthorDTO[] | FeedAuthorDTO | null
   channel?: FeedChannelDTO[] | FeedChannelDTO | null
@@ -227,6 +252,8 @@ export interface FeedPostQueryRowDTO {
   is_moderated: boolean
   moderation_reason?: string | null
   approval_status: ApprovalStatus
+  expires_at?: string | null
+  post_contact?: PostContactEntry[] | null
   created_at: string
   updated_at?: string
   likes_count?: number | null
@@ -248,6 +275,8 @@ export interface FeedPost {
   is_moderated: boolean
   moderation_reason?: string | null
   approval_status: ApprovalStatus
+  expires_at?: string
+  post_contact?: PostContactEntry[]
   created_at: string
   updated_at?: string
   author?: FeedAuthorDTO | null

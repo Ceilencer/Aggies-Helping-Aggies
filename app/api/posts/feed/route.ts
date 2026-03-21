@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const { data: postsData, error: postsError, count: totalCount } = await supabase
       .from('posts')
       .select(`
-        id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
+        id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count, expires_at, post_contact,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
         channel:channels!inner(id, name, slug, description),
         pending_edit:post_edits(proposed_title, proposed_content),
@@ -82,6 +82,8 @@ export async function GET(request: NextRequest) {
       is_moderated: post.is_moderated,
       moderation_reason: post.moderation_reason,
       approval_status: post.approval_status,
+      expires_at: post.expires_at ?? undefined,
+      post_contact: post.post_contact ?? undefined,
       created_at: post.created_at,
       updated_at: post.updated_at,
       author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),

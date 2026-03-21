@@ -55,6 +55,8 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
       is_moderated: post.is_moderated,
       moderation_reason: post.moderation_reason,
       approval_status: post.approval_status,
+      expires_at: post.expires_at ?? undefined,
+      post_contact: post.post_contact ?? undefined,
       created_at: post.created_at,
       updated_at: post.updated_at,
       author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
@@ -75,7 +77,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
     const { data, error, count } = await supabase
       .from('posts')
       .select(`
-        id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
+        id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count, expires_at, post_contact,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
         channel:channels(id, name, slug, description),
         pending_edit:post_edits(proposed_title, proposed_content)
@@ -427,7 +429,7 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
             .from('posts')
             .select(`
               id, title, content, images, is_pinned, created_at, updated_at,
-              author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
+              author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count, expires_at, post_contact,
               author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
               channel:channels(id, name, slug, description)
             `)
@@ -449,6 +451,8 @@ export function useChannelFeedState({ rawSlug, canonicalSlug, onRealtimeAnnounce
             approval_status: data.approval_status,
             created_at: data.created_at,
             updated_at: data.updated_at,
+            expires_at: (data as any).expires_at ?? undefined,
+            post_contact: (data as any).post_contact ?? undefined,
             author: Array.isArray(data.author) ? (data.author[0] ?? null) : (data.author ?? null),
             channel: Array.isArray(data.channel) ? (data.channel[0] ?? null) : (data.channel ?? null),
             like_count: data.likes_count ?? 0,

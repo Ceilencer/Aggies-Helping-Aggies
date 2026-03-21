@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!validation.success) {
       return NextResponse.json({ error: validation.error.errors[0]?.message || 'Invalid request body' }, { status: 400 })
     }
-    const { approve, reason } = validation.data
+    const { approve, reason, channel_id, duration_days } = validation.data
 
     const supabase = await createClient()
 
@@ -127,9 +127,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // ── NEW POST REVIEW ──────────────────────────────────────────────────────
     if (approve) {
-      const { error } = await supabase
+      const updates: Record<string, unknown> = { is_moderated: true, moderation_reason: null, approval_status: 'approved' }
+      if (channel_id) updates.channel_id = channel_id
+      if (duration_days != null) updates.expires_at = new Date(Date.now() + duration_days * 86400 * 1000).toISOString()
+
+      console.log('[admin approve] updates:', JSON.stringify(updates))
+
+      const { error } = await serviceClient
         .from('posts')
-        .update({ is_moderated: true, moderation_reason: null, approval_status: 'approved' })
+        .update(updates)
         .eq('id', id)
 
       if (error) {

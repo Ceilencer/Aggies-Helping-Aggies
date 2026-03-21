@@ -274,6 +274,17 @@ export default function DashboardClient({
                         <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                           {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
                         </p>
+                        {post.post_contact && post.post_contact.length > 0 && (
+                          <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contact</p>
+                            {post.post_contact.map((entry: { label: string; value: string }, i: number) => (
+                              <p key={i} className="text-sm">
+                                <span className="font-medium text-foreground">{entry.label}:</span>{' '}
+                                <span className="text-muted-foreground break-all">{entry.value}</span>
+                              </p>
+                            ))}
+                          </div>
+                        )}
                         {post.images && post.images.length > 0 && (
                           <div className="-mx-6 mt-3">
                             <PostImageGrid images={post.images} postTitle={post.title} className="overflow-hidden" />

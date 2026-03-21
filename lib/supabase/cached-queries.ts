@@ -84,9 +84,10 @@ export const getCachedPostsByChannel = cache(async function getCachedPostsByChan
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
+      id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count, expires_at, post_contact,
       author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
-      channel:channels(id, name, slug, description)
+      channel:channels(id, name, slug, description),
+      pending_edit:post_edits(proposed_title, proposed_content)
     `)
     .eq('channel_id', channelId)
     .eq('is_moderated', true)
@@ -109,6 +110,8 @@ export const getCachedPostsByChannel = cache(async function getCachedPostsByChan
     is_moderated: post.is_moderated,
     moderation_reason: post.moderation_reason,
     approval_status: post.approval_status,
+    expires_at: post.expires_at ?? undefined,
+    post_contact: post.post_contact ?? undefined,
     created_at: post.created_at,
     updated_at: post.updated_at,
     author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
@@ -130,7 +133,7 @@ export const getCachedPostsByChannels = cache(async function getCachedPostsByCha
   const { data, error } = await supabase
     .from('posts')
     .select(`
-      id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count,
+      id, title, content, images, is_pinned, created_at, author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count, expires_at, post_contact,
       author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
       channel:channels!inner(id, name, slug, description),
       pending_edit:post_edits(proposed_title, proposed_content)
@@ -156,6 +159,8 @@ export const getCachedPostsByChannels = cache(async function getCachedPostsByCha
     is_moderated: post.is_moderated,
     moderation_reason: post.moderation_reason,
     approval_status: post.approval_status,
+    expires_at: post.expires_at ?? undefined,
+    post_contact: post.post_contact ?? undefined,
     created_at: post.created_at,
     updated_at: post.updated_at,
     author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
@@ -189,6 +194,7 @@ export const getCachedPendingPosts = cache(async function getCachedPendingPosts(
         content,
         images,
         created_at,
+        expires_at,
         approval_status,
         author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role, posts_approved, posts_denied),
         channel:channels!inner(id, name, slug),
@@ -211,6 +217,7 @@ export const getCachedPendingPosts = cache(async function getCachedPendingPosts(
     content: post.content,
     images: post.images ?? null,
     created_at: post.created_at,
+    expires_at: post.expires_at ?? null,
     approval_status: post.approval_status,
     author: Array.isArray(post.author) ? (post.author[0] ?? null) : (post.author ?? null),
     channel: Array.isArray(post.channel) ? (post.channel[0] ?? null) : (post.channel ?? null),

@@ -8,7 +8,8 @@ import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import { getInitials } from '@/lib/utils'
-import type { AdminPendingPostDTO } from '@/lib/types'
+import UserProfileModal from '@/components/UserProfileModal'
+import type { AdminPendingPostDTO, FeedChannelDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
 
@@ -29,6 +30,21 @@ interface DenyState {
   custom: string
 }
 
+interface PostOverrides {
+  duration: number
+  channelId: string
+}
+
+const DURATION_OPTIONS = [1, 3, 7, 14] as const
+
+function getDefaultDuration(post: AdminPendingPostDTO): number {
+  if (!post.expires_at) return 7
+  const days = Math.round((new Date(post.expires_at).getTime() - new Date(post.created_at).getTime()) / 86400000)
+  return DURATION_OPTIONS.reduce((closest, opt) =>
+    Math.abs(opt - days) < Math.abs(closest - days) ? opt : closest
+  )
+}
+
 const POSTS_PER_PAGE = 15
 
 export default function AdminDashboardPage() {
@@ -44,6 +60,9 @@ export default function AdminDashboardPage() {
   const [newPostsAvailable, setNewPostsAvailable] = useState(false)
   const [realtimeOk, setRealtimeOk] = useState(true)
   const [denyState, setDenyState] = useState<Record<string, DenyState>>({})
+  const [postOverrides, setPostOverrides] = useState<Record<string, PostOverrides>>({})
+  const [channels, setChannels] = useState<FeedChannelDTO[]>([])
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const { reportStatus } = useRealtimeStatus()
 
   const loadedPostIdsRef = useRef<Set<string>>(new Set())
@@ -53,7 +72,11 @@ export default function AdminDashboardPage() {
     try {
       setAccessDenied(false)
       setLoadError(null)
-      const res = await fetch(`/api/admin/posts?offset=0&limit=${POSTS_PER_PAGE}`, { credentials: 'include' })
+      const supabase = createClient()
+      const [res, channelsResult] = await Promise.all([
+        fetch(`/api/admin/posts?offset=0&limit=${POSTS_PER_PAGE}`, { credentials: 'include' }),
+        supabase.from('channels').select('id, name, slug, description').in('slug', ['general', 'aggie-ring', 'fundraising', 'rings', 'jobs-networking', 'jobs', 'promotions', 'events', 'football-tickets', 'tickets']).order('name'),
+      ])
 
       if (res.status === 401 || res.status === 403) {
         setAccessDenied(true)
@@ -65,6 +88,8 @@ export default function AdminDashboardPage() {
 
       if (!res.ok) throw new Error('Failed to load admin posts')
 
+      if (channelsResult.data) setChannels(channelsResult.data as FeedChannelDTO[])
+
       const { data, total } = await res.json()
       const fetched: PostItem[] = data || []
       setPosts(fetched)
@@ -73,6 +98,9 @@ export default function AdminDashboardPage() {
       setPage(0)
       setNewPostsAvailable(false)
       loadedPostIdsRef.current = new Set(fetched.map((p) => p.id))
+      const overrides: Record<string, PostOverrides> = {}
+      fetched.forEach((p) => { overrides[p.id] = { duration: getDefaultDuration(p), channelId: p.channel?.id ?? '' } })
+      setPostOverrides(overrides)
     } catch (e) {
       console.error(e)
       setLoadError('Unable to load admin posts right now.')
@@ -157,6 +185,11 @@ export default function AdminDashboardPage() {
       setPage(nextPage)
       setHasMore(fetched.length >= POSTS_PER_PAGE)
       fetched.forEach((p) => loadedPostIdsRef.current.add(p.id))
+      setPostOverrides((prev) => {
+        const next = { ...prev }
+        fetched.forEach((p) => { next[p.id] = { duration: getDefaultDuration(p), channelId: p.channel?.id ?? '' } })
+        return next
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -174,11 +207,15 @@ export default function AdminDashboardPage() {
   const approve = async (id: string) => {
     setActioning(id)
     try {
+      const overrides = postOverrides[id]
+      const body: Record<string, unknown> = { approve: true }
+      if (overrides?.duration) body.duration_days = overrides.duration
+      if (overrides?.channelId) body.channel_id = overrides.channelId
       const res = await fetch(`/api/admin/posts/${id}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ approve: true }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error('Failed')
       removePost(id)
@@ -241,6 +278,11 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
+      <UserProfileModal
+        isOpen={selectedUserId !== null}
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+      />
 
       {accessDenied && (
         <div className="rounded-md border p-4">
@@ -361,6 +403,61 @@ export default function AdminDashboardPage() {
                           ✕ {post.author?.posts_denied ?? 0} denied
                         </span>
                       </div>
+
+                      {/* View author profile */}
+                      {post.author?.id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => setSelectedUserId(post.author!.id)}
+                          disabled={busy}
+                        >
+                          View Profile
+                        </Button>
+                      )}
+
+                      {/* Duration + channel overrides (new posts only) */}
+                      {!isEditReview && (
+                        <div className="space-y-2">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Duration</p>
+                            <div className="flex flex-wrap gap-1">
+                              {DURATION_OPTIONS.map((d) => {
+                                const isKeep = d === getDefaultDuration(post)
+                                return (
+                                  <button
+                                    key={d}
+                                    type="button"
+                                    onClick={() => setPostOverrides((prev) => ({ ...prev, [post.id]: { ...prev[post.id], duration: d } }))}
+                                    className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
+                                      postOverrides[post.id]?.duration === d
+                                        ? 'bg-primary text-primary-foreground border-primary'
+                                        : 'bg-background text-foreground border-border hover:bg-muted'
+                                    }`}
+                                    disabled={busy}
+                                  >
+                                    {isKeep ? `${d}d (Keep)` : `${d}d`}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-1">Channel</p>
+                            <select
+                              value={postOverrides[post.id]?.channelId ?? ''}
+                              onChange={(e) => setPostOverrides((prev) => ({ ...prev, [post.id]: { ...prev[post.id], channelId: e.target.value } }))}
+                              disabled={busy}
+                              className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                            >
+                              {channels.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Approve */}
                       <Button

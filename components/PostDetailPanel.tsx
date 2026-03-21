@@ -364,6 +364,21 @@ export default function PostDetailPanel({
         </div>
       </div>
 
+      {/* Contact info */}
+      {post.post_contact && post.post_contact.length > 0 && (
+        <div className="px-6 pt-2">
+          <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contact</p>
+            {post.post_contact.map((entry: { label: string; value: string }, i: number) => (
+              <p key={i} className="text-sm">
+                <span className="font-medium text-foreground">{entry.label}:</span>{' '}
+                <span className="text-muted-foreground break-all">{entry.value}</span>
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Full-bleed image — no horizontal padding */}
       {post.images && post.images.length > 0 && (
         <PostImageGrid images={post.images} postTitle={post.title} />

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Profile, UserRole } from "@/lib/types"
+import { Profile, UserRole, ContactVisibility } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +24,23 @@ export function UserProfile() {
     is_alumni: false,
     graduation_year: undefined as number | undefined,
     major: "",
+    // Contact info
+    contact_email: "",
+    contact_email_visibility: "on_request" as ContactVisibility,
+    phone_number: "",
+    phone_number_visibility: "on_request" as ContactVisibility,
+    instagram_handle: "",
+    instagram_visibility: "on_request" as ContactVisibility,
+    discord_username: "",
+    discord_visibility: "on_request" as ContactVisibility,
+    facebook_url: "",
+    facebook_visibility: "on_request" as ContactVisibility,
+    linkedin_url: "",
+    linkedin_visibility: "on_request" as ContactVisibility,
+    twitter_handle: "",
+    twitter_visibility: "on_request" as ContactVisibility,
+    website_url: "",
+    website_visibility: "on_request" as ContactVisibility,
   })
 
   const supabase = createClient()
@@ -59,6 +76,22 @@ export function UserProfile() {
         is_alumni: data.is_alumni || false,
         graduation_year: data.graduation_year,
         major: data.major || "",
+        contact_email: data.contact_email || "",
+        contact_email_visibility: data.contact_email_visibility || "on_request",
+        phone_number: data.phone_number || "",
+        phone_number_visibility: data.phone_number_visibility || "on_request",
+        instagram_handle: data.instagram_handle || "",
+        instagram_visibility: data.instagram_visibility || "on_request",
+        discord_username: data.discord_username || "",
+        discord_visibility: data.discord_visibility || "on_request",
+        facebook_url: data.facebook_url || "",
+        facebook_visibility: data.facebook_visibility || "on_request",
+        linkedin_url: data.linkedin_url || "",
+        linkedin_visibility: data.linkedin_visibility || "on_request",
+        twitter_handle: data.twitter_handle || "",
+        twitter_visibility: data.twitter_visibility || "on_request",
+        website_url: data.website_url || "",
+        website_visibility: data.website_visibility || "on_request",
       })
     } catch (err) {
       console.error("Error fetching profile:", err)
@@ -79,6 +112,22 @@ export function UserProfile() {
         is_alumni: profile.is_alumni || false,
         graduation_year: profile.graduation_year,
         major: profile.major || "",
+        contact_email: profile.contact_email || "",
+        contact_email_visibility: profile.contact_email_visibility || "on_request",
+        phone_number: profile.phone_number || "",
+        phone_number_visibility: profile.phone_number_visibility || "on_request",
+        instagram_handle: profile.instagram_handle || "",
+        instagram_visibility: profile.instagram_visibility || "public",
+        discord_username: profile.discord_username || "",
+        discord_visibility: profile.discord_visibility || "public",
+        facebook_url: profile.facebook_url || "",
+        facebook_visibility: profile.facebook_visibility || "public",
+        linkedin_url: profile.linkedin_url || "",
+        linkedin_visibility: profile.linkedin_visibility || "public",
+        twitter_handle: profile.twitter_handle || "",
+        twitter_visibility: profile.twitter_visibility || "public",
+        website_url: profile.website_url || "",
+        website_visibility: profile.website_visibility || "public",
       })
     }
     setIsEditing(false)
@@ -97,6 +146,22 @@ export function UserProfile() {
           is_alumni: formData.is_alumni,
           graduation_year: formData.graduation_year || null,
           major: formData.major,
+          contact_email: formData.contact_email || null,
+          contact_email_visibility: formData.contact_email_visibility,
+          phone_number: formData.phone_number || null,
+          phone_number_visibility: formData.phone_number_visibility,
+          instagram_handle: formData.instagram_handle || null,
+          instagram_visibility: formData.instagram_visibility,
+          discord_username: formData.discord_username || null,
+          discord_visibility: formData.discord_visibility,
+          facebook_url: formData.facebook_url || null,
+          facebook_visibility: formData.facebook_visibility,
+          linkedin_url: formData.linkedin_url || null,
+          linkedin_visibility: formData.linkedin_visibility,
+          twitter_handle: formData.twitter_handle || null,
+          twitter_visibility: formData.twitter_visibility,
+          website_url: formData.website_url || null,
+          website_visibility: formData.website_visibility,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id)
@@ -329,6 +394,74 @@ export function UserProfile() {
                 {profile.is_alumni ? "Yes" : "No"}
               </span>
             )}
+          </div>
+
+          {/* Contact Information */}
+          <div className="border-t border-border pt-6 space-y-4">
+            <div>
+              <p className="text-sm font-semibold">Contact Information</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Choose what others can see on your profile. <span className="font-medium">On Request</span> means it's hidden until someone requests it and you accept.
+              </p>
+            </div>
+            {([
+              { key: 'contact_email', visKey: 'contact_email_visibility', label: 'Contact Email', placeholder: 'you@example.com', defaultVis: 'on_request' },
+              { key: 'phone_number', visKey: 'phone_number_visibility', label: 'Phone Number', placeholder: '+1 (555) 000-0000', defaultVis: 'on_request' },
+              { key: 'instagram_handle', visKey: 'instagram_visibility', label: 'Instagram', placeholder: '@username', defaultVis: 'on_request' },
+              { key: 'discord_username', visKey: 'discord_visibility', label: 'Discord', placeholder: 'username', defaultVis: 'on_request' },
+              { key: 'facebook_url', visKey: 'facebook_visibility', label: 'Facebook', placeholder: 'facebook.com/yourprofile', defaultVis: 'on_request' },
+              { key: 'linkedin_url', visKey: 'linkedin_visibility', label: 'LinkedIn', placeholder: 'linkedin.com/in/yourprofile', defaultVis: 'on_request' },
+              { key: 'twitter_handle', visKey: 'twitter_visibility', label: 'X / Twitter', placeholder: '@username', defaultVis: 'on_request' },
+              { key: 'website_url', visKey: 'website_visibility', label: 'Website', placeholder: 'https://yoursite.com', defaultVis: 'on_request' },
+            ] as const).map(({ key, visKey, label, placeholder }) => (
+              <div key={key} className="space-y-1.5">
+                <Label htmlFor={key}>{label}</Label>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <Input
+                      id={key}
+                      type="text"
+                      value={formData[key]}
+                      onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                      placeholder={placeholder}
+                      className="flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, [visKey]: formData[visKey] === 'public' ? 'on_request' : 'public' })}
+                      className={cn(
+                        "shrink-0 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
+                        formData[visKey] === 'public'
+                          ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30"
+                          : "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30"
+                      )}
+                    >
+                      {formData[visKey] === 'public' ? 'Public' : 'Private'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id={key}
+                      type="text"
+                      value={profile[key] || "Not set"}
+                      disabled
+                      className="flex-1 bg-muted"
+                    />
+                    {profile[key] && (
+                      <span className={cn(
+                        "shrink-0 px-3 py-1.5 rounded-md text-xs font-medium border",
+                        (profile[visKey] ?? 'on_request') === 'public'
+                          ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30"
+                          : "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30"
+                      )}>
+                        {(profile[visKey] ?? 'on_request') === 'public' ? 'Public' : 'Private'}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* Action buttons */}

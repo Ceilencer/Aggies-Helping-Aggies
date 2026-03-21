@@ -5,7 +5,20 @@ import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { validatePost } from '@/lib/profanity-filter'
 import { POST_LIMITS } from '@/lib/types'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
-import type { Channel, Post, UserRole } from '@/lib/types'
+import type { Channel, Post, UserRole, PostContactEntry } from '@/lib/types'
+
+const CONTACT_FIELD_DEFS = [
+  { key: 'contact_email',    label: 'Email' },
+  { key: 'phone_number',     label: 'Phone' },
+  { key: 'instagram_handle', label: 'Instagram' },
+  { key: 'discord_username', label: 'Discord' },
+  { key: 'facebook_url',     label: 'Facebook' },
+  { key: 'linkedin_url',     label: 'LinkedIn' },
+  { key: 'twitter_handle',   label: 'X / Twitter' },
+  { key: 'website_url',      label: 'Website' },
+] as const
+
+export type AvailableContactField = { key: string; label: string; value: string }
 
 type PostCounts = {
   dailyUsed: number
@@ -36,7 +49,10 @@ export function useCreatePostForm({
     channel_id: '',
     title: '',
     content: '',
+    duration_days: 7 as 1 | 3 | 7 | 14,
+    selected_contact_keys: [] as string[],
   })
+  const [availableContactFields, setAvailableContactFields] = useState<AvailableContactField[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -90,7 +106,7 @@ export function useCreatePostForm({
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       const [profileResult, trackingResult] = await Promise.all([
-        supabase.from('profiles').select('role').eq('id', user.id).single(),
+        supabase.from('profiles').select('role, contact_email, phone_number, instagram_handle, discord_username, facebook_url, linkedin_url, twitter_handle, website_url').eq('id', user.id).single(),
         supabase.rpc('get_post_counts'),
       ])
 
@@ -105,6 +121,15 @@ export function useCreatePostForm({
         dailyLimit: limits.daily,
         monthlyLimit: limits.monthly,
       })
+
+      // Build list of non-empty contact fields the user can attach to the post
+      if (profileResult.data) {
+        const p = profileResult.data as Record<string, string | null>
+        const available = CONTACT_FIELD_DEFS
+          .filter(({ key }) => !!p[key])
+          .map(({ key, label }) => ({ key, label, value: p[key] as string }))
+        setAvailableContactFields(available)
+      }
 
       return role
     }
@@ -143,6 +168,12 @@ export function useCreatePostForm({
         return
       }
 
+      // Resolve selected contact keys to { label, value } snapshot
+      const post_contact: PostContactEntry[] = formData.selected_contact_keys
+        .map(key => availableContactFields.find(f => f.key === key))
+        .filter((f): f is AvailableContactField => !!f)
+        .map(({ label, value }) => ({ label, value }))
+
       // --- Create the post via the server-side API route ---
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -152,6 +183,8 @@ export function useCreatePostForm({
           channel_id: formData.channel_id,
           title: formData.title.trim(),
           content: formData.content.trim(),
+          duration_days: formData.duration_days,
+          post_contact,
         }),
       })
 
@@ -249,6 +282,7 @@ export function useCreatePostForm({
     channels,
     formData,
     setFormData,
+    availableContactFields,
     error,
     loading,
     uploading,

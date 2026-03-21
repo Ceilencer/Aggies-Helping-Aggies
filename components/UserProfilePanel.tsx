@@ -11,6 +11,7 @@ import Image from 'next/image'
 import { getInitials, getRoleBadgeColor } from '@/lib/utils'
 import { useUserProfilePanelState } from '@/lib/hooks/useUserProfilePanelState'
 
+
 interface UserProfilePanelProps {
   userId: string
   onClose?: () => void
@@ -42,6 +43,7 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
     adminNote,
     isLoading,
     isAdmin,
+    currentUserId,
     error,
     noteContent,
     setNoteContent,
