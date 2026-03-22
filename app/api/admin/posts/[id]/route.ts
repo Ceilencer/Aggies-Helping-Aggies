@@ -131,8 +131,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (channel_id) updates.channel_id = channel_id
       if (duration_days != null) updates.expires_at = new Date(Date.now() + duration_days * 86400 * 1000).toISOString()
 
-      console.log('[admin approve] updates:', JSON.stringify(updates))
-
       const { error } = await serviceClient
         .from('posts')
         .update(updates)

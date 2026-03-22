@@ -6,7 +6,7 @@ export type ApprovalStatus = 'pending' | 'pending_edit' | 'approved' | 'rejected
 /** User account lifecycle status stored on the profiles table. */
 export type AccountStatus = 'active' | 'pending_approval' | 'suspended'
 
-export type ContactVisibility = 'public' | 'on_request'
+export type ContactVisibility = 'public' | 'private'
 export interface PostContactEntry { label: string; value: string }
 
 export interface Profile {
@@ -107,7 +107,7 @@ export interface Channel {
   slug: string
   description?: string
   type: ChannelType
-  requires_mfa: boolean
+
   is_read_only: boolean
   color: string
   created_at: string

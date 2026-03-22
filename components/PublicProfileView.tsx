@@ -30,7 +30,7 @@ function getRoleBadgeColor(role: string) {
 export default function PublicProfileView({ profile }: PublicProfileViewProps) {
   const visibleFields = CONTACT_FIELDS.filter(({ key, visKey }) => {
     if (!profile[key]) return false
-    const vis: ContactVisibility = (profile[visKey] as ContactVisibility) ?? 'on_request'
+    const vis: ContactVisibility = (profile[visKey] as ContactVisibility) ?? 'private'
     return vis === 'public'
   })
 

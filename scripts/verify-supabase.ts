@@ -139,7 +139,7 @@ async function verifySetup() {
       console.log(`   Role: ${profile.role}`)
       console.log(`   Verified: ${profile.is_verified}`)
       console.log(`   Alumni: ${profile.is_alumni}`)
-      console.log(`   MFA Enabled: ${profile.mfa_enabled}\n`)
+      console.log()
     }
   } else {
     console.log('ℹ️  Not currently authenticated (this is OK for now)\n')

@@ -98,7 +98,6 @@ async function checkUser(email?: string) {
   console.log(`   Role: ${profile.role}`)
   console.log(`   Verified: ${profile.is_verified ? '✅ YES' : '❌ NO'}`)
   console.log(`   Alumni: ${profile.is_alumni ? 'YES' : 'NO'}`)
-  console.log(`   MFA Enabled: ${profile.mfa_enabled ? 'YES' : 'NO'}`)
   console.log()
 
   if (!profile.is_verified) {
@@ -123,8 +122,7 @@ async function checkUser(email?: string) {
 
   console.log(`✅ Found ${channels.length} channels:`)
   channels.forEach(ch => {
-    const access = ch.requires_mfa && !profile.mfa_enabled ? '🔒 MFA Required' : '✅ Can post'
-    console.log(`   ${ch.icon} ${ch.name} - ${access}`)
+    console.log(`   ${ch.icon} ${ch.name} - ✅ Can post`)
   })
   console.log()
 

@@ -26,21 +26,21 @@ export function UserProfile() {
     major: "",
     // Contact info
     contact_email: "",
-    contact_email_visibility: "on_request" as ContactVisibility,
+    contact_email_visibility: "private" as ContactVisibility,
     phone_number: "",
-    phone_number_visibility: "on_request" as ContactVisibility,
+    phone_number_visibility: "private" as ContactVisibility,
     instagram_handle: "",
-    instagram_visibility: "on_request" as ContactVisibility,
+    instagram_visibility: "private" as ContactVisibility,
     discord_username: "",
-    discord_visibility: "on_request" as ContactVisibility,
+    discord_visibility: "private" as ContactVisibility,
     facebook_url: "",
-    facebook_visibility: "on_request" as ContactVisibility,
+    facebook_visibility: "private" as ContactVisibility,
     linkedin_url: "",
-    linkedin_visibility: "on_request" as ContactVisibility,
+    linkedin_visibility: "private" as ContactVisibility,
     twitter_handle: "",
-    twitter_visibility: "on_request" as ContactVisibility,
+    twitter_visibility: "private" as ContactVisibility,
     website_url: "",
-    website_visibility: "on_request" as ContactVisibility,
+    website_visibility: "private" as ContactVisibility,
   })
 
   const supabase = createClient()
@@ -77,21 +77,21 @@ export function UserProfile() {
         graduation_year: data.graduation_year,
         major: data.major || "",
         contact_email: data.contact_email || "",
-        contact_email_visibility: data.contact_email_visibility || "on_request",
+        contact_email_visibility: data.contact_email_visibility || "private",
         phone_number: data.phone_number || "",
-        phone_number_visibility: data.phone_number_visibility || "on_request",
+        phone_number_visibility: data.phone_number_visibility || "private",
         instagram_handle: data.instagram_handle || "",
-        instagram_visibility: data.instagram_visibility || "on_request",
+        instagram_visibility: data.instagram_visibility || "private",
         discord_username: data.discord_username || "",
-        discord_visibility: data.discord_visibility || "on_request",
+        discord_visibility: data.discord_visibility || "private",
         facebook_url: data.facebook_url || "",
-        facebook_visibility: data.facebook_visibility || "on_request",
+        facebook_visibility: data.facebook_visibility || "private",
         linkedin_url: data.linkedin_url || "",
-        linkedin_visibility: data.linkedin_visibility || "on_request",
+        linkedin_visibility: data.linkedin_visibility || "private",
         twitter_handle: data.twitter_handle || "",
-        twitter_visibility: data.twitter_visibility || "on_request",
+        twitter_visibility: data.twitter_visibility || "private",
         website_url: data.website_url || "",
-        website_visibility: data.website_visibility || "on_request",
+        website_visibility: data.website_visibility || "private",
       })
     } catch (err) {
       console.error("Error fetching profile:", err)
@@ -113,9 +113,9 @@ export function UserProfile() {
         graduation_year: profile.graduation_year,
         major: profile.major || "",
         contact_email: profile.contact_email || "",
-        contact_email_visibility: profile.contact_email_visibility || "on_request",
+        contact_email_visibility: profile.contact_email_visibility || "private",
         phone_number: profile.phone_number || "",
-        phone_number_visibility: profile.phone_number_visibility || "on_request",
+        phone_number_visibility: profile.phone_number_visibility || "private",
         instagram_handle: profile.instagram_handle || "",
         instagram_visibility: profile.instagram_visibility || "public",
         discord_username: profile.discord_username || "",
@@ -401,18 +401,18 @@ export function UserProfile() {
             <div>
               <p className="text-sm font-semibold">Contact Information</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Choose what others can see on your profile. <span className="font-medium">On Request</span> means it's hidden until someone requests it and you accept.
+                Choose what others can see on your profile. Set a field to <span className="font-medium">Public</span> to make it visible to other members, or <span className="font-medium">Private</span> to hide it.
               </p>
             </div>
             {([
-              { key: 'contact_email', visKey: 'contact_email_visibility', label: 'Contact Email', placeholder: 'you@example.com', defaultVis: 'on_request' },
-              { key: 'phone_number', visKey: 'phone_number_visibility', label: 'Phone Number', placeholder: '+1 (555) 000-0000', defaultVis: 'on_request' },
-              { key: 'instagram_handle', visKey: 'instagram_visibility', label: 'Instagram', placeholder: '@username', defaultVis: 'on_request' },
-              { key: 'discord_username', visKey: 'discord_visibility', label: 'Discord', placeholder: 'username', defaultVis: 'on_request' },
-              { key: 'facebook_url', visKey: 'facebook_visibility', label: 'Facebook', placeholder: 'facebook.com/yourprofile', defaultVis: 'on_request' },
-              { key: 'linkedin_url', visKey: 'linkedin_visibility', label: 'LinkedIn', placeholder: 'linkedin.com/in/yourprofile', defaultVis: 'on_request' },
-              { key: 'twitter_handle', visKey: 'twitter_visibility', label: 'X / Twitter', placeholder: '@username', defaultVis: 'on_request' },
-              { key: 'website_url', visKey: 'website_visibility', label: 'Website', placeholder: 'https://yoursite.com', defaultVis: 'on_request' },
+              { key: 'contact_email', visKey: 'contact_email_visibility', label: 'Contact Email', placeholder: 'you@example.com', defaultVis: 'private' },
+              { key: 'phone_number', visKey: 'phone_number_visibility', label: 'Phone Number', placeholder: '+1 (555) 000-0000', defaultVis: 'private' },
+              { key: 'instagram_handle', visKey: 'instagram_visibility', label: 'Instagram', placeholder: '@username', defaultVis: 'private' },
+              { key: 'discord_username', visKey: 'discord_visibility', label: 'Discord', placeholder: 'username', defaultVis: 'private' },
+              { key: 'facebook_url', visKey: 'facebook_visibility', label: 'Facebook', placeholder: 'facebook.com/yourprofile', defaultVis: 'private' },
+              { key: 'linkedin_url', visKey: 'linkedin_visibility', label: 'LinkedIn', placeholder: 'linkedin.com/in/yourprofile', defaultVis: 'private' },
+              { key: 'twitter_handle', visKey: 'twitter_visibility', label: 'X / Twitter', placeholder: '@username', defaultVis: 'private' },
+              { key: 'website_url', visKey: 'website_visibility', label: 'Website', placeholder: 'https://yoursite.com', defaultVis: 'private' },
             ] as const).map(({ key, visKey, label, placeholder }) => (
               <div key={key} className="space-y-1.5">
                 <Label htmlFor={key}>{label}</Label>
@@ -428,7 +428,7 @@ export function UserProfile() {
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, [visKey]: formData[visKey] === 'public' ? 'on_request' : 'public' })}
+                      onClick={() => setFormData({ ...formData, [visKey]: formData[visKey] === 'public' ? 'private' : 'public' })}
                       className={cn(
                         "shrink-0 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
                         formData[visKey] === 'public'
@@ -451,11 +451,11 @@ export function UserProfile() {
                     {profile[key] && (
                       <span className={cn(
                         "shrink-0 px-3 py-1.5 rounded-md text-xs font-medium border",
-                        (profile[visKey] ?? 'on_request') === 'public'
+                        (profile[visKey] ?? 'private') === 'public'
                           ? "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30"
                           : "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30"
                       )}>
-                        {(profile[visKey] ?? 'on_request') === 'public' ? 'Public' : 'Private'}
+                        {(profile[visKey] ?? 'private') === 'public' ? 'Public' : 'Private'}
                       </span>
                     )}
                   </div>
