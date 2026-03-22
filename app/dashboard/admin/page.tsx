@@ -75,7 +75,7 @@ export default function AdminDashboardPage() {
       const supabase = createClient()
       const [res, channelsResult] = await Promise.all([
         fetch(`/api/admin/posts?offset=0&limit=${POSTS_PER_PAGE}`, { credentials: 'include' }),
-        supabase.from('channels').select('id, name, slug, description').in('slug', ['general', 'aggie-ring', 'fundraising', 'rings', 'jobs-networking', 'jobs', 'promotions', 'events', 'football-tickets', 'tickets']).order('name'),
+        supabase.from('channels').select('id, name, slug, description').in('slug', ['general', 'housing', 'jobs-networking', 'jobs', 'promotions', 'events', 'football-tickets', 'tickets']).order('name'),
       ])
 
       if (res.status === 401 || res.status === 403) {

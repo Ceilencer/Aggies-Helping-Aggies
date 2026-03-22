@@ -7,7 +7,6 @@ import CommentForm from '@/components/CommentForm'
 import CommentAdminMenu from '@/components/CommentAdminMenu'
 import EditCommentForm from '@/components/EditCommentForm'
 import { formatRelativeTime, getInitials, getRoleBadgeColor } from '@/lib/utils'
-import { ChevronDown } from 'lucide-react'
 import type { Comment, Profile } from '@/lib/types'
 
 // Avatar sizes
@@ -27,13 +26,23 @@ interface CommentCardProps {
   onReplyCreated?: (reply: any) => void
   onCommentUpdated?: (comment: Comment) => void
   isReply?: boolean
+  depth?: number                 // 0 = top-level, 1 = reply, 2 = reply-to-reply (no further nesting)
   onProfileClick?: (userId: string) => void
   replyCount?: number
   repliesExpanded?: boolean
   onToggleReplies?: () => void
   showThreadLine?: boolean       // parent: vertical line below avatar
   showCurvedConnector?: boolean  // reply: L-curve connecting from parent thread line
-  isLastReply?: boolean          // reply: when false, draws continuation line below L-curve
+  isLastReply?: boolean          // reply: controls bottom padding (pb-2 vs pb-0)
+  showConnectorLine?: boolean    // reply: explicit control of connector line; falls back to !isLastReply
+  onConnectorClick?: () => void  // reply: makes the connector column clickable (collapses parent thread)
+  lineHighlighted?: boolean      // whether thread lines should appear highlighted (coordinated from parent)
+  onLineMouseEnter?: () => void  // notify parent when hovering a line segment
+  onLineMouseLeave?: () => void  // notify parent when leaving a line segment
+  replyLineHighlighted?: boolean    // reply: whether the level-2 thread line should appear highlighted
+  onReplyLineMouseEnter?: () => void  // reply: notify parent when hovering the level-2 thread line
+  onReplyLineMouseLeave?: () => void  // reply: notify parent when leaving the level-2 thread line
+  topLevelCommentId?: string         // reply: routes new replies to the top-level thread (flatten model)
 }
 
 export default function CommentCard({
@@ -45,6 +54,7 @@ export default function CommentCard({
   onReplyCreated,
   onCommentUpdated,
   isReply = false,
+  depth = 0,
   onProfileClick,
   replyCount = 0,
   repliesExpanded = false,
@@ -52,6 +62,15 @@ export default function CommentCard({
   showThreadLine = false,
   showCurvedConnector = false,
   isLastReply = true,
+  showConnectorLine,
+  onConnectorClick,
+  lineHighlighted = false,
+  onLineMouseEnter,
+  onLineMouseLeave,
+  replyLineHighlighted = false,
+  onReplyLineMouseEnter,
+  onReplyLineMouseLeave,
+  topLevelCommentId,
 }: CommentCardProps) {
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
@@ -185,12 +204,18 @@ export default function CommentCard({
         <div className="flex gap-2">
 
           {/* Connector column — same pixel width as parent avatar column */}
-          <div className="flex flex-col flex-shrink-0" style={{ width: AVATAR_SIZE }}>
+          <div
+            className={`flex flex-col flex-shrink-0 ${onConnectorClick ? 'cursor-pointer' : ''}`}
+            style={{ width: AVATAR_SIZE }}
+            onClick={onConnectorClick}
+            onMouseEnter={onLineMouseEnter}
+            onMouseLeave={onLineMouseLeave}
+          >
             {showCurvedConnector && (
               // SVG bezier curve: starts at top of thread line, curves right to reply avatar center.
               // CURVE_HEIGHT=14 = REPLY_AVATAR_SIZE/2, so curve ends exactly at avatar vertical center.
               <svg
-                className="text-brand-maroon dark:text-slate-500 opacity-40 dark:opacity-50"
+                className={`transition-colors ${lineHighlighted ? 'text-brand-maroon/70 dark:text-slate-400/70' : 'text-brand-maroon/40 dark:text-slate-500/50'}`}
                 style={{
                   width: (AVATAR_SIZE - 3) / 2 + 8,
                   height: CURVE_HEIGHT,
@@ -215,28 +240,66 @@ export default function CommentCard({
                 />
               </svg>
             )}
-            {!isLastReply && (
+            {(showConnectorLine ?? !isLastReply) && (
               <div
-                className="w-[3px] flex-1 bg-brand-maroon/40 dark:bg-slate-500/50 rounded-t-full"
+                className={`w-[3px] flex-1 rounded-t-full transition-colors ${lineHighlighted ? 'bg-brand-maroon/70 dark:bg-slate-400/70' : 'bg-brand-maroon/40 dark:bg-slate-500/50'}`}
                 style={{ marginLeft: (AVATAR_SIZE - 3) / 2 }}
               />
             )}
           </div>
 
-          {/* Reply avatar + bubble — items-start keeps avatar pinned to top of bubble */}
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            <button
-              onClick={() => comment.author?.id && onProfileClick?.(comment.author.id)}
-              className="flex-shrink-0 hover:opacity-80 transition-opacity"
-            >
-              {renderAvatar(REPLY_AVATAR_SIZE)}
-            </button>
+          {/* Reply avatar + bubble */}
+          <div className="flex gap-2 flex-1 min-w-0">
+            <div className="flex flex-col items-center flex-shrink-0">
+              <button
+                onClick={() => comment.author?.id && onProfileClick?.(comment.author.id)}
+                className="hover:opacity-80 transition-opacity"
+              >
+                {renderAvatar(REPLY_AVATAR_SIZE)}
+              </button>
+              {showThreadLine ? (
+                <button
+                  onClick={onToggleReplies}
+                  onMouseEnter={onReplyLineMouseEnter}
+                  onMouseLeave={onReplyLineMouseLeave}
+                  className="flex flex-col items-center flex-1 mt-1"
+                  aria-label="Hide replies"
+                >
+                  <div className={`w-[18px] h-[18px] rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${replyLineHighlighted ? 'border-brand-maroon/70 dark:border-slate-400/70' : 'border-brand-maroon/40 dark:border-slate-500/50'}`}>
+                    <span className={`text-[13px] font-bold leading-none transition-colors ${replyLineHighlighted ? 'text-brand-maroon/90 dark:text-slate-300' : 'text-brand-maroon/60 dark:text-slate-400'}`}>−</span>
+                  </div>
+                  <div className={`w-[3px] flex-1 transition-colors ${replyLineHighlighted ? 'bg-brand-maroon/70 dark:bg-slate-400/70' : 'bg-brand-maroon/40 dark:bg-slate-500/50'}`} />
+                </button>
+              ) : replyCount > 0 && depth < 2 ? (
+                <button
+                  onClick={onToggleReplies}
+                  className="flex flex-col items-center mt-1 gap-0.5 group"
+                  aria-label={`View ${replyCount} replies`}
+                >
+                  <div className="w-[3px] h-4 bg-brand-maroon/30 dark:bg-slate-500/40 rounded-full group-hover:bg-brand-maroon/60 dark:group-hover:bg-slate-400/60 transition-colors" />
+                  <div className="w-[18px] h-[18px] rounded-full border border-brand-maroon/40 dark:border-slate-500/50 flex items-center justify-center group-hover:border-brand-maroon/70 dark:group-hover:border-slate-400/70 transition-colors">
+                    <span className="text-[9px] font-bold text-brand-maroon/60 dark:text-slate-400 leading-none group-hover:text-brand-maroon/90 dark:group-hover:text-slate-300 transition-colors">
+                      {replyCount}
+                    </span>
+                  </div>
+                </button>
+              ) : null}
+            </div>
 
             <div className="flex-1 min-w-0">
               {bubble}
               <div className="flex items-center gap-0.5 mt-0.5 ml-1 text-xs text-muted-foreground">
                 <span className="px-1">{formatRelativeTime(comment.created_at)}</span>
                 <span className="text-muted-foreground/40 select-none">·</span>
+                <>
+                  <button
+                    onClick={() => setShowReplyForm(!showReplyForm)}
+                    className="px-2 py-1 hover:text-foreground transition-colors rounded"
+                  >
+                    Reply
+                  </button>
+                  <span className="text-muted-foreground/40 select-none">·</span>
+                </>
                 <CommentLikeButton
                   commentId={comment.id}
                   likeCount={comment.like_count || 0}
@@ -263,6 +326,20 @@ export default function CommentCard({
                   </>
                 )}
               </div>
+
+              {showReplyForm && (
+                <div className="mt-2" ref={replyFormRef}>
+                  <CommentForm
+                    postId={postId}
+                    parentCommentId={topLevelCommentId ?? comment.id}
+                    onCommentCreated={handleReplyCreated}
+                    onCancel={() => setShowReplyForm(false)}
+                    placeholder={`Reply to ${comment.author?.full_name}…`}
+                    isReply={true}
+                  />
+                </div>
+              )}
+
             </div>
           </div>
 
@@ -284,9 +361,33 @@ export default function CommentCard({
           >
             {renderAvatar(AVATAR_SIZE)}
           </button>
-          {showThreadLine && (
-            <div className="w-[3px] flex-1 mt-1 bg-brand-maroon/40 dark:bg-slate-500/50 rounded-t-full" />
-          )}
+          {showThreadLine ? (
+            <button
+              onClick={onToggleReplies}
+              onMouseEnter={onLineMouseEnter}
+              onMouseLeave={onLineMouseLeave}
+              className="flex flex-col items-center flex-1 mt-1"
+              aria-label="Hide replies"
+            >
+              <div className={`w-[18px] h-[18px] rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${lineHighlighted ? 'border-brand-maroon/70 dark:border-slate-400/70' : 'border-brand-maroon/40 dark:border-slate-500/50'}`}>
+                <span className={`text-[13px] font-bold leading-none transition-colors ${lineHighlighted ? 'text-brand-maroon/90 dark:text-slate-300' : 'text-brand-maroon/60 dark:text-slate-400'}`}>−</span>
+              </div>
+              <div className={`w-[3px] flex-1 transition-colors ${lineHighlighted ? 'bg-brand-maroon/70 dark:bg-slate-400/70' : 'bg-brand-maroon/40 dark:bg-slate-500/50'}`} />
+            </button>
+          ) : replyCount > 0 ? (
+            <button
+              onClick={onToggleReplies}
+              className="flex flex-col items-center mt-1 gap-0.5 group"
+              aria-label={`View ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`}
+            >
+              <div className="w-[3px] h-5 bg-brand-maroon/30 dark:bg-slate-500/40 rounded-full group-hover:bg-brand-maroon/60 dark:group-hover:bg-slate-400/60 transition-colors" />
+              <div className="w-[18px] h-[18px] rounded-full border border-brand-maroon/40 dark:border-slate-500/50 flex items-center justify-center group-hover:border-brand-maroon/70 dark:group-hover:border-slate-400/70 transition-colors">
+                <span className="text-[9px] font-bold text-brand-maroon/60 dark:text-slate-400 leading-none group-hover:text-brand-maroon/90 dark:group-hover:text-slate-300 transition-colors">
+                  {replyCount}
+                </span>
+              </div>
+            </button>
+          ) : null}
         </div>
 
         {/* Content */}
@@ -343,14 +444,6 @@ export default function CommentCard({
             </div>
           )}
 
-          {replyCount > 0 && !repliesExpanded && (
-            <button
-              onClick={onToggleReplies}
-              className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-brand-maroon dark:text-slate-400 hover:opacity-75 transition-opacity"
-            >
-              <ChevronDown size={13} />View {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
-            </button>
-          )}
         </div>
 
       </div>

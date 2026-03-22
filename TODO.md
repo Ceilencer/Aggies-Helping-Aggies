@@ -26,9 +26,9 @@
 ### 3. Comment System & Notifications
 **Goal:** Deepen on-platform engagement by improving comment threading and closing notification gaps.
 
-- [ ] Increase comment nesting depth from 1 level to 3 levels
-- [ ] Send a notification to a post author when someone comments on their post
-- [ ] Send a notification to a commenter when someone replies to their comment
+- [x] Increase comment nesting depth — 2 levels of nesting, flattens after that
+- [x] Send a notification to a post author when someone comments on their post
+- [x] Send a notification to a commenter when someone replies to their comment
 
 ---
 
@@ -76,6 +76,19 @@
 
 ---
 
+### 8. OpenAI Moderation API
+**Goal:** Add an AI-based content moderation layer on top of the existing `obscenity` filter.
+
+- [ ] Add `OPENAI_API_KEY` to `.env.local` and Vercel environment variables
+- [ ] Integrate `openai` npm package
+- [ ] Call `omni-moderation-latest` in the comment POST route before saving to DB
+- [ ] Call it in the post creation route as well
+- [ ] Decide on behavior: block the request or flag for admin review
+
+**Notes:** The OpenAI Moderation API is free (no token cost). Adds ~300–500ms latency per submission. Catches context-aware hate speech and coded language that regex-based filters miss.
+
+---
+
 ### 7. Native Mobile App
 **Goal:** Expand platform reach to iOS and Android.
 
@@ -86,4 +99,4 @@
 
 ---
 
-*Last updated: 2026-03-21*
+*Last updated: 2026-03-22*

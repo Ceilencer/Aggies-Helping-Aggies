@@ -1,7 +1,7 @@
 export type UserRole = 'Personal' | 'Business' | 'Charity' | 'Admin'
 export type FlairType = 'Student' | 'Former Student' | 'Family Member' | 'Aggie Mom' | 'Faculty' | 'BCS Local'
 export type VerificationStatus = 'pending' | 'approved' | 'rejected'
-export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'aggie_ring'
+export type ChannelType = 'general' | 'jobs' | 'tickets' | 'promotions' | 'housing'
 export type ApprovalStatus = 'pending' | 'pending_edit' | 'approved' | 'rejected'
 /** User account lifecycle status stored on the profiles table. */
 export type AccountStatus = 'active' | 'pending_approval' | 'suspended'

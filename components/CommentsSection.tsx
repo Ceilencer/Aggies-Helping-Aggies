@@ -5,7 +5,6 @@ import CommentForm from '@/components/CommentForm'
 import CommentCard from '@/components/CommentCard'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
-import { ChevronUp } from 'lucide-react'
 import type { Comment, FeedAuthorDTO } from '@/lib/types'
 
 interface CommentsSectionProps {
@@ -33,6 +32,8 @@ export default function CommentsSection({
   const [realtimeOk, setRealtimeOk] = useState(true)
   // Tracks which top-level comment threads have their replies expanded
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
+  // Tracks which top-level comment's thread line is currently being hovered
+  const [hoveredThreadId, setHoveredThreadId] = useState<string | null>(null)
   // Track IDs that were optimistically added by the current user so Realtime doesn't duplicate them
   const optimisticIds = useRef<Set<string>>(new Set())
   const commentRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -90,7 +91,7 @@ export default function CommentsSection({
 
           setComments(prev => {
             if (prev.some(c => c.id === newComment.id)) return prev
-            return [newComment, ...prev]
+            return [...prev, newComment]
           })
         }
       )
@@ -146,7 +147,7 @@ export default function CommentsSection({
 
   const handleOptimisticComment = (tempComment: Comment) => {
     optimisticIds.current.add(tempComment.id)
-    setComments(prev => [tempComment, ...prev])
+    setComments(prev => [...prev, tempComment])
   }
 
   const handleCommentCreated = (realComment: Comment, tempId?: string) => {
@@ -157,7 +158,7 @@ export default function CommentsSection({
     } else {
       setComments(prev => {
         if (prev.some(c => c.id === realComment.id)) return prev
-        return [realComment, ...prev]
+        return [...prev, realComment]
       })
     }
   }
@@ -174,7 +175,7 @@ export default function CommentsSection({
   const handleReplyCreated = (reply: Comment) => {
     setComments(prev => {
       if (prev.some(c => c.id === reply.id)) return prev
-      return [reply, ...prev]
+      return [...prev, reply]
     })
     // Auto-expand the parent thread so the new reply is immediately visible
     if (reply.parent_comment_id) {
@@ -199,9 +200,14 @@ export default function CommentsSection({
   }
 
   // Organize comments and replies
-  const topLevelComments = comments.filter(c => !c.parent_comment_id)
+  // Top-level: most liked first so best content surfaces; replies: oldest first so threads read top-to-bottom
+  const topLevelComments = comments
+    .filter(c => !c.parent_comment_id)
+    .sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))
   const getReplies = (parentCommentId: string) =>
-    comments.filter(c => c.parent_comment_id === parentCommentId)
+    comments
+      .filter(c => c.parent_comment_id === parentCommentId)
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
   return (
     <div>
@@ -228,12 +234,13 @@ export default function CommentsSection({
       ) : (
         <div>
           {topLevelComments.map((comment) => {
-            const replies = getReplies(comment.id)
+            const level1Replies = getReplies(comment.id)
             const isExpanded = expandedReplies.has(comment.id)
+            const isThreadHovered = hoveredThreadId === comment.id
+            const lineEnter = () => setHoveredThreadId(comment.id)
+            const lineLeave = () => setHoveredThreadId(null)
 
             return (
-              // Border wraps the whole group (parent + replies) so no line splits them
-              // Border wraps the whole group (parent + replies) so no line splits them
               <div key={comment.id} ref={(el) => { commentRefs.current[comment.id] = el }}>
                 <CommentCard
                   comment={comment}
@@ -243,36 +250,97 @@ export default function CommentsSection({
                   onCommentDeleted={handleCommentDeleted}
                   onReplyCreated={handleReplyCreated}
                   onProfileClick={onProfileClick}
-                  replyCount={replies.length}
+                  replyCount={level1Replies.length}
                   repliesExpanded={isExpanded}
                   onToggleReplies={() => toggleReplies(comment.id)}
-                  showThreadLine={isExpanded && replies.length > 0}
+                  showThreadLine={isExpanded && level1Replies.length > 0}
+                  lineHighlighted={isThreadHovered}
+                  onLineMouseEnter={lineEnter}
+                  onLineMouseLeave={lineLeave}
                 />
 
-                {/* Replies — only shown when expanded, each gets the L-curve connector */}
-                {isExpanded && replies.map((reply, index) => (
-                  <CommentCard
-                    key={reply.id}
-                    comment={reply}
-                    currentUserId={currentUserId}
-                    currentUserRole={currentUserRole}
-                    postId={postId}
-                    onCommentDeleted={handleCommentDeleted}
-                    isReply={true}
-                    onProfileClick={onProfileClick}
-                    showCurvedConnector={true}
-                    isLastReply={index === replies.length - 1}
-                  />
-                ))}
+                {/* Level-1 replies */}
+                {isExpanded && level1Replies.map((reply, index) => {
+                  const level2Replies = getReplies(reply.id)
+                  const isReplyExpanded = expandedReplies.has(reply.id)
+                  const isLast = index === level1Replies.length - 1
+                  const isReplyThreadHovered = hoveredThreadId === reply.id
+                  const replyLineEnter = () => setHoveredThreadId(reply.id)
+                  const replyLineLeave = () => setHoveredThreadId(null)
 
-                {isExpanded && replies.length > 0 && (
-                  <button
-                    onClick={() => toggleReplies(comment.id)}
-                    className="mb-3 ml-10 flex items-center gap-1 text-xs font-semibold text-brand-maroon dark:text-slate-400 hover:opacity-75 transition-opacity"
-                  >
-                    <ChevronUp size={13} />Hide replies
-                  </button>
-                )}
+                  return (
+                    <div key={reply.id} className="relative">
+                      {/* Absolute continuation line spans the full group height (card + level-2 content)
+                          so the connector is unbroken between non-last level-1 siblings */}
+                      {!isLast && (
+                        <button
+                          onClick={() => toggleReplies(comment.id)}
+                          onMouseEnter={lineEnter}
+                          onMouseLeave={lineLeave}
+                          className="absolute cursor-pointer"
+                          style={{ left: 8, top: 14, bottom: 0, width: 18 }}
+                          aria-label="Hide replies"
+                        >
+                          <div
+                            className={`absolute transition-colors ${isThreadHovered ? 'bg-brand-maroon/70 dark:bg-slate-400/70' : 'bg-brand-maroon/40 dark:bg-slate-500/50'}`}
+                            style={{ left: '50%', top: 0, bottom: 0, width: 3, transform: 'translateX(-50%)' }}
+                          />
+                        </button>
+                      )}
+                      <CommentCard
+                        comment={reply}
+                        currentUserId={currentUserId}
+                        currentUserRole={currentUserRole}
+                        postId={postId}
+                        onCommentDeleted={handleCommentDeleted}
+                        onReplyCreated={handleReplyCreated}
+                        onProfileClick={onProfileClick}
+                        isReply={true}
+                        depth={1}
+                        replyCount={level2Replies.length}
+                        repliesExpanded={isReplyExpanded}
+                        onToggleReplies={() => toggleReplies(reply.id)}
+                        onConnectorClick={() => toggleReplies(comment.id)}
+                        lineHighlighted={isThreadHovered}
+                        onLineMouseEnter={lineEnter}
+                        onLineMouseLeave={lineLeave}
+                        showCurvedConnector={true}
+                        showConnectorLine={false}
+                        isLastReply={!(isReplyExpanded && level2Replies.length > 0)}
+                        showThreadLine={isReplyExpanded && level2Replies.length > 0}
+                        replyLineHighlighted={isReplyThreadHovered}
+                        onReplyLineMouseEnter={replyLineEnter}
+                        onReplyLineMouseLeave={replyLineLeave}
+                      />
+
+                      {/* Level-2 replies — replies to these flatten back into this thread */}
+                      {isReplyExpanded && level2Replies.map((level2Reply, l2Index) => (
+                        <div key={level2Reply.id} className="ml-[39px]">
+                          <CommentCard
+                            comment={level2Reply}
+                            currentUserId={currentUserId}
+                            currentUserRole={currentUserRole}
+                            postId={postId}
+                            onCommentDeleted={handleCommentDeleted}
+                            onReplyCreated={handleReplyCreated}
+                            onProfileClick={onProfileClick}
+                            isReply={true}
+                            depth={2}
+                            showCurvedConnector={true}
+                            isLastReply={l2Index === level2Replies.length - 1}
+                            onConnectorClick={() => toggleReplies(reply.id)}
+                            lineHighlighted={isReplyThreadHovered}
+                            onLineMouseEnter={replyLineEnter}
+                            onLineMouseLeave={replyLineLeave}
+                            topLevelCommentId={reply.id}
+                          />
+                        </div>
+                      ))}
+
+                    </div>
+                  )
+                })}
+
               </div>
             )
           })}

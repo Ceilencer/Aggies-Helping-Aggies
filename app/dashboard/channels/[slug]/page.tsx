@@ -99,7 +99,6 @@ export default function ChannelPage() {
   const rawSlug = params.slug as string
   const canonicalSlug = useMemo(() => {
     const slugAliases: Record<string, string> = {
-      'aggie-ring': 'fundraising',
       'tickets': 'football-tickets',
       'jobs': 'jobs-networking',
     }

@@ -6,12 +6,12 @@ import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 import {
   Briefcase,
+  Building2,
   Home,
   Megaphone,
   MessagesSquare,
   Ticket,
 } from "lucide-react";
-import AggieRingIcon from "@/components/AggieRingIcon";
 import { getInitials } from "@/lib/utils";
 import { UserMenu } from "@/components/UserMenu";
 import { AdminShieldLink } from "@/components/AdminShieldLink";
@@ -31,10 +31,10 @@ const CHANNELS = [
     icon: MessagesSquare,
   },
   {
-    id: "aggie-ring",
-    label: "Ring Fundraising",
-    href: "/dashboard/channels/aggie-ring",
-    icon: AggieRingIcon,
+    id: "housing",
+    label: "Housing & Roommates",
+    href: "/dashboard/channels/housing",
+    icon: Building2,
   },
   {
     id: "jobs",

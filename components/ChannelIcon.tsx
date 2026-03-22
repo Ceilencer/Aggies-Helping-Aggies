@@ -1,5 +1,4 @@
-import { MessagesSquare, Megaphone, Briefcase, Ticket } from 'lucide-react'
-import AggieRingIcon from '@/components/AggieRingIcon'
+import { MessagesSquare, Megaphone, Briefcase, Ticket, Building2 } from 'lucide-react'
 
 interface ChannelIconProps {
   slug: string
@@ -14,7 +13,7 @@ export default function ChannelIcon({ slug, size = 20, className }: ChannelIconP
     case 'promotions': return <Megaphone {...props} />
     case 'jobs':       return <Briefcase {...props} />
     case 'tickets':    return <Ticket {...props} />
-    case 'aggie-ring': return <AggieRingIcon className={className} style={{ width: size, height: size }} />
+    case 'housing':    return <Building2 {...props} />
     default:           return null
   }
 }

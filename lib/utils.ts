@@ -85,7 +85,7 @@ export function getInitials(name: string): string {
  */
 export const CHANNEL_DISPLAY_ORDER = [
   'general',
-  'aggie-ring',
+  'housing',
   'jobs',
   'promotions',
   'tickets',

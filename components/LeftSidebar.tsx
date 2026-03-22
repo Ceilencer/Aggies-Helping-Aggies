@@ -4,10 +4,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Home, FileText, User, Shield,
-  MessagesSquare, Megaphone, Briefcase, Ticket, Bell,
+  MessagesSquare, Megaphone, Briefcase, Ticket, Bell, Building2,
 } from 'lucide-react'
 import type { Channel } from '@/lib/types'
-import AggieRingIcon from '@/components/AggieRingIcon'
 import { useNotificationCount } from '@/components/NotificationCountProvider'
 import { useAdminCounts } from '@/components/AdminCountProvider'
 
@@ -77,9 +76,9 @@ export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
                 <Ticket size={17} />{channel.name}
               </Link>
             )
-            if (channel.slug === 'aggie-ring') return (
+            if (channel.slug === 'housing') return (
               <Link key={channel.id} href={`/dashboard/channels/${channel.slug}`} className={linkClass(`/dashboard/channels/${channel.slug}`)}>
-                <AggieRingIcon style={{ width: 17, height: 17 }} className="shrink-0" />{channel.name}
+                <Building2 size={17} />{channel.name}
               </Link>
             )
 

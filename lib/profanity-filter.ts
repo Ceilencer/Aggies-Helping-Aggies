@@ -9,6 +9,12 @@ const matcher = new RegExpMatcher({
 // Initialize the censor for replacing profane words
 const censor = new TextCensor()
 
+// Collapses letter-spacing bypass attempts like "f u c k" → "fuck"
+// Requires 3+ consecutive single letters separated by spaces to avoid false positives
+function normalizeSpacedLetters(text: string): string {
+  return text.replace(/\b([a-zA-Z])([ \t]+[a-zA-Z]){2,}\b/g, (m) => m.replace(/[ \t]+/g, ''))
+}
+
 /**
  * Check if text contains profanity
  * @param text - Text to check
@@ -16,7 +22,7 @@ const censor = new TextCensor()
  */
 export function containsProfanity(text: string): boolean {
   if (!text) return false
-  const matches = matcher.getAllMatches(text)
+  const matches = matcher.getAllMatches(normalizeSpacedLetters(text))
   return matches.length > 0
 }
 
@@ -27,8 +33,9 @@ export function containsProfanity(text: string): boolean {
  */
 export function censorProfanity(text: string): string {
   if (!text) return text
-  const matches = matcher.getAllMatches(text)
-  return censor.applyTo(text, matches)
+  const normalized = normalizeSpacedLetters(text)
+  const matches = matcher.getAllMatches(normalized)
+  return censor.applyTo(normalized, matches)
 }
 
 /**

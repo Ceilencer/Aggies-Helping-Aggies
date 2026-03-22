@@ -38,7 +38,8 @@
       "Bash(rmdir \"c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app/api/contact-requests\")",
       "Bash(grep -l \"PostCard\\\\|post card\" c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components/*.tsx)",
       "Bash(grep -r \"TODO\\\\|FIXME\\\\|HACK\\\\|XXX\" --include=*.ts --include=*.tsx -l)",
-      "Bash(grep -r \"hardcoded\\\\|0x\\\\|magic.*string\\\\|SECRET\\\\|API_KEY\" /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app --include=*.ts --include=*.tsx -n)"
+      "Bash(grep -r \"hardcoded\\\\|0x\\\\|magic.*string\\\\|SECRET\\\\|API_KEY\" /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app --include=*.ts --include=*.tsx -n)",
+      "Bash(node -e \":*)"
     ]
   }
 }
