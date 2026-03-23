@@ -243,10 +243,10 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
         <div className="px-6 pt-3 pb-4">
           <div className={isAdmin ? 'grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]' : 'grid gap-6'}>
             <div>
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
                   {profile.avatar_url ? (
-                    <div className="relative h-20 w-20 overflow-hidden rounded-full">
+                    <div className="relative h-16 w-16 overflow-hidden rounded-full">
                       <Image
                         src={profile.avatar_url}
                         alt={profile.full_name}
@@ -255,25 +255,17 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
                       />
                     </div>
                   ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-semibold">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-semibold">
                       {getInitials(profile.full_name)}
                     </div>
                   )}
-
-                  <div className="space-y-1 text-sm">
-                    <p className="text-muted-foreground break-all">{profile.email}</p>
-                    <p className="text-muted-foreground">{profile.major || 'Major not set'}</p>
-                    <p className="text-muted-foreground">
-                      {profile.graduation_year ? `Class of ${profile.graduation_year}` : 'Graduation year not set'}
-                    </p>
-                  </div>
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <h2 className="text-2xl font-bold text-card-header-text mb-2">
+                  <h2 className="text-2xl font-bold text-card-header-text leading-tight">
                     {profile.full_name}
                   </h2>
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <div className="flex flex-wrap items-center gap-2 mt-1 mb-1">
                     <span
                       className={`text-xs px-3 py-1 rounded-full font-semibold ${getRoleBadgeColor(profile.role)}`}
                     >
@@ -284,6 +276,10 @@ export default function UserProfilePanel({ userId, onClose, onDeleted }: UserPro
                         ✓ Verified
                       </span>
                     )}
+                  </div>
+                  <div className="flex flex-wrap gap-x-3 text-xs text-muted-foreground mt-1">
+                    <span>{profile.major || 'Major not set'}</span>
+                    <span>{profile.graduation_year ? `Class of ${profile.graduation_year}` : 'Graduation year not set'}</span>
                   </div>
                 </div>
               </div>

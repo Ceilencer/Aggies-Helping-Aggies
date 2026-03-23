@@ -7,7 +7,7 @@ import { useAdminCounts } from '@/components/AdminCountProvider'
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const { pendingPosts, pendingUsers, unresolvedReports } = useAdminCounts()
+  const { pendingPosts, pendingUsers, unresolvedReports, pendingNameChanges } = useAdminCounts()
 
   const navItems = [
     { href: '/dashboard/admin', label: 'Pending Posts', count: pendingPosts },
@@ -15,6 +15,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/dashboard/admin/suspended-users', label: 'Suspended Users', count: null },
     { href: '/dashboard/admin/pending-verifications', label: 'Pending New Users', count: pendingUsers },
     { href: '/dashboard/admin/reported-posts', label: 'Reported Posts & Comments', count: unresolvedReports },
+    { href: '/dashboard/admin/name-change-requests', label: 'Name Changes', count: pendingNameChanges },
   ]
 
   return (

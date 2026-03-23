@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { useState } from 'react'
 import { getInitials } from '@/lib/utils'
 import type { Profile } from '@/lib/types'
 
@@ -19,16 +20,17 @@ const sizeClasses = {
   lg: 'h-16 w-16 text-lg'
 }
 
-export default function UserAvatar({ 
-  user, 
-  size = 'md', 
+export default function UserAvatar({
+  user,
+  size = 'md',
   linkToProfile = true,
   className = '',
   onProfileClick
 }: UserAvatarProps) {
   const sizeClass = sizeClasses[size]
-  
-  const avatarElement = user.avatar_url ? (
+  const [imgError, setImgError] = useState(false)
+
+  const avatarElement = user.avatar_url && !imgError ? (
     <div className={`relative overflow-hidden rounded-full ${sizeClass} ${className}`}>
       <Image
         src={user.avatar_url}
@@ -36,6 +38,7 @@ export default function UserAvatar({
         fill
         sizes={size === 'sm' ? '32px' : size === 'lg' ? '64px' : '40px'}
         className="object-cover"
+        onError={() => setImgError(true)}
       />
     </div>
   ) : (

@@ -9,6 +9,7 @@ export interface AdminPendingCounts {
   pendingPosts: number
   pendingUsers: number
   unresolvedReports: number
+  pendingNameChanges: number
 }
 
 const DEFAULT_COUNTS: AdminPendingCounts = {
@@ -16,6 +17,7 @@ const DEFAULT_COUNTS: AdminPendingCounts = {
   pendingPosts: 0,
   pendingUsers: 0,
   unresolvedReports: 0,
+  pendingNameChanges: 0,
 }
 
 // Dispatch this event anywhere in the app to immediately trigger a badge re-fetch.
@@ -35,7 +37,7 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
   const channelNameRef = useRef(`admin-pending-count-${Math.random().toString(36).slice(2)}`)
 
   const fetchCounts = useCallback(async () => {
-    const [postsResult, vrResult, reportsResult] = await Promise.all([
+    const [postsResult, vrResult, reportsResult, nameChangeResult] = await Promise.all([
       supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
@@ -48,6 +50,10 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
         .from('reports')
         .select('*', { count: 'exact', head: true })
         .eq('is_resolved', false),
+      supabase
+        .from('name_change_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending'),
     ])
 
     if (!mountedRef.current) return
@@ -55,12 +61,14 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
     const pendingPosts = postsResult.count ?? 0
     const pendingUsers = vrResult.count ?? 0
     const unresolvedReports = reportsResult.count ?? 0
+    const pendingNameChanges = nameChangeResult.count ?? 0
 
     setCounts({
       pendingPosts,
       pendingUsers,
       unresolvedReports,
-      total: pendingPosts + pendingUsers + unresolvedReports,
+      pendingNameChanges,
+      total: pendingPosts + pendingUsers + unresolvedReports + pendingNameChanges,
     })
   // supabase is stable — created once per component mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,6 +103,9 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
           void fetchCounts()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, () => {
+          void fetchCounts()
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'name_change_requests' }, () => {
           void fetchCounts()
         })
         .subscribe((status) => {
