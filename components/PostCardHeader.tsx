@@ -49,7 +49,7 @@ export default function PostCardHeader({
     if (daysLeft <= 0) {
       setExpiryLabel({ text: 'expires today', className: 'text-red-500 dark:text-red-400' })
     } else if (daysLeft === 1) {
-      setExpiryLabel({ text: 'expires tomorrow', className: 'text-red-500 dark:text-red-400' })
+      setExpiryLabel({ text: 'expires tonight', className: 'text-red-500 dark:text-red-400' })
     } else if (daysLeft <= 3) {
       setExpiryLabel({ text: `expires in ${daysLeft} days`, className: 'text-amber-500 dark:text-amber-400' })
     } else {
