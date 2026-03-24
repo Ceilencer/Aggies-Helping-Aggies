@@ -37,7 +37,10 @@ function LoginForm() {
 
       const { error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          scopes: 'email,public_profile',
+        },
       })
 
       if (signInError) throw signInError

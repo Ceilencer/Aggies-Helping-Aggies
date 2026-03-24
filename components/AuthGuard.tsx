@@ -7,6 +7,14 @@ import { createClient } from '@/lib/supabase/client'
 export default function AuthGuard({ userId }: { userId: string }) {
   const router = useRouter()
 
+  // Facebook OAuth appends #_=_ to the redirect URL as a legacy artifact.
+  // Strip it immediately so it doesn't appear in the address bar.
+  useEffect(() => {
+    if (window.location.hash === '#_=_') {
+      history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+  }, [])
+
   useEffect(() => {
     const supabase = createClient()
 

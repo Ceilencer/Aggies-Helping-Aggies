@@ -8,6 +8,13 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
 
+  // Log any OAuth error returned by Supabase/Facebook so failures are diagnosable
+  const oauthError = searchParams.get('error')
+  const oauthErrorDescription = searchParams.get('error_description')
+  if (oauthError) {
+    console.error('OAuth callback error:', oauthError, oauthErrorDescription)
+  }
+
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
@@ -21,8 +28,10 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
 
-  // Normalise email so domain checks are case-insensitive
-  const email = (data.user.email ?? '').toLowerCase().trim()
+  // Normalise email so domain checks are case-insensitive.
+  // May be null for Facebook users who signed up with a phone number only.
+  const rawEmail = data.user.email?.toLowerCase().trim() ?? null
+  const email = rawEmail ?? ''
   const provider = (data.user.app_metadata?.provider as string | undefined) ?? 'google'
 
   // --- Routing decision (modular – see lib/utils/auth-routing.ts) ---
@@ -30,32 +39,33 @@ export async function GET(request: Request) {
 
   const service = createServiceClient()
 
-  // --- Permanent ban check: reject before doing anything else ----------
-  const { count: rejectionCount } = await service
-    .from('rejected_accounts')
-    .select('id', { count: 'exact', head: true })
-    .eq('email', email)
+  // --- Permanent ban / suspend checks (email-based, skipped for no-email users) ---
+  if (rawEmail) {
+    const { count: rejectionCount } = await service
+      .from('rejected_accounts')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', rawEmail)
 
-  if ((rejectionCount ?? 0) >= 2) {
-    await service.auth.admin.deleteUser(data.user.id)
-    return NextResponse.redirect(`${origin}/login?error=banned`)
-  }
+    if ((rejectionCount ?? 0) >= 2) {
+      await service.auth.admin.deleteUser(data.user.id)
+      return NextResponse.redirect(`${origin}/login?error=banned`)
+    }
 
-  // --- Suspended account check by email --------------------------------
-  // Guards against a banned user signing in with a different OAuth provider
-  // (e.g. Google banned → tries Facebook with same email). Identity linking
-  // gives the same user.id in most cases, but an email-based check ensures
-  // the ban holds even if Supabase creates a new auth identity.
-  const { data: suspendedByEmail } = await service
-    .from('profiles')
-    .select('account_status')
-    .eq('email', email)
-    .eq('account_status', 'suspended')
-    .maybeSingle()
+    // Guards against a banned user signing in with a different OAuth provider
+    // (e.g. Google banned → tries Facebook with same email). Identity linking
+    // gives the same user.id in most cases, but an email-based check ensures
+    // the ban holds even if Supabase creates a new auth identity.
+    const { data: suspendedByEmail } = await service
+      .from('profiles')
+      .select('account_status')
+      .eq('email', rawEmail)
+      .eq('account_status', 'suspended')
+      .maybeSingle()
 
-  if (suspendedByEmail) {
-    await supabase.auth.signOut()
-    return NextResponse.redirect(`${origin}/?suspended=true`)
+    if (suspendedByEmail) {
+      await supabase.auth.signOut()
+      return NextResponse.redirect(`${origin}/?suspended=true`)
+    }
   }
 
   // --- Check for an existing profile -----------------------------------
@@ -77,7 +87,8 @@ export async function GET(request: Request) {
     }
 
     // Active returning user — update last_login via RPC and go to dashboard.
-    // Keep the existing avatar_url so switching providers doesn't overwrite it.
+    // Always prefer the fresh OAuth avatar_url (Facebook/Google CDN URLs expire),
+    // falling back to the stored URL only if OAuth returns nothing.
     const newAvatar = data.user.user_metadata?.avatar_url ||
                       data.user.user_metadata?.picture ||
                       null
@@ -87,7 +98,7 @@ export async function GET(request: Request) {
       p_full_name:      data.user.user_metadata?.full_name ||
                         data.user.user_metadata?.name ||
                         '',
-      p_avatar_url:     existingProfile?.avatar_url ?? newAvatar,
+      p_avatar_url:     newAvatar ?? existingProfile?.avatar_url ?? null,
       p_account_status: 'active' as const,
       p_is_verified:    true,
     })
