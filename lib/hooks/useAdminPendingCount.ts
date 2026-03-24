@@ -30,7 +30,6 @@ export function notifyAdminCountChanged() {
 
 export function useAdminPendingCount(enabled = true): AdminPendingCounts {
   const [counts, setCounts] = useState<AdminPendingCounts>(DEFAULT_COUNTS)
-  const [realtimeOk, setRealtimeOk] = useState(true)
   const supabase = createClient()
   const { reportStatus } = useRealtimeStatus()
   const mountedRef = useRef(true)
@@ -110,8 +109,6 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
         })
         .subscribe((status) => {
           reportStatus(channelNameRef.current, status)
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeOk(false)
-          else if (status === 'SUBSCRIBED') setRealtimeOk(true)
         })
     }
 
@@ -124,12 +121,15 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
     }
   }, [enabled, fetchCounts])
 
-  // Fallback: poll every 30s if the realtime channel failed to connect
+  // Poll every 15s regardless of realtime status.
+  // postgres_changes events on admin tables are silently dropped when RLS
+  // policies use cross-table joins (EXISTS ... FROM profiles), so realtime
+  // alone is unreliable here. Polling ensures counts stay fresh.
   useEffect(() => {
-    if (!enabled || realtimeOk) return
-    const id = setInterval(() => void fetchCounts(), 30_000)
+    if (!enabled) return
+    const id = setInterval(() => void fetchCounts(), 15_000)
     return () => clearInterval(id)
-  }, [enabled, realtimeOk, fetchCounts])
+  }, [enabled, fetchCounts])
 
   return counts
 }
