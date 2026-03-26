@@ -40,11 +40,6 @@ function LoginForm() {
         options: {
           redirectTo,
           scopes: 'email,public_profile',
-          queryParams: {
-            // Forces Facebook to re-request any scopes not yet granted,
-            // e.g. users who first authorized without an email on their account.
-            auth_type: 'rerequest',
-          },
         },
       })
 

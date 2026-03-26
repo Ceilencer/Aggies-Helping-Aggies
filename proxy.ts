@@ -17,10 +17,10 @@ export async function proxy(request: NextRequest) {
     // 'unsafe-inline' for styles is kept — Tailwind and next-themes require it,
     // and CSS-based attacks are much less severe than script injection.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data: https://*.googleusercontent.com https://*.supabase.co",
+    "img-src 'self' blob: data: https://*.googleusercontent.com https://*.supabase.co https://*.fbcdn.net https://*.facebook.com",
     "font-src 'self'",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com",
-    "frame-src 'self' https://accounts.google.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://*.facebook.com https://*.fbcdn.net",
+    "frame-src 'self' https://accounts.google.com https://*.facebook.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
