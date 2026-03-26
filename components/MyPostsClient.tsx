@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import CommentCountButton from '@/components/CommentCountButton'
 import PostLikeButton from '@/components/PostLikeButton'
 import PostCardHeader from '@/components/PostCardHeader'
+import { PostImageGrid } from '@/components/PostImageGrid'
 import CreatePostModal from '@/components/CreatePostModal'
 import EditPostModal from '@/components/EditPostModal'
 import PostDetailModal from '@/components/PostDetailModal'
@@ -206,6 +207,12 @@ export default function MyPostsClient({
                       : post.content
                     }
                   </p>
+
+                  {post.images && post.images.length > 0 && (
+                    <div className="-mx-6 mt-3">
+                      <PostImageGrid images={post.images} postTitle={post.title} className="overflow-hidden" />
+                    </div>
+                  )}
 
                   {post.approval_status === 'rejected' && post.moderation_reason && (
                     <p className="text-sm text-red-600 dark:text-red-400">

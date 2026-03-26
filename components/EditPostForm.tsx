@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { X } from 'lucide-react'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
 import { Button } from '@/components/ui/button'
@@ -9,10 +11,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ImageUploadInput } from '@/components/ImageUploadInput'
 import { validatePost } from '@/lib/profanity-filter'
 import type { Post, Channel, ChannelListDTO } from '@/lib/types'
 
-type EditablePost = Pick<Post, 'id' | 'title' | 'content'>
+const MAX_TOTAL_IMAGES = 5
+
+type EditablePost = Pick<Post, 'id' | 'title' | 'content' | 'images'>
 
 interface EditPostFormProps {
   post: EditablePost
@@ -35,9 +40,19 @@ export default function EditPostForm({
     title: post.title,
     content: post.content,
   })
+  // Track which existing images the user wants to keep
+  const [keptImages, setKeptImages] = useState<string[]>(post.images ?? [])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+
+  const totalImageCount = keptImages.length + imageUpload.uploadedImages.length
+  const canAddMore = totalImageCount < MAX_TOTAL_IMAGES
+  const remainingSlots = MAX_TOTAL_IMAGES - totalImageCount
+
+  const removeExistingImage = (url: string) => {
+    setKeptImages((prev) => prev.filter((u) => u !== url))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +60,6 @@ export default function EditPostForm({
     setLoading(true)
 
     try {
-      // Validate required fields
       if (!formData.title.trim()) {
         setError('Please enter a title')
         setLoading(false)
@@ -58,7 +72,6 @@ export default function EditPostForm({
         return
       }
 
-      // Validate content for profanity
       const validation = validatePost(formData.title, formData.content)
       if (!validation.valid) {
         setError(validation.error || 'Validation failed')
@@ -66,34 +79,37 @@ export default function EditPostForm({
         return
       }
 
-      // Verify authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-      if (authError) {
-        setError('Authentication error. Please log in again.')
-        setLoading(false)
-        return
-      }
-
-      if (!user) {
+      if (authError || !user) {
         setError('You must be logged in to edit posts.')
         setLoading(false)
         return
       }
 
-      // Prepare update data
-      const updateData = {
-        title: formData.title.trim(),
-        content: formData.content.trim(),
+      // Upload any new images first
+      let newImageUrls: string[] = []
+      if (imageUpload.uploadedImages.length > 0) {
+        setUploading(true)
+        const uploadResult = await imageUpload.uploadImages(post.id)
+        setUploading(false)
+        if (!uploadResult.success) {
+          setError(uploadResult.error || 'Failed to upload images')
+          setLoading(false)
+          return
+        }
+        newImageUrls = uploadResult.urls
       }
 
-      // Update post
+      const finalImages = [...keptImages, ...newImageUrls]
+
       const response = await fetch(`/api/posts/${post.id}/edit`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title.trim(),
+          content: formData.content.trim(),
+          images: finalImages,
+        }),
       })
 
       if (!response.ok) {
@@ -108,12 +124,10 @@ export default function EditPostForm({
         return
       }
 
-      // Success - redirect to dashboard
       router.push('/dashboard')
     } catch (err: any) {
       console.error('Post update error:', err)
-      const errorMessage = err?.message || 'Failed to update post'
-      setError(errorMessage)
+      setError(err?.message || 'Failed to update post')
     } finally {
       setLoading(false)
       setUploading(false)
@@ -179,6 +193,87 @@ export default function EditPostForm({
               </p>
             </div>
 
+            {/* Image editing section */}
+            <div className="space-y-4 border-t pt-6">
+              <Label className="dark:text-white">Images</Label>
+
+              {/* Existing images */}
+              {keptImages.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground dark:text-white/70">
+                    Current images — click × to remove
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {keptImages.map((url) => (
+                      <div key={url} className="relative group">
+                        <div className="relative w-full h-24 sm:h-32 bg-muted rounded-lg overflow-hidden border border-border">
+                          <Image
+                            src={url}
+                            alt="Post image"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeExistingImage(url)}
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0 hover:bg-red-500/20 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* New image upload */}
+              <ImageUploadInput
+                onImagesSelected={imageUpload.addImages}
+                canAddMore={canAddMore}
+                remainingSlots={remainingSlots}
+                error={imageUpload.error}
+              />
+
+              {imageUpload.uploadedImages.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground dark:text-white/70">
+                    New images to add ({imageUpload.uploadedImages.length})
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {imageUpload.uploadedImages.map((image, index) => (
+                      <div key={`${image.file.name}-${index}`} className="relative group">
+                        <div className="relative w-full h-24 sm:h-32 bg-muted rounded-lg overflow-hidden border border-border">
+                          <Image
+                            src={image.preview}
+                            alt={image.file.name}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 50vw, 25vw"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => imageUpload.removeImage(index)}
+                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0 hover:bg-red-500/20 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <p className="text-xs text-muted-foreground dark:text-white/70 mt-1 truncate">
+                          {image.file.name}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 dark:bg-blue-900/20 p-4">
               <h4 className="font-semibold text-blue-800 dark:text-white mb-2">Note on Edits</h4>
               <ul className="text-sm text-blue-700 dark:text-white/80 space-y-1">
@@ -189,12 +284,12 @@ export default function EditPostForm({
             </div>
 
             <div className="flex space-x-4">
-              <Button 
-                type="submit" 
-                disabled={loading || uploading} 
+              <Button
+                type="submit"
+                disabled={loading || uploading}
                 className="flex-1"
               >
-                {loading ? 'Updating Post...' : 'Update Post'}
+                {uploading ? 'Uploading Images...' : loading ? 'Updating Post...' : 'Update Post'}
               </Button>
               <Button
                 type="button"

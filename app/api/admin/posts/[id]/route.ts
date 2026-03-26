@@ -24,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Determine whether this is a new-post review or an edit review
     const { data: post, error: postFetchError } = await supabase
       .from('posts')
-      .select('approval_status, author_id, title')
+      .select('approval_status, author_id, title, channel:channels!inner(slug)')
       .eq('id', id)
       .single()
 
@@ -34,6 +34,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const isPendingEdit = post.approval_status === 'pending_edit'
     const serviceClient = createServiceClient()
+
+    const channelSlug = Array.isArray(post.channel)
+      ? (post.channel[0] as { slug: string } | undefined)?.slug
+      : (post.channel as { slug: string } | null)?.slug
 
     // ── PENDING EDIT REVIEW ──────────────────────────────────────────────────
     // Fetch current admin name once for history entries
@@ -48,7 +52,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       // Fetch the proposed changes
       const { data: pendingEdit, error: editFetchError } = await supabase
         .from('post_edits')
-        .select('proposed_title, proposed_content')
+        .select('proposed_title, proposed_content, proposed_images')
         .eq('post_id', id)
         .single()
 
@@ -65,7 +69,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           .update({
             title: pendingEdit.proposed_title,
             content: pendingEdit.proposed_content,
+            images: pendingEdit.proposed_images ?? undefined,
             approval_status: 'approved',
+            is_moderated: true,
+            moderation_reason: null,
           })
           .eq('id', id)
 
@@ -86,7 +93,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           type: 'edit_approved',
           title: 'Your edit was approved',
           message: `Your changes to "${post.title}" are now live.`,
-          link: '/dashboard/my-posts',
+          link: channelSlug ? `/dashboard/channels/${channelSlug}?post=${id}` : '/dashboard/my-posts',
         })
       } else {
         // Reject: discard proposed changes, restore post to approved (original content untouched)
@@ -148,12 +155,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         actor_name: adminName,
       })
 
+      let approvedChannelSlug = channelSlug
+      if (channel_id) {
+        const { data: newChannel } = await supabase
+          .from('channels')
+          .select('slug')
+          .eq('id', channel_id)
+          .single()
+        if (newChannel) approvedChannelSlug = newChannel.slug
+      }
+
       await serviceClient.from('notifications').insert({
         user_id: post.author_id,
         type: 'post_approved',
         title: 'Your post was approved',
         message: `"${post.title}" is now live and visible to the community.`,
-        link: '/dashboard/my-posts',
+        link: approvedChannelSlug ? `/dashboard/channels/${approvedChannelSlug}?post=${id}` : '/dashboard/my-posts',
       })
 
       return NextResponse.json({ success: true })

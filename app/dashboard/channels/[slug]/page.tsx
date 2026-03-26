@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import Modal from '@/components/Modal'
@@ -96,6 +96,8 @@ function ChannelLoadingSkeleton() {
 
 export default function ChannelPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const rawSlug = params.slug as string
   const canonicalSlug = useMemo(() => {
     const slugAliases: Record<string, string> = {
@@ -136,7 +138,7 @@ export default function ChannelPage() {
       })
     },
   })
-  const [activePostId, setActivePostId] = useState<string | null>(null)
+  const [activePostId, setActivePostId] = useState<string | null>(() => searchParams.get('post'))
   const [createPostOpen, setCreatePostOpen] = useState(false)
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -393,7 +395,14 @@ export default function ChannelPage() {
       <PostDetailModal
         isOpen={!!activePostId}
         postId={activePostId}
-        onClose={() => setActivePostId(null)}
+        onClose={() => {
+          setActivePostId(null)
+          if (searchParams.get('post')) {
+            const url = new URL(window.location.href)
+            url.searchParams.delete('post')
+            router.replace(url.pathname + url.search, { scroll: false })
+          }
+        }}
         onPostDeleted={(postId) => {
           setPosts(current => current.filter(item => item.id !== postId))
           setPostOffset(current => Math.max(current - 1, 0))

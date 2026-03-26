@@ -21,7 +21,7 @@ export async function PUT(
       )
     }
 
-    const { title, content } = validation.data
+    const { title, content, images } = validation.data
 
     // Validate content for profanity
     const profanityCheck = validatePost(title, content)
@@ -79,9 +79,12 @@ export async function PUT(
 
     // --- ADMIN: apply edit immediately ---
     if (profile.role === 'Admin') {
+      const updateFields: Record<string, unknown> = { title, content }
+      if (images !== undefined) updateFields.images = images
+
       const { data: updatedPost, error: updateError } = await supabase
         .from('posts')
-        .update({ title, content })
+        .update(updateFields)
         .eq('id', postId)
         .select(`
           *,
@@ -116,6 +119,7 @@ export async function PUT(
           submitted_by: user.id,
           proposed_title: title,
           proposed_content: content,
+          proposed_images: images ?? null,
         },
         { onConflict: 'post_id' }
       )
@@ -157,7 +161,7 @@ export async function PUT(
         *,
         author:profiles!posts_author_id_fkey(*),
         channel:channels!inner(*),
-        pending_edit:post_edits(proposed_title, proposed_content)
+        pending_edit:post_edits(proposed_title, proposed_content, proposed_images)
       `)
       .eq('id', postId)
       .single()

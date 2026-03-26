@@ -89,6 +89,7 @@ export const editPostSchema = z.object({
     .string()
     .min(10, 'Content must be at least 10 characters')
     .max(5000, 'Content must be less than 5000 characters'),
+  images: z.array(z.string().url()).max(5).optional(),
 })
 
 // Create comment form schema

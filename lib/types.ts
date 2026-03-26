@@ -149,7 +149,7 @@ export interface Post {
   like_count?: number
   user_has_liked?: boolean
   like_id?: string | null
-  pending_edit?: { proposed_title: string; proposed_content: string } | null
+  pending_edit?: { proposed_title: string; proposed_content: string; proposed_images?: string[] | null } | null
   /** Signals to the client that the update created a pending edit awaiting admin review */
   _pendingEdit?: boolean
 }
@@ -161,6 +161,7 @@ export type ChannelListDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description
 export interface FeedPendingEditDTO {
   proposed_title: string
   proposed_content: string
+  proposed_images?: string[] | null
 }
 
 // Admin-specific DTOs for admin dashboard
