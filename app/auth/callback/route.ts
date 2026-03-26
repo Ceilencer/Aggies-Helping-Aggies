@@ -29,10 +29,26 @@ export async function GET(request: Request) {
   }
 
   // Normalise email so domain checks are case-insensitive.
-  // May be null for Facebook users who signed up with a phone number only.
-  const rawEmail = data.user.email?.toLowerCase().trim() ?? null
+  // Facebook does not always populate data.user.email — fall back to the raw
+  // identity data and user_metadata where Supabase may store it instead.
+  // May still be null for Facebook accounts registered with a phone number only.
+  const rawEmail = (
+    data.user.email ??
+    data.user.identities?.[0]?.identity_data?.email ??
+    data.user.user_metadata?.email ??
+    null
+  )?.toLowerCase().trim() ?? null
+
   const email = rawEmail ?? ''
   const provider = (data.user.app_metadata?.provider as string | undefined) ?? 'google'
+
+  // Diagnostic: log what Facebook actually returned so we can confirm the fix.
+  if (provider === 'facebook') {
+    console.log('[FB OAuth] user.email:', data.user.email)
+    console.log('[FB OAuth] identity_data.email:', data.user.identities?.[0]?.identity_data?.email)
+    console.log('[FB OAuth] user_metadata.email:', data.user.user_metadata?.email)
+    console.log('[FB OAuth] resolved rawEmail:', rawEmail)
+  }
 
   // --- Routing decision (modular – see lib/utils/auth-routing.ts) ---
   const decision = resolveAuthRoute(provider, email)
