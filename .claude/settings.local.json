@@ -39,7 +39,15 @@
       "Bash(grep -l \"PostCard\\\\|post card\" c:/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/components/*.tsx)",
       "Bash(grep -r \"TODO\\\\|FIXME\\\\|HACK\\\\|XXX\" --include=*.ts --include=*.tsx -l)",
       "Bash(grep -r \"hardcoded\\\\|0x\\\\|magic.*string\\\\|SECRET\\\\|API_KEY\" /c/Users/Ceilencer/Capstone/Howdy-Helps-Capstone/app --include=*.ts --include=*.tsx -n)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "WebFetch(domain:developers.facebook.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:stackoverflow.com)",
+      "WebFetch(domain:community.supabase.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:supabase.com)",
+      "WebFetch(domain:www.facebook.com)",
+      "WebFetch(domain:web.dev)"
     ]
   }
 }

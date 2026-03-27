@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createServiceClient } from '@/lib/supabase/service'
 import { resolveAuthRoute } from '@/lib/utils/auth-routing'
 
@@ -19,13 +19,44 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
 
-  const supabase = await createClient()
+  // Build a Supabase client that captures cookies locally so we can stamp them
+  // onto whichever NextResponse.redirect() we return. The shared createClient()
+  // writes to Next.js's implicit response, which is discarded when we return an
+  // explicit redirect — meaning the session cookie never reaches the browser.
+  const cookiesToSet: { name: string; value: string; options: CookieOptions }[] = []
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.headers
+            .get('cookie')
+            ?.split(';')
+            .map((c) => {
+              const [name, ...rest] = c.trim().split('=')
+              return { name: name.trim(), value: rest.join('=') }
+            }) ?? []
+        },
+        setAll(incoming: { name: string; value: string; options: CookieOptions }[]) {
+          cookiesToSet.push(...incoming)
+        },
+      },
+    }
+  )
+
+  // Helper: build a redirect and stamp all session cookies onto it.
+  function redirectWith(url: string) {
+    const res = NextResponse.redirect(url)
+    cookiesToSet.forEach(({ name, value, options }) => res.cookies.set(name, value, options))
+    return res
+  }
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error || !data.user) {
     console.error('🔴 Supabase Auth Error:', error)
-    return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    return redirectWith(`${origin}/login?error=auth_failed`)
   }
 
   // Normalise email so domain checks are case-insensitive.
@@ -64,7 +95,7 @@ export async function GET(request: Request) {
 
     if ((rejectionCount ?? 0) >= 2) {
       await service.auth.admin.deleteUser(data.user.id)
-      return NextResponse.redirect(`${origin}/login?error=banned`)
+      return redirectWith(`${origin}/login?error=banned`)
     }
 
     // Guards against a banned user signing in with a different OAuth provider
@@ -80,7 +111,7 @@ export async function GET(request: Request) {
 
     if (suspendedByEmail) {
       await supabase.auth.signOut()
-      return NextResponse.redirect(`${origin}/?suspended=true`)
+      return redirectWith(`${origin}/?suspended=true`)
     }
   }
 
@@ -99,7 +130,7 @@ export async function GET(request: Request) {
   if (preLoginStatus !== null) {
     if (preLoginStatus === 'suspended') {
       await supabase.auth.signOut()
-      return NextResponse.redirect(`${origin}/?suspended=true`)
+      return redirectWith(`${origin}/?suspended=true`)
     }
 
     // Active returning user — update last_login via RPC and go to dashboard.
@@ -118,7 +149,7 @@ export async function GET(request: Request) {
       p_account_status: 'active' as const,
       p_is_verified:    true,
     })
-    return NextResponse.redirect(`${origin}/dashboard`)
+    return redirectWith(`${origin}/dashboard`)
   }
 
   // --- No existing profile: TAMU fast-track ----------------------------
@@ -139,10 +170,10 @@ export async function GET(request: Request) {
 
     if (upsertError) {
       console.error('Profile upsert error:', upsertError)
-      return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+      return redirectWith(`${origin}/login?error=auth_failed`)
     }
 
-    return NextResponse.redirect(`${origin}/dashboard`)
+    return redirectWith(`${origin}/dashboard`)
   }
 
   // --- No existing profile: non-TAMU new/returning user ----------------
@@ -153,7 +184,7 @@ export async function GET(request: Request) {
     .eq('user_id', data.user.id)
     .maybeSingle()
 
-  return NextResponse.redirect(
+  return redirectWith(
     vr ? `${origin}/pending-approval` : `${origin}/verification-questionnaire`
   )
 }
