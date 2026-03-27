@@ -265,6 +265,13 @@ if (accessDenied) {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
+                          timeZone: 'America/Chicago',
+                        })}{' '}
+                        {new Date(u.created_at).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          timeZone: 'America/Chicago',
+                          timeZoneName: 'short',
                         })}
                       </p>
                     </div>
