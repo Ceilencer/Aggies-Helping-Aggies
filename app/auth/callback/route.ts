@@ -152,6 +152,19 @@ export async function GET(request: Request) {
     return redirectWith(`${origin}/dashboard`)
   }
 
+  // --- No existing profile: Facebook user with no email anywhere -------
+  // If rawEmail is still null here, the user registered Facebook with a
+  // phone number only. Route them to collect-email to provide one before
+  // they can proceed to the verification questionnaire.
+  // Returning approved users are already handled above (they have a profile
+  // and exited at line 152), so this only affects new/pending users.
+  // Note: if the user previously visited /collect-email and the API stored
+  // their email in user_metadata, rawEmail would already be non-null (source
+  // #3 in the resolution above) and this branch would not fire.
+  if (rawEmail === null) {
+    return redirectWith(`${origin}/collect-email`)
+  }
+
   // --- No existing profile: TAMU fast-track ----------------------------
   // Create the profile immediately and send to dashboard.
   if (decision.accountStatus === 'active') {

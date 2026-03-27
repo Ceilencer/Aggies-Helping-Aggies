@@ -76,7 +76,7 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // PROTECTED ROUTES — require authentication
-  const protectedPrefixes = ['/dashboard', '/verification-questionnaire', '/pending-approval']
+  const protectedPrefixes = ['/dashboard', '/verification-questionnaire', '/pending-approval', '/collect-email']
   if (protectedPrefixes.some((p) => pathname.startsWith(p))) {
     if (!user) {
       const redirectResponse = NextResponse.redirect(new URL('/', request.url))

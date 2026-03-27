@@ -60,7 +60,11 @@ export default function VerificationQuestionnairePage() {
       if (!user) { router.replace('/login'); return }
 
       setUserId(user.id)
-      setUserEmail(user.email ?? '')
+      setUserEmail(
+        user.email ??
+        (user.user_metadata?.email as string | undefined) ??
+        ''
+      )
 
       // Pre-fill name from Google metadata
       if (!formData.full_name) {
@@ -91,7 +95,11 @@ export default function VerificationQuestionnairePage() {
 
       // Duplicate account check: if a *different* active profile shares this email,
       // the user likely has an existing account via another provider (e.g. Google).
-      const userEmail = (user.email ?? '').toLowerCase().trim()
+      const userEmail = (
+        user.email ??
+        (user.user_metadata?.email as string | undefined) ??
+        ''
+      ).toLowerCase().trim()
       if (userEmail) {
         const { data: emailMatch } = await supabase
           .from('profiles')

@@ -13,7 +13,12 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const email = user.email ?? ''
+  // For Facebook users who registered with a phone number, user.email is null.
+  // Their email is stored in user_metadata after the /collect-email step.
+  const email =
+    user.email ??
+    (user.user_metadata?.email as string | undefined) ??
+    ''
 
   // Use service client to bypass RLS on rejected_accounts.
   // Look up by email — the old user_id is NULL after account deletion.
