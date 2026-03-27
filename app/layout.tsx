@@ -33,6 +33,13 @@ export default async function RootLayout({
           disableTransitionOnChange
           nonce={nonce}
         >
+          <div className="w-full bg-yellow-400 text-yellow-900 text-center text-sm font-medium px-4 py-2">
+            This site is currently a work in progress and is not yet deployed.{' '}
+            Found a bug?{' '}
+            <a href="mailto:support@aggieshelpingaggies.org" className="underline font-semibold hover:text-yellow-950">
+              support@aggieshelpingaggies.org
+            </a>
+          </div>
           {children}
         </ThemeProvider>
       </body>

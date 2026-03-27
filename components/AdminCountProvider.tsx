@@ -9,6 +9,7 @@ const DEFAULT: AdminPendingCounts = {
   pendingUsers: 0,
   unresolvedReports: 0,
   pendingNameChanges: 0,
+  pendingRingApplications: 0,
 }
 
 const AdminCountContext = createContext<AdminPendingCounts>(DEFAULT)
