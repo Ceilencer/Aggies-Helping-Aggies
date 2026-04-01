@@ -5,14 +5,15 @@
 ## Priority 1 — Core Features
 
 ### 1. Channel Restructure
-- [ ] Remove the Aggie Ring channel
-- [ ] Add a Housing / Roommates channel
+- [x] Remove the Aggie Ring channel
+- [x] Add a Housing / Roommates channel
 
 ---
 
 ### 2. Aggie Ring Sponsorship Feature
-**Goal:** Create a dedicated, public-facing home for the nonprofit's ring sponsorship program.
+**Goal:** Create a dedicated, public-facing home for the nonprofit's ring sponsorship program, including a digital application for sponsorship candidates.
 
+#### 2a. Public-Facing Ring Page & Sponsored Student Showcase
 - [ ] Build a static Ring page explaining the program with links to Zeffy application forms
 - [ ] Add a public-facing sponsorship sidebar visible to all users, including non-logged-in visitors
 - [ ] Each sponsored student card displays: name, photo, goal amount, and admin-managed progress bar
@@ -20,6 +21,47 @@
 - [ ] Cap active sponsored students at 2–3 at a time
 - [ ] Build a dedicated admin management page to add, edit, and remove sponsored students
 - [ ] Build an archive page of past recipients to showcase nonprofit impact over time
+
+#### 2b. Ring Sponsorship Application (Digital Questionnaire)
+**Goal:** Digitize the Aggies Helping Aggies Ring Program application questionnaire. Applicants must be existing Howdy Helps users (platform login is an extra guarantee of student identity).
+
+**Application collects (25 questions from the official form):**
+- Personal info: full legal name, address, email, student ID, phone, Ring Office invoice number
+- Family member contact info (name, address, email, phone) — acknowledged as not confidential
+- Financial info: monthly income, dependents, household income if dependent
+- Community & university involvement, court-ordered payments, monthly obligations
+- Employment history during student career
+- Ring Day cycle, graduation date, degree/major
+- Social media consent paragraph (photo + story for Facebook/website)
+- Essay: why they should be helped (used in public fundraising posts)
+
+**Sensitive document handling — PENDING TEAM DECISION:**
+- Tax returns, bank statements, and ID photos are required by the application but must NOT be stored on platform infrastructure due to security liability (identity theft risk, breach notification laws, nonprofit reputation risk)
+- **Recommended approach: Google Drive upload via per-applicant folder**
+  - Platform generates a restricted Google Drive upload link per applicant pointing to a board-controlled Shared Drive folder named `LastName.FirstName Ring Cycle YYYY`
+  - Documents never touch Supabase storage
+  - Board reviews documents directly in Drive
+- **Prerequisite: Apply for Google Workspace for Nonprofits (free for 501c3)**
+  - AHA qualifies as a registered 501(c)3
+  - Apply at google.com/nonprofits — requires TechSoup verification (takes days to weeks)
+  - Unlocks: custom domain email (`cindy@aggieshelpingaggies.org`), Shared Drive, Drive API access, admin audit controls
+  - Currently domain is owned and Squarespace is forwarding `support@aggieshelpingaggies.org` to Gmail — Workspace would replace this properly
+  - Consider creating board member emails (e.g. `board@aggieshelpingaggies.org`) at the same time
+
+**Platform tasks (can be built before Google Workspace is approved):**
+- [ ] Design application DB schema: `ring_applications` table (questionnaire answers, status, user_id, timestamps)
+- [ ] Build multi-step application form (questionnaire only — documents handled separately)
+- [ ] Applicants must be logged-in Howdy Helps users to apply
+- [ ] Admin dashboard to review submitted questionnaires and manage application status
+- [ ] Admin notifications when a new application is submitted
+- [ ] Application status visible to applicant (submitted, under review, approved, rejected)
+- [ ] Enforce one active application per user per Ring cycle
+
+**Platform tasks (requires Google Workspace approval first):**
+- [ ] Set up Google Workspace for Nonprofits and Shared Drive for ring documents
+- [ ] Integrate Google Drive API: auto-create per-applicant folder on submission
+- [ ] Generate restricted upload link shown to applicant after questionnaire submission
+- [ ] Notify board via email when documents are uploaded to Drive
 
 ---
 
@@ -99,4 +141,4 @@
 
 ---
 
-*Last updated: 2026-03-22*
+*Last updated: 2026-03-31*

@@ -47,7 +47,11 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:supabase.com)",
       "WebFetch(domain:www.facebook.com)",
-      "WebFetch(domain:web.dev)"
+      "WebFetch(domain:web.dev)",
+      "Bash(python3 -c \":*)",
+      "Bash(mkdir -p \"$TEMP/docx_extract\")",
+      "Read(//c/Users/cobyr/Capstone/Howdy-Helps-Capstone/$TEMP/**)",
+      "Bash(unzip -o \"c:/Users/cobyr/Capstone/Howdy-Helps-Capstone/3_22_26 Final AGGIE RING application.docx\" word/document.xml)"
     ]
   }
 }
