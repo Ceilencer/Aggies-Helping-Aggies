@@ -23,7 +23,7 @@ export default function CreatePostModal({
   return (
     <>
       <ToastContainer />
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+      <Modal isOpen={isOpen} onClose={onClose} size="lg" contentClassName="px-6 py-4">
         <CreatePostForm
           initialChannelSlug={initialChannelSlug}
           onCancel={onClose}
