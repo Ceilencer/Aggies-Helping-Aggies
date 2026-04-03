@@ -11,7 +11,7 @@ export async function GET() {
   const service = createServiceClient()
   const { data, error } = await service
     .from('ring_sponsorship_applications')
-    .select('id, full_name, email, credit_hours, ring_type, story, created_at')
+    .select('id, full_name, email, phone, address_street, address_city, address_state, address_zip, uin, invoice_number, ring_type, credit_hours, ring_day_cycle, graduation_date, degree, major, family_name, family_address, family_email, family_phone, monthly_income, dependents_count, household_income, court_ordered_payments, monthly_obligations, community_involvement, university_involvement, employment_history, story, social_media_consent, created_at')
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
 
