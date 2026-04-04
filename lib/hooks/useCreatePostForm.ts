@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useImageUpload } from '@/lib/hooks/useImageUpload'
+import { saveDraftImages, loadDraftImages, clearDraftImages } from '@/lib/hooks/useImageDraftDB'
 import { validatePost } from '@/lib/profanity-filter'
 import { POST_LIMITS } from '@/lib/types'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
@@ -34,6 +35,18 @@ type UseCreatePostFormArgs = {
   showToast: (options: { message: string; type: 'success' | 'error' | 'info'; positionClassName?: string }) => void
 }
 
+const EMPTY_FORM = {
+  channel_id: '',
+  title: '',
+  content: '',
+  duration_days: 7 as 1 | 3 | 7 | 14,
+  selected_contact_keys: [] as string[],
+}
+
+function draftKey(uid: string) {
+  return `post-draft-${uid}`
+}
+
 export function useCreatePostForm({
   initialChannelSlug,
   onCancel,
@@ -45,13 +58,7 @@ export function useCreatePostForm({
   const imageUpload = useImageUpload()
 
   const [channels, setChannels] = useState<Channel[]>([])
-  const [formData, setFormData] = useState({
-    channel_id: '',
-    title: '',
-    content: '',
-    duration_days: 7 as 1 | 3 | 7 | 14,
-    selected_contact_keys: [] as string[],
-  })
+  const [formData, setFormData] = useState(EMPTY_FORM)
   const [availableContactFields, setAvailableContactFields] = useState<AvailableContactField[]>([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -63,16 +70,58 @@ export function useCreatePostForm({
     dailyLimit: POST_LIMITS['Personal'].daily,
     monthlyLimit: POST_LIMITS['Personal'].monthly,
   })
+  const [userId, setUserId] = useState<string | null>(null)
+  const [profileLoaded, setProfileLoaded] = useState(false)
+  const [draftRestored, setDraftRestored] = useState(false)
+
+  // Save draft to localStorage whenever formData changes (only if there is content)
+  useEffect(() => {
+    if (!userId || typeof window === 'undefined') return
+    const hasContent = formData.title.trim() || formData.content.trim()
+    if (!hasContent) return
+    localStorage.setItem(draftKey(userId), JSON.stringify({
+      ...formData,
+      savedAt: new Date().toISOString(),
+    }))
+  }, [formData, userId])
+
+  // Save draft images to IndexedDB whenever the image list changes
+  useEffect(() => {
+    if (!userId) return
+    const files = imageUpload.uploadedImages.map(img => img.file)
+    saveDraftImages(userId, files)
+  }, [imageUpload.uploadedImages, userId])
 
   useEffect(() => {
     const initialize = async () => {
-      const role = await loadUserRole()
-      await loadChannels(role)
+      const { role, restored } = await loadUserRole()
+      await loadChannels(role, restored)
     }
     initialize()
   }, [])
 
-  const loadChannels = async (role: string) => {
+  const clearDraft = (uid?: string) => {
+    const id = uid ?? userId
+    if (!id) return
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(draftKey(id))
+    }
+    clearDraftImages(id)
+  }
+
+  const discardDraft = () => {
+    clearDraft()
+    imageUpload.clearImages()
+    setDraftRestored(false)
+    const reset = { ...EMPTY_FORM }
+    if (initialChannelSlug) {
+      const channel = channels.find(c => c.slug === initialChannelSlug)
+      if (channel) reset.channel_id = channel.id
+    }
+    setFormData(reset)
+  }
+
+  const loadChannels = async (role: string, draftWasRestored: boolean) => {
     const { data, error: channelsError } = await supabase
       .from('channels')
       .select('*')
@@ -94,7 +143,8 @@ export function useCreatePostForm({
 
     setChannels(sortChannelsByDisplayOrder(loadedChannels))
 
-    if (initialChannelSlug) {
+    // Only apply the initial channel slug if no draft was restored
+    if (!draftWasRestored && initialChannelSlug) {
       const channel = loadedChannels.find(c => c.slug === initialChannelSlug)
       if (channel) {
         setFormData(prev => ({ ...prev, channel_id: channel.id }))
@@ -102,9 +152,35 @@ export function useCreatePostForm({
     }
   }
 
-  const loadUserRole = async (): Promise<string> => {
+  const loadUserRole = async (): Promise<{ role: string; restored: boolean }> => {
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
+      setUserId(user.id)
+
+      // Restore draft before any other state updates
+      let restored = false
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem(draftKey(user.id))
+        if (saved) {
+          try {
+            const { savedAt: _savedAt, ...draft } = JSON.parse(saved)
+            setFormData(prev => ({ ...prev, ...draft }))
+            setDraftRestored(true)
+            restored = true
+          } catch {
+            localStorage.removeItem(draftKey(user.id))
+          }
+        }
+      }
+
+      // Restore draft images from IndexedDB (best-effort, runs after text draft)
+      loadDraftImages(user.id).then(files => {
+        if (files.length > 0) {
+          imageUpload.restoreImages(files)
+          setDraftRestored(true)
+        }
+      })
+
       const [profileResult, trackingResult] = await Promise.all([
         supabase.from('profiles').select('role, contact_email, phone_number, instagram_handle, discord_username, facebook_url, linkedin_url, twitter_handle, website_url').eq('id', user.id).single(),
         supabase.rpc('get_post_counts'),
@@ -131,11 +207,13 @@ export function useCreatePostForm({
         setAvailableContactFields(available)
       }
 
-      return role
+      setProfileLoaded(true)
+      return { role, restored }
     }
 
     setUserRole('Personal')
-    return 'Personal'
+    setProfileLoaded(true)
+    return { role: 'Personal', restored: false }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -252,7 +330,8 @@ export function useCreatePostForm({
         })
       }
 
-      // Clear image previews now that the post is fully committed
+      // Clear draft and image previews now that the post is fully committed
+      clearDraft()
       imageUpload.clearImages()
 
       if (onPostCreated) {
@@ -271,6 +350,7 @@ export function useCreatePostForm({
   }
 
   const handleCancel = () => {
+    clearDraft()
     if (onCancel) {
       onCancel()
       return
@@ -283,6 +363,9 @@ export function useCreatePostForm({
     formData,
     setFormData,
     availableContactFields,
+    profileLoaded,
+    draftRestored,
+    discardDraft,
     error,
     loading,
     uploading,

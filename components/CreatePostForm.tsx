@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCreatePostForm } from '@/lib/hooks/useCreatePostForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +27,9 @@ export default function CreatePostForm({
     formData,
     setFormData,
     availableContactFields,
+    profileLoaded,
+    draftRestored,
+    discardDraft,
     error,
     loading,
     uploading,
@@ -52,6 +56,20 @@ export default function CreatePostForm({
             Share opportunities, resources, or start a discussion with the Aggie community
           </p>
         </div>
+
+        {/* Draft restored banner */}
+        {draftRestored && (
+          <div className="flex items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 px-3 py-2 text-sm">
+            <span className="text-amber-800 dark:text-amber-300">Draft restored from your last session.</span>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="text-xs text-amber-700 dark:text-amber-400 underline underline-offset-4 hover:text-amber-900 dark:hover:text-amber-200 shrink-0"
+            >
+              Discard
+            </button>
+          </div>
+        )}
 
         {/* Posting limits — compact pills */}
         {userRole !== 'Admin' && (
@@ -147,41 +165,56 @@ export default function CreatePostForm({
                 </p>
               </div>
 
-              {availableContactFields.length > 0 && (
+              {profileLoaded && (
                 <div className="space-y-1.5">
                   <Label className="dark:text-white">
                     Contact Info{' '}
                     <span className="font-normal text-muted-foreground">(optional)</span>
                   </Label>
-                  <div className="rounded-lg border border-border p-3 space-y-2">
-                    {availableContactFields.map(({ key, label, value }) => {
-                      const checked = formData.selected_contact_keys.includes(key)
-                      return (
-                        <label key={key} className="flex items-center gap-2.5 cursor-pointer select-none">
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() =>
-                              setFormData({
-                                ...formData,
-                                selected_contact_keys: checked
-                                  ? formData.selected_contact_keys.filter(k => k !== key)
-                                  : [...formData.selected_contact_keys, key],
-                              })
-                            }
-                            className="h-4 w-4 rounded border-border"
-                          />
-                          <span className="text-sm">
-                            <span className="font-medium text-foreground">{label}:</span>{' '}
-                            <span className="text-muted-foreground">{value}</span>
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </div>
-                  <p className="text-xs text-muted-foreground dark:text-white/60">
-                    Visible on this post until it expires.
-                  </p>
+                  {availableContactFields.length > 0 ? (
+                    <>
+                      <div className="rounded-lg border border-border p-3 space-y-2">
+                        {availableContactFields.map(({ key, label, value }) => {
+                          const checked = formData.selected_contact_keys.includes(key)
+                          return (
+                            <label key={key} className="flex items-center gap-2.5 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() =>
+                                  setFormData({
+                                    ...formData,
+                                    selected_contact_keys: checked
+                                      ? formData.selected_contact_keys.filter(k => k !== key)
+                                      : [...formData.selected_contact_keys, key],
+                                  })
+                                }
+                                className="h-4 w-4 rounded border-border"
+                              />
+                              <span className="text-sm">
+                                <span className="font-medium text-foreground">{label}:</span>{' '}
+                                <span className="text-muted-foreground">{value}</span>
+                              </span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                      <p className="text-xs text-muted-foreground dark:text-white/60">
+                        Visible on this post until it expires.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground dark:text-white/60">
+                      No contact info saved.{' '}
+                      <Link
+                        href="/dashboard/profile"
+                        className="underline underline-offset-4 hover:text-foreground"
+                      >
+                        Add it in your profile
+                      </Link>{' '}
+                      to share it on posts.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

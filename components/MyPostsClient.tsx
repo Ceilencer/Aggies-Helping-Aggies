@@ -192,7 +192,7 @@ export default function MyPostsClient({
                     channels={channels}
                     currentUserId={profile?.id}
                     onPostDeleted={handlePostDeleted}
-                    onEditClick={post.approval_status === 'pending_edit' ? undefined : () => setEditingPostId(post.id)}
+                    onEditClick={post.approval_status === 'pending_edit' || post.approval_status === 'pending' ? undefined : () => setEditingPostId(post.id)}
                     onViewPendingEdit={post.approval_status === 'pending_edit' && post.pending_edit ? () => setPreviewEditPostId(post.id) : undefined}
                   />
                 </CardHeader>

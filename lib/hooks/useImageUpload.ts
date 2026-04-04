@@ -147,6 +147,20 @@ export function useImageUpload() {
     setError('')
   }, [uploadedImages])
 
+  /**
+   * Restore File objects recovered from IndexedDB into the upload state.
+   * Creates fresh blob URLs for each file. Skips any files that fail validation.
+   */
+  const restoreImages = useCallback((files: File[]) => {
+    if (files.length === 0) return
+    const valid = files.filter(f => ALLOWED_TYPES.includes(f.type) && f.size <= MAX_FILE_SIZE)
+    const restored = valid.slice(0, MAX_IMAGES).map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }))
+    setUploadedImages(restored)
+  }, [])
+
   return {
     uploadedImages,
     error,
@@ -154,6 +168,7 @@ export function useImageUpload() {
     removeImage,
     uploadImages,
     clearImages,
+    restoreImages,
     canAddMore: uploadedImages.length < MAX_IMAGES,
     remainingSlots: MAX_IMAGES - uploadedImages.length,
   }
