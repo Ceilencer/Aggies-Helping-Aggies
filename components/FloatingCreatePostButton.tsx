@@ -21,17 +21,20 @@ export default function FloatingCreatePostButton({
 
   useEffect(() => {
     let frameId = 0
+    const scrollEl = document.getElementById("main-scroll-container")
 
     const updateOffset = () => {
       const isMobile = window.innerWidth < 1024
       const baseOffset = isMobile ? MOBILE_NAV_HEIGHT + DEFAULT_OFFSET : DEFAULT_OFFSET
 
       const footer = document.querySelector("footer")
-      if (!footer) {
+      if (!footer || !scrollEl) {
         setBottomOffset(baseOffset)
         return
       }
 
+      // getBoundingClientRect gives position relative to the viewport.
+      // On mobile the scroll container IS the viewport proxy, so this works.
       const footerRect = footer.getBoundingClientRect()
       const viewportHeight = window.innerHeight
       const overlap = viewportHeight - footerRect.top
@@ -52,14 +55,14 @@ export default function FloatingCreatePostButton({
     }
 
     updateOffset()
-    window.addEventListener("scroll", onScroll, { passive: true })
+    scrollEl?.addEventListener("scroll", onScroll, { passive: true })
     window.addEventListener("resize", onScroll)
 
     return () => {
       if (frameId) {
         window.cancelAnimationFrame(frameId)
       }
-      window.removeEventListener("scroll", onScroll)
+      scrollEl?.removeEventListener("scroll", onScroll)
       window.removeEventListener("resize", onScroll)
     }
   }, [])
