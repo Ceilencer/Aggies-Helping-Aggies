@@ -40,14 +40,21 @@ export default function HomeAnnouncementSection({
     setPopupOpen(false)
   }
 
-  // Show popup on load/update if the user hasn't seen this version yet
+  // Show popup on load/update if the user hasn't seen this version yet.
+  // New users (no prior localStorage entry) get the card but not the popup —
+  // we silently mark it as seen so they aren't interrupted before they know the app.
+  // Returning users who haven't seen the latest version do get the popup.
   useEffect(() => {
     if (isAgreementOpen || !announcement?.updated_at || !profileId || typeof window === 'undefined') {
       setPopupOpen(false)
       return
     }
     const seenVersion = window.localStorage.getItem(`home-announcement-seen-${profileId}`)
-    if (seenVersion !== announcement.updated_at) {
+    if (seenVersion === null) {
+      // First visit — silently mark as seen, no popup
+      markSeen(announcement.updated_at)
+    } else if (seenVersion !== announcement.updated_at) {
+      // Returning user who hasn't seen this version — show popup
       setPopupOpen(true)
     }
   }, [announcement?.updated_at, isAgreementOpen, profileId])
