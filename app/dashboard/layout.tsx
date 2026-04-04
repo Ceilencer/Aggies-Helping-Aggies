@@ -1,18 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import Header from '@/components/Header'
-import LeftSidebar from '@/components/LeftSidebar'
-import { AdminCountProvider } from '@/components/AdminCountProvider'
-import { RealtimeStatusProvider } from '@/lib/realtime/RealtimeStatusContext'
-import { RealtimeStatusBanner } from '@/components/RealtimeStatusBanner'
-import LegalModal from '@/components/LegalModalClient'
-import { TERMS_SECTIONS, TERMS_EFFECTIVE_DATE } from '@/lib/legal/terms'
-import { PRIVACY_SECTIONS, PRIVACY_EFFECTIVE_DATE } from '@/lib/legal/privacy'
 import { getCachedAllChannels } from '@/lib/supabase/cached-queries'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
-import ContentWrapper from '@/components/ContentWrapper'
-import { NotificationCountProvider } from '@/components/NotificationCountProvider'
-import AuthGuard from '@/components/AuthGuard'
+import DashboardLayoutShell from '@/components/DashboardLayoutShell'
 
 export default async function DashboardLayout({
   children,
@@ -54,7 +44,6 @@ export default async function DashboardLayout({
 
   // Check if user is suspended or has active bans
   if (profile.account_status === 'suspended') {
-    // Check if there are active bans for this user
     const { data: activeBans } = await supabase
       .from('user_bans')
       .select('*')
@@ -66,20 +55,16 @@ export default async function DashboardLayout({
       const expiresAt = activeBans.expires_at ? new Date(activeBans.expires_at) : null
       const now = new Date()
 
-      // Check if ban is still active (permanent or expiry hasn't passed)
       const isStillActive = activeBans.ban_type === 'permanent' || (expiresAt && expiresAt > now)
 
       if (isStillActive) {
-        // Route through signout to clear the session before showing the suspended page
         redirect('/auth/signout?reason=suspended')
       } else if (expiresAt && expiresAt <= now) {
-        // Suspension has expired, update account status back to active
         await supabase
           .from('profiles')
           .update({ account_status: 'active' })
           .eq('id', user.id)
 
-        // Mark ban as inactive
         await supabase
           .from('user_bans')
           .update({ is_active: false })
@@ -111,54 +96,16 @@ export default async function DashboardLayout({
     .eq('is_read', false)
 
   return (
-    <RealtimeStatusProvider>
-    <AdminCountProvider isAdmin={isAdmin}>
-    <NotificationCountProvider userId={user.id} initialUnreadCount={unreadCount ?? 0}>
-    <AuthGuard userId={user.id} />
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top Navigation */}
-      <Header
-        displayName={displayName}
-        avatarUrl={profile?.avatar_url ?? null}
-        isAdmin={isAdmin}
-        userId={user.id}
-        signOutAction={handleSignOut}
-      />
-
-      <RealtimeStatusBanner />
-
-      {/* Main Content */}
-      <main className="flex-1">
-        <div className="flex">
-          <div className="hidden lg:flex flex-1 justify-start pl-4">
-            <LeftSidebar channels={sidebarChannels} isAdmin={isAdmin} />
-          </div>
-          <ContentWrapper>
-            {children}
-          </ContentWrapper>
-          <div className="hidden lg:block flex-1" />
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-footer-bg py-8">
-        <div className="container mx-auto px-4 text-center text-footer-text">
-          <p className="mb-2">
-            &copy; {new Date().getFullYear()} Aggies Helping Aggies. Built for Aggies by Aggies.
-          </p>
-          <p className="text-sm mb-3">
-            This is an independent platform and is not officially affiliated with Texas A&M University.
-          </p>
-          <div className="flex items-center justify-center gap-4 text-sm">
-            <LegalModal title="Privacy Policy" effectiveDate={PRIVACY_EFFECTIVE_DATE} sections={PRIVACY_SECTIONS} />
-            <span aria-hidden="true">&middot;</span>
-            <LegalModal title="Terms and Conditions" effectiveDate={TERMS_EFFECTIVE_DATE} sections={TERMS_SECTIONS} />
-          </div>
-        </div>
-      </footer>
-    </div>
-    </NotificationCountProvider>
-    </AdminCountProvider>
-    </RealtimeStatusProvider>
+    <DashboardLayoutShell
+      displayName={displayName}
+      avatarUrl={profile?.avatar_url ?? null}
+      isAdmin={isAdmin}
+      userId={user.id}
+      channels={sidebarChannels}
+      initialUnreadCount={unreadCount ?? 0}
+      signOutAction={handleSignOut}
+    >
+      {children}
+    </DashboardLayoutShell>
   )
 }

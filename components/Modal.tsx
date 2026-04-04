@@ -50,14 +50,14 @@ export default function Modal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 sm:p-4"
       onMouseDown={(e) => { mouseDownTargetRef.current = e.target }}
       onClick={(e) => { if (e.target === e.currentTarget && mouseDownTargetRef.current === e.currentTarget) onClose() }}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} max-h-[min(90vh,56rem)] overflow-hidden rounded-lg bg-background shadow-xl flex flex-col`}
+        className={`relative w-full ${sizeClasses[size]} h-[95dvh] sm:h-auto sm:max-h-[min(90vh,56rem)] overflow-hidden rounded-t-2xl sm:rounded-lg bg-background shadow-xl flex flex-col`}
         onClick={(event) => event.stopPropagation()}
       >
         <button

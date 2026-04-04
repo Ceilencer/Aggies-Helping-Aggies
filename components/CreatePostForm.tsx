@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useRef } from 'react'
 import { useCreatePostForm } from '@/lib/hooks/useCreatePostForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +46,23 @@ export default function CreatePostForm({
     showToast,
   })
 
+  const contactDetailsRef = useRef<HTMLDetailsElement>(null)
+  const imagesDetailsRef = useRef<HTMLDetailsElement>(null)
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    const apply = (matches: boolean) => {
+      if (matches) {
+        contactDetailsRef.current?.setAttribute('open', '')
+        imagesDetailsRef.current?.setAttribute('open', '')
+      }
+    }
+    apply(mq.matches)
+    const handler = (e: MediaQueryListEvent) => apply(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
   return (
     <>
       <ToastContainer />
@@ -52,7 +70,7 @@ export default function CreatePostForm({
         {/* Header */}
         <div>
           <h2 className="text-xl font-bold text-primary dark:text-white">Create New Post</h2>
-          <p className="text-sm text-muted-foreground dark:text-white/70 mt-0.5">
+          <p className="hidden sm:block text-sm text-muted-foreground dark:text-white/70 mt-0.5">
             Share opportunities, resources, or start a discussion with the Aggie community
           </p>
         </div>
@@ -71,7 +89,7 @@ export default function CreatePostForm({
           </div>
         )}
 
-        {/* Posting limits — compact pills */}
+        {/* Posting limits */}
         {userRole !== 'Admin' && (
           <div className="flex flex-wrap gap-2">
             {userRole !== 'Business' && (
@@ -104,53 +122,59 @@ export default function CreatePostForm({
             </div>
           )}
 
-          {/* Two-column main layout */}
-          <div className="grid grid-cols-5 gap-6">
-            {/* Left column: Channel, Title, Duration, Contact */}
-            <div className="col-span-2 space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="channel_id" className="dark:text-white">Channel *</Label>
-                <select
-                  id="channel_id"
-                  value={formData.channel_id}
-                  onChange={(e) => setFormData({ ...formData, channel_id: e.target.value })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  required
-                >
-                  <option value="">Select a channel...</option>
-                  {channels.map((channel) => (
-                    <option key={channel.id} value={channel.id}>
-                      {channel.name}
-                    </option>
-                  ))}
-                </select>
+          {/* ── DESKTOP: two-column layout / MOBILE: single column ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 sm:gap-6">
+
+            {/* Left column (desktop) / stacked (mobile) */}
+            <div className="sm:col-span-2 space-y-3">
+
+              {/* Channel + Title: side-by-side on mobile to save vertical space */}
+              <div className="grid grid-cols-2 sm:grid-cols-1 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="channel_id" className="dark:text-white">Channel *</Label>
+                  <select
+                    id="channel_id"
+                    value={formData.channel_id}
+                    onChange={(e) => setFormData({ ...formData, channel_id: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    required
+                  >
+                    <option value="">Select...</option>
+                    {channels.map((channel) => (
+                      <option key={channel.id} value={channel.id}>
+                        {channel.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="title" className="dark:text-white">Title *</Label>
+                  <Input
+                    id="title"
+                    type="text"
+                    placeholder="5–200 chars"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    maxLength={200}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground dark:text-white/60">
+                    {formData.title.length}/200
+                  </p>
+                </div>
               </div>
 
+              {/* Duration */}
               <div className="space-y-1.5">
-                <Label htmlFor="title" className="dark:text-white">Title *</Label>
-                <Input
-                  id="title"
-                  type="text"
-                  placeholder="Descriptive title (5–200 chars)"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  maxLength={200}
-                  required
-                />
-                <p className="text-xs text-muted-foreground dark:text-white/60">
-                  {formData.title.length}/200 characters
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="dark:text-white">Post Duration</Label>
-                <div className="flex gap-2 flex-wrap">
+                <Label className="dark:text-white">Duration</Label>
+                <div className="flex gap-1.5 flex-wrap">
                   {([1, 3, 7, 14] as const).map((days) => (
                     <button
                       key={days}
                       type="button"
                       onClick={() => setFormData({ ...formData, duration_days: days })}
-                      className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                      className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
                         formData.duration_days === days
                           ? 'bg-primary text-primary-foreground border-primary'
                           : 'bg-background text-foreground border-border hover:bg-muted'
@@ -161,66 +185,73 @@ export default function CreatePostForm({
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground dark:text-white/60">
-                  Post auto-removes after selected duration.
+                  Auto-removes after selected duration.
                 </p>
               </div>
 
+              {/* Contact Info — collapsible on mobile */}
               {profileLoaded && (
-                <div className="space-y-1.5">
-                  <Label className="dark:text-white">
-                    Contact Info{' '}
-                    <span className="font-normal text-muted-foreground">(optional)</span>
-                  </Label>
-                  {availableContactFields.length > 0 ? (
-                    <>
-                      <div className="rounded-lg border border-border p-3 space-y-2">
-                        {availableContactFields.map(({ key, label, value }) => {
-                          const checked = formData.selected_contact_keys.includes(key)
-                          return (
-                            <label key={key} className="flex items-center gap-2.5 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() =>
-                                  setFormData({
-                                    ...formData,
-                                    selected_contact_keys: checked
-                                      ? formData.selected_contact_keys.filter(k => k !== key)
-                                      : [...formData.selected_contact_keys, key],
-                                  })
-                                }
-                                className="h-4 w-4 rounded border-border"
-                              />
-                              <span className="text-sm">
-                                <span className="font-medium text-foreground">{label}:</span>{' '}
-                                <span className="text-muted-foreground">{value}</span>
-                              </span>
-                            </label>
-                          )
-                        })}
-                      </div>
-                      <p className="text-xs text-muted-foreground dark:text-white/60">
-                        Visible on this post until it expires.
+                <details ref={contactDetailsRef} className="group">
+                  <summary className="cursor-pointer text-sm font-medium dark:text-white list-none flex items-center justify-between sm:pointer-events-none">
+                    <span>
+                      Contact Info{' '}
+                      <span className="font-normal text-muted-foreground">(optional)</span>
+                    </span>
+                    <span className="sm:hidden text-xs text-muted-foreground group-open:hidden">Show</span>
+                    <span className="sm:hidden text-xs text-muted-foreground hidden group-open:inline">Hide</span>
+                  </summary>
+                  <div className="mt-1.5">
+                    {availableContactFields.length > 0 ? (
+                      <>
+                        <div className="rounded-lg border border-border p-3 space-y-2">
+                          {availableContactFields.map(({ key, label, value }) => {
+                            const checked = formData.selected_contact_keys.includes(key)
+                            return (
+                              <label key={key} className="flex items-center gap-2.5 cursor-pointer select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() =>
+                                    setFormData({
+                                      ...formData,
+                                      selected_contact_keys: checked
+                                        ? formData.selected_contact_keys.filter(k => k !== key)
+                                        : [...formData.selected_contact_keys, key],
+                                    })
+                                  }
+                                  className="h-4 w-4 rounded border-border"
+                                />
+                                <span className="text-sm">
+                                  <span className="font-medium text-foreground">{label}:</span>{' '}
+                                  <span className="text-muted-foreground truncate">{value}</span>
+                                </span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                        <p className="text-xs text-muted-foreground dark:text-white/60 mt-1">
+                          Visible on this post until it expires.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground dark:text-white/60">
+                        No contact info saved.{' '}
+                        <Link
+                          href="/dashboard/profile"
+                          className="underline underline-offset-4 hover:text-foreground"
+                        >
+                          Add it in your profile
+                        </Link>
+                        {' '}to share it on posts.
                       </p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground dark:text-white/60">
-                      No contact info saved.{' '}
-                      <Link
-                        href="/dashboard/profile"
-                        className="underline underline-offset-4 hover:text-foreground"
-                      >
-                        Add it in your profile
-                      </Link>{' '}
-                      to share it on posts.
-                    </p>
-                  )}
-                </div>
+                    )}
+                  </div>
+                </details>
               )}
             </div>
 
-            {/* Right column: Content, Images */}
-            <div className="col-span-3 space-y-4">
+            {/* Right column (desktop) / below (mobile) */}
+            <div className="sm:col-span-3 space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="content" className="dark:text-white">Content *</Label>
                 <Textarea
@@ -228,7 +259,7 @@ export default function CreatePostForm({
                   placeholder="Share your message with the community (10–5000 characters)"
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="min-h-[220px]"
+                  className="min-h-[120px] sm:min-h-[220px]"
                   maxLength={5000}
                   required
                 />
@@ -237,7 +268,13 @@ export default function CreatePostForm({
                 </p>
               </div>
 
-              <div className="border-t pt-3">
+              {/* Images — collapsible on mobile */}
+              <details ref={imagesDetailsRef} className="group border-t pt-3">
+                <summary className="cursor-pointer text-sm font-medium dark:text-white list-none flex items-center justify-between sm:pointer-events-none mb-1.5">
+                  <span>Upload Images <span className="font-normal text-muted-foreground">(optional)</span></span>
+                  <span className="sm:hidden text-xs text-muted-foreground group-open:hidden">Show</span>
+                  <span className="sm:hidden text-xs text-muted-foreground hidden group-open:inline">Hide</span>
+                </summary>
                 <ImageUploadInput
                   onImagesSelected={imageUpload.addImages}
                   canAddMore={imageUpload.canAddMore}
@@ -246,11 +283,11 @@ export default function CreatePostForm({
                   images={imageUpload.uploadedImages}
                   onRemove={imageUpload.removeImage}
                 />
-              </div>
+              </details>
             </div>
           </div>
 
-          {/* Community guidelines — collapsible */}
+          {/* Community guidelines */}
           <details className="rounded-lg border border-blue-500/30 bg-blue-500/10 dark:bg-blue-900/20">
             <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-blue-800 dark:text-white select-none">
               Community Guidelines
@@ -260,6 +297,7 @@ export default function CreatePostForm({
               <li>• No profanity or inappropriate language</li>
               <li>• Stay on topic for the selected channel</li>
               <li>• No spam or excessive self-promotion</li>
+              <li>• No political content or discussion</li>
             </ul>
           </details>
 

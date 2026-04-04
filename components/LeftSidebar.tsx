@@ -47,7 +47,7 @@ export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
 
   return (
     <aside className="w-56 shrink-0 hidden lg:block">
-      <div className="sidebar-scroll sticky top-[var(--header-h)] max-h-[calc(100vh-var(--header-h))] overflow-y-auto pt-6 space-y-5">
+      <div className="sidebar-scroll sticky top-0 max-h-screen overflow-y-auto pt-6 space-y-5">
 
         {isAdminArea ? (
           <>
