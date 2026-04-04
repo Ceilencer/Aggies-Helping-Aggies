@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 const DEFAULT_OFFSET = 24
+// h-16 = 64px bottom nav on mobile (lg:hidden); add gap so FAB clears it
+const MOBILE_NAV_HEIGHT = 64
 
 interface FloatingCreatePostButtonProps {
   onClick?: () => void
@@ -21,9 +23,12 @@ export default function FloatingCreatePostButton({
     let frameId = 0
 
     const updateOffset = () => {
+      const isMobile = window.innerWidth < 1024
+      const baseOffset = isMobile ? MOBILE_NAV_HEIGHT + DEFAULT_OFFSET : DEFAULT_OFFSET
+
       const footer = document.querySelector("footer")
       if (!footer) {
-        setBottomOffset(DEFAULT_OFFSET)
+        setBottomOffset(baseOffset)
         return
       }
 
@@ -32,9 +37,9 @@ export default function FloatingCreatePostButton({
       const overlap = viewportHeight - footerRect.top
 
       if (overlap > 0) {
-        setBottomOffset(overlap + DEFAULT_OFFSET)
+        setBottomOffset(overlap + baseOffset)
       } else {
-        setBottomOffset(DEFAULT_OFFSET)
+        setBottomOffset(baseOffset)
       }
     }
 

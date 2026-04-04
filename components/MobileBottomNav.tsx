@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -69,6 +69,14 @@ export default function MobileBottomNav({ channels, isAdmin }: MobileBottomNavPr
   }
 
   const closeDrawer = () => setOpenDrawer(null)
+
+  // Lock the main scroll container while any drawer is open
+  useEffect(() => {
+    const el = document.getElementById('main-scroll-container')
+    if (!el) return
+    el.style.overflow = openDrawer !== null ? 'hidden' : ''
+    return () => { el.style.overflow = '' }
+  }, [openDrawer])
 
   const accountBadgeCount = unreadCount
 

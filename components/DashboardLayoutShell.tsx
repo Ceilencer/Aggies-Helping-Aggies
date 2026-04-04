@@ -64,7 +64,7 @@ export default function DashboardLayoutShell({
         the far right edge of the viewport. The three-column flex row sits
         inside it; the sidebar uses sticky positioning within this container.
       */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div id="main-scroll-container" className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex min-h-full">
 
           {/* Desktop sidebar */}
