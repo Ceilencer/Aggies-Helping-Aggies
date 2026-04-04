@@ -70,30 +70,30 @@ export default function PostCardHeader({
         />
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2">
-            <button 
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
               onClick={() => post.author?.id && onProfileClick?.(post.author.id)}
-              className="font-semibold text-card-header-text hover:underline cursor-pointer text-left"
+              className="font-semibold text-card-header-text hover:underline cursor-pointer text-left text-sm sm:text-base leading-tight"
             >
               {post.author?.full_name}
             </button>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role)}`}>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 ${getRoleBadgeColor(post.author?.role)}`}>
               {post.author?.role}
             </span>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-card-subtext">
+          <div className="flex items-center gap-1 flex-wrap text-xs text-card-subtext mt-0.5">
             {post.channel?.slug && (
-              <span className="flex items-center gap-1">
-                <ChannelIcon slug={post.channel.slug} size={13} />
-                {post.channel.name}
+              <span className="flex items-center gap-0.5 shrink-0">
+                <ChannelIcon slug={post.channel.slug} size={11} />
+                <span className="truncate max-w-[120px]">{post.channel.name}</span>
               </span>
             )}
             <span>•</span>
-            <span>{formattedDate || '—'}</span>
+            <span className="shrink-0">{formattedDate || '—'}</span>
             {expiryLabel && (
               <>
                 <span>•</span>
-                <span className={expiryLabel.className}>{expiryLabel.text}</span>
+                <span className={`shrink-0 ${expiryLabel.className}`}>{expiryLabel.text}</span>
               </>
             )}
           </div>

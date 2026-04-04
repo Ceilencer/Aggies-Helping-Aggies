@@ -220,7 +220,7 @@ export default function MyPostsClient({
                     </p>
                   )}
 
-                  <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                  <div className="flex items-center justify-between space-x-4 py-2 sm:py-4 border-t">
                     <div className="flex items-center space-x-4">
                       <PostLikeButton
                         postId={post.id}

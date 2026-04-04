@@ -256,11 +256,11 @@ export default function ChannelPage() {
       )}
 
       {/* Posts */}
-      <div className="space-y-4">
+      <div className="-mx-4 sm:mx-0 divide-y divide-border sm:divide-y-0 sm:space-y-4">
         {posts && posts.length > 0 ? (
           posts.map((post: any) => (
-            <Card key={post.id} className="hover:shadow-md transition-shadow overflow-hidden">
-              <CardHeader>
+            <Card key={post.id} className="rounded-none border-0 shadow-none sm:rounded-lg sm:border sm:shadow-sm sm:hover:shadow-md transition-shadow overflow-hidden">
+              <CardHeader className="p-3 sm:p-6">
                 <PostCardHeader
                   post={post}
                   isAdmin={currentUserRole === 'Admin'}
@@ -280,7 +280,7 @@ export default function ChannelPage() {
                 />
               </CardHeader>
 
-              <CardContent className="space-y-3 pb-0">
+              <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-6 pb-0 pt-0">
                 <h3 className="text-xl font-bold text-card-header-text">
                   {post.title}
                 </h3>
@@ -308,7 +308,7 @@ export default function ChannelPage() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between space-x-4 py-4 border-t">
+                <div className="flex items-center justify-between space-x-4 py-2 sm:py-4 border-t">
                   <div className="flex items-center space-x-4">
                     <PostLikeButton
                       postId={post.id}
