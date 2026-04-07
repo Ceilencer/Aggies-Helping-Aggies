@@ -1,16 +1,22 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function WIPBanner() {
   const [visible, setVisible] = useState(true)
-  const lastScrollY = useRef(0)
 
   useEffect(() => {
     const el = document.getElementById('main-scroll-container')
     if (!el) return
 
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    // Track the scroll position where the last direction change happened.
+    // Only flip visibility once the user has moved a significant distance in
+    // one direction — this prevents iOS momentum-bounce jitter from toggling
+    // the banner back and forth.
+    const HIDE_THRESHOLD = 40   // px scrolled down before hiding
+    const SHOW_THRESHOLD = 40   // px scrolled up before showing
+
+    let directionAnchor = el.scrollTop
 
     const onScroll = () => {
       if (window.innerWidth >= 1024) {
@@ -18,21 +24,19 @@ export default function WIPBanner() {
         return
       }
       const current = el.scrollTop
-      const delta = current - lastScrollY.current
-      if (Math.abs(delta) < 4) return
-      lastScrollY.current = current
+      const delta = current - directionAnchor
 
-      const next = delta < 0 || current < 10
-      // Debounce so rapid micro-fluctuations (iOS momentum bounce) don't jitter
-      if (debounceTimer) clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(() => setVisible(next), 50)
+      if (delta > HIDE_THRESHOLD && current > 10) {
+        setVisible(false)
+        directionAnchor = current
+      } else if (delta < -SHOW_THRESHOLD) {
+        setVisible(true)
+        directionAnchor = current
+      }
     }
 
     el.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      el.removeEventListener('scroll', onScroll)
-      if (debounceTimer) clearTimeout(debounceTimer)
-    }
+    return () => el.removeEventListener('scroll', onScroll)
   }, [])
 
   return (
