@@ -13,8 +13,13 @@ export default function WIPBanner() {
     // Only flip visibility once the user has moved a significant distance in
     // one direction — this prevents iOS momentum-bounce jitter from toggling
     // the banner back and forth.
-    const HIDE_THRESHOLD = 40   // px scrolled down before hiding
-    const SHOW_THRESHOLD = 40   // px scrolled up before showing
+    const HIDE_THRESHOLD = 40  // px scrolled down before hiding
+    const SHOW_THRESHOLD = 40  // px scrolled up before showing
+    // The banner may only reappear when the user is in the top portion of the
+    // scroll range. iOS momentum bounce at the bottom sits at ~95-100% of
+    // scroll depth and can never reach this threshold, making the gate
+    // immune to bounce regardless of how long deceleration takes.
+    const SHOW_MAX_FRACTION = 0.35
 
     let directionAnchor = el.scrollTop
 
@@ -24,12 +29,13 @@ export default function WIPBanner() {
         return
       }
       const current = el.scrollTop
+      const scrollMax = el.scrollHeight - el.clientHeight
       const delta = current - directionAnchor
 
       if (delta > HIDE_THRESHOLD && current > 10) {
         setVisible(false)
         directionAnchor = current
-      } else if (delta < -SHOW_THRESHOLD) {
+      } else if (delta < -SHOW_THRESHOLD && (scrollMax <= 0 || current / scrollMax < SHOW_MAX_FRACTION)) {
         setVisible(true)
         directionAnchor = current
       }

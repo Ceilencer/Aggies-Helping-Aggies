@@ -215,8 +215,9 @@ export default function PostDetailPanel({
   const postChannel = channels.find((c) => c.id === post.channel_id)
 
   const authorRow = (
-    <div className="flex items-start justify-between">
-      <div className="flex items-start gap-3">
+    <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-3 min-w-0">
+        {/* Avatar */}
         {post.author?.avatar_url ? (
           <div className="relative h-10 w-10 overflow-hidden rounded-full flex-shrink-0">
             <Image
@@ -232,21 +233,30 @@ export default function PostDetailPanel({
             {getInitials(post.author?.full_name || 'Unknown')}
           </div>
         )}
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-semibold text-card-header-text">{post.author?.full_name}</p>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleBadgeColor(post.author?.role || 'Personal')}`}>
+
+        {/* Name + badges + metadata */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-semibold text-card-header-text text-sm sm:text-base leading-tight">
+              {post.author?.full_name}
+            </p>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 ${getRoleBadgeColor(post.author?.role || 'Personal')}`}>
               {post.author?.role}
             </span>
+            {(post.author as any)?.flair && (
+              <span className="text-xs px-1.5 py-0.5 rounded-full shrink-0 bg-muted text-muted-foreground border border-border">
+                {(post.author as any).flair}
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <span>{formatRelativeTime(post.created_at)}</span>
+          <div className="flex items-center gap-1 flex-wrap text-xs text-muted-foreground mt-0.5">
+            <span className="shrink-0">{formatRelativeTime(post.created_at)}</span>
             {postChannel && (
               <>
-                <span className="text-muted-foreground/40 select-none">·</span>
-                <span className="flex items-center gap-1 font-medium text-brand-maroon dark:text-slate-400">
-                  <ChannelIcon slug={postChannel.slug} size={13} />
-                  {postChannel.name}
+                <span className="text-muted-foreground/40 select-none shrink-0">·</span>
+                <span className="flex items-center gap-0.5 font-medium text-brand-maroon dark:text-slate-400 shrink-0">
+                  <ChannelIcon slug={postChannel.slug} size={11} />
+                  <span className="truncate max-w-[140px]">{postChannel.name}</span>
                 </span>
               </>
             )}
