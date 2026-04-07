@@ -154,7 +154,7 @@ export interface Post {
   _pendingEdit?: boolean
 }
 
-export type FeedAuthorDTO = Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role'>
+export type FeedAuthorDTO = Pick<Profile, 'id' | 'full_name' | 'avatar_url' | 'role' | 'flair'>
 export type FeedChannelDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description'>
 export type ChannelListDTO = Pick<Channel, 'id' | 'name' | 'slug' | 'description' | 'is_read_only'>
 

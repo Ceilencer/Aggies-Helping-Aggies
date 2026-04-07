@@ -3,7 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/client"
-import { Profile, UserRole, ContactVisibility } from "@/lib/types"
+import { Profile, UserRole, FlairType, ContactVisibility } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -112,6 +112,8 @@ export function UserProfile() {
   const [submittingNameRequest, setSubmittingNameRequest] = React.useState(false)
   const [cancellingNameRequest, setCancellingNameRequest] = React.useState(false)
 
+  const [savingFlair, setSavingFlair] = React.useState(false)
+
   const [editingContact, setEditingContact] = React.useState(false)
   const [savingContact, setSavingContact] = React.useState(false)
   const [contactForm, setContactForm] = React.useState<ContactFormData>(contactFormFromProfile({} as Profile))
@@ -213,6 +215,28 @@ export function UserProfile() {
     setEditingProfile(false)
   }
 
+  const handleSaveFlair = async (flair: FlairType) => {
+    if (!profile || flair === profile.flair) return
+    try {
+      setSavingFlair(true)
+      const res = await fetch('/api/user/flair', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ flair }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update flair')
+      }
+      setProfile({ ...profile, flair })
+      showToast({ message: 'Flair updated!', type: 'success' })
+    } catch (err) {
+      showToast({ message: err instanceof Error ? err.message : 'Failed to update flair', type: 'error' })
+    } finally {
+      setSavingFlair(false)
+    }
+  }
+
   const handleSaveContact = async () => {
     if (!profile) return
     try {
@@ -294,6 +318,11 @@ export function UserProfile() {
                   <span className={cn("text-xs px-2.5 py-0.5 rounded-full font-semibold", getRoleBadgeColor(profile.role))}>
                     {profile.role}
                   </span>
+                  {profile.flair && (
+                    <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-muted text-muted-foreground border border-border">
+                      {profile.flair}
+                    </span>
+                  )}
                   {profile.is_verified && (
                     <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-green-500/20 text-green-700 dark:text-green-400 dark:bg-green-900/30 flex items-center gap-1">
                       ✓ Verified
@@ -467,6 +496,32 @@ export function UserProfile() {
                 ) : (
                   <p className="text-sm text-card-header-text py-2">{profile.graduation_year?.toString() || "Not specified"}</p>
                 )}
+              </div>
+
+              {/* Flair */}
+              <div className="space-y-2 pt-2 border-t border-border">
+                <div>
+                  <Label>Flair</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">Shown on your posts so the community knows your connection to A&M.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(['Student', 'Former Student', 'Family Member', 'Aggie Mom', 'Faculty', 'BCS Local'] as FlairType[]).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      disabled={savingFlair}
+                      onClick={() => handleSaveFlair(f)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-medium border transition-colors",
+                        profile.flair === f
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted text-muted-foreground border-border hover:border-primary hover:text-foreground"
+                      )}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Former Student Toggle */}

@@ -9,106 +9,132 @@ interface PostImageGridProps {
   className?: string
 }
 
+// Extracted so useState can be called at the top level of a component (rules of hooks)
+function SingleImageTile({ src, alt, onOpen }: { src: string; alt: string; onOpen: () => void }) {
+  const [loaded, setLoaded] = useState(false)
+  return (
+    <button
+      onClick={onOpen}
+      className="relative w-full overflow-hidden bg-muted group aspect-[4/3] max-h-[480px]"
+    >
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={`object-contain transition-opacity duration-300 group-hover:opacity-90 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        sizes="(max-width: 768px) 100vw, 700px"
+        onLoad={() => setLoaded(true)}
+      />
+    </button>
+  )
+}
+
+function Tile({
+  src,
+  alt,
+  className = '',
+  sizes,
+  overlay,
+  onOpen,
+}: {
+  src: string
+  alt: string
+  className?: string
+  sizes: string
+  overlay?: React.ReactNode
+  onOpen: () => void
+}) {
+  const [loaded, setLoaded] = useState(false)
+  return (
+    <button
+      onClick={onOpen}
+      className={`relative overflow-hidden bg-muted group ${className}`}
+    >
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        className={`object-cover transition-opacity duration-300 group-hover:opacity-90 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        sizes={sizes}
+        onLoad={() => setLoaded(true)}
+      />
+      {overlay}
+    </button>
+  )
+}
+
 export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hidden rounded-lg border border-border' }: PostImageGridProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   if (!images || images.length === 0) return null
 
   const count = images.length
-  // Show at most 5 tiles; anything beyond is collapsed into a "+N" overlay on the 5th tile.
   const visibleCount = Math.min(count, 5)
   const hiddenCount = count - visibleCount
 
-  // A single image tile. The button is positioned (relative) so the fill Image renders correctly.
-  const Tile = ({
-    index,
-    className = '',
-    sizes,
-  }: {
-    index: number
-    className?: string
-    sizes: string
-  }) => (
-    <button
-      onClick={() => setSelectedIndex(index)}
-      className={`relative overflow-hidden bg-muted group ${className}`}
-    >
-      <Image
-        src={images[index]}
-        alt={`${postTitle} — image ${index + 1}`}
-        fill
-        className="object-cover transition-opacity duration-200 group-hover:opacity-90"
-        sizes={sizes}
-        unoptimized
-      />
-      {/* "+N" overlay on the last visible tile when images are hidden */}
-      {index === visibleCount - 1 && hiddenCount > 0 && (
+  const tile = (index: number, cls: string, sizes: string) => (
+    <Tile
+      key={index}
+      src={images[index]}
+      alt={`${postTitle} — image ${index + 1}`}
+      className={cls}
+      sizes={sizes}
+      overlay={index === visibleCount - 1 && hiddenCount > 0 ? (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none select-none">
           <span className="text-white text-2xl font-bold">+{hiddenCount}</span>
         </div>
-      )}
-    </button>
+      ) : undefined}
+      onOpen={() => setSelectedIndex(index)}
+    />
   )
 
   let grid: React.ReactNode
 
   if (count === 1) {
-    // Single image: full width, natural aspect ratio capped at 480px tall
     grid = (
-      <button
-        onClick={() => setSelectedIndex(0)}
-        className="flex items-center w-full overflow-hidden max-h-[480px] group bg-muted"
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={images[0]}
-          alt={`${postTitle} — image 1`}
-          className="w-full h-auto block transition-opacity duration-200 group-hover:opacity-90"
-          loading="lazy"
-        />
-      </button>
+      <SingleImageTile
+        src={images[0]}
+        alt={`${postTitle} — image 1`}
+        onOpen={() => setSelectedIndex(0)}
+      />
     )
   } else if (count === 2) {
-    // Two images: side by side, equal width
     grid = (
       <div className="flex gap-0.5 aspect-[16/9]">
-        <Tile index={0} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
-        <Tile index={1} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        {tile(0, 'flex-1 h-full', '(max-width: 768px) 50vw, 350px')}
+        {tile(1, 'flex-1 h-full', '(max-width: 768px) 50vw, 350px')}
       </div>
     )
   } else if (count === 3) {
-    // Three images: large on left (2/3), two stacked on right (1/3)
     grid = (
       <div className="flex gap-0.5 aspect-[16/9]">
-        <Tile index={0} className="flex-[2] h-full" sizes="(max-width: 768px) 66vw, 460px" />
+        {tile(0, 'flex-[2] h-full', '(max-width: 768px) 66vw, 460px')}
         <div className="flex-1 flex flex-col gap-0.5">
-          <Tile index={1} className="flex-1 w-full" sizes="(max-width: 768px) 33vw, 230px" />
-          <Tile index={2} className="flex-1 w-full" sizes="(max-width: 768px) 33vw, 230px" />
+          {tile(1, 'flex-1 w-full', '(max-width: 768px) 33vw, 230px')}
+          {tile(2, 'flex-1 w-full', '(max-width: 768px) 33vw, 230px')}
         </div>
       </div>
     )
   } else if (count === 4) {
-    // Four images: 2×2 grid
     grid = (
       <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-[4/3]">
-        <Tile index={0} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
-        <Tile index={1} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
-        <Tile index={2} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
-        <Tile index={3} className="h-full" sizes="(max-width: 768px) 50vw, 350px" />
+        {tile(0, 'h-full', '(max-width: 768px) 50vw, 350px')}
+        {tile(1, 'h-full', '(max-width: 768px) 50vw, 350px')}
+        {tile(2, 'h-full', '(max-width: 768px) 50vw, 350px')}
+        {tile(3, 'h-full', '(max-width: 768px) 50vw, 350px')}
       </div>
     )
   } else {
-    // 5+ images: two large on top, three smaller on bottom (5th tile gets "+N" overlay)
     grid = (
       <div className="flex flex-col gap-0.5">
         <div className="flex gap-0.5 aspect-[3/1]">
-          <Tile index={0} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
-          <Tile index={1} className="flex-1 h-full" sizes="(max-width: 768px) 50vw, 350px" />
+          {tile(0, 'flex-1 h-full', '(max-width: 768px) 50vw, 350px')}
+          {tile(1, 'flex-1 h-full', '(max-width: 768px) 50vw, 350px')}
         </div>
         <div className="flex gap-0.5 aspect-[4/1]">
-          <Tile index={2} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
-          <Tile index={3} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
-          <Tile index={4} className="flex-1 h-full" sizes="(max-width: 768px) 33vw, 230px" />
+          {tile(2, 'flex-1 h-full', '(max-width: 768px) 33vw, 230px')}
+          {tile(3, 'flex-1 h-full', '(max-width: 768px) 33vw, 230px')}
+          {tile(4, 'flex-1 h-full', '(max-width: 768px) 33vw, 230px')}
         </div>
       </div>
     )
@@ -136,7 +162,6 @@ export function PostImageGrid({ images, postTitle, className = 'mt-3 overflow-hi
               fill
               className="object-contain"
               sizes="90vw"
-              unoptimized
             />
 
             {/* Counter */}

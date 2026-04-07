@@ -29,6 +29,7 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   const sizeClass = sizeClasses[size]
   const [imgError, setImgError] = useState(false)
+  const [imgLoaded, setImgLoaded] = useState(false)
 
   const avatarElement = user.avatar_url && !imgError ? (
     <div className={`relative overflow-hidden rounded-full ${sizeClass} ${className}`}>
@@ -37,8 +38,9 @@ export default function UserAvatar({
         alt={`${user.full_name || 'User'} avatar`}
         fill
         sizes={size === 'sm' ? '32px' : size === 'lg' ? '64px' : '40px'}
-        className="object-cover"
+        className={`object-cover transition-opacity duration-200 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
         onError={() => setImgError(true)}
+        onLoad={() => setImgLoaded(true)}
       />
     </div>
   ) : (

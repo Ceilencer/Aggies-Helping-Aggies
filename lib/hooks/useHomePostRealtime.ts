@@ -73,7 +73,7 @@ export function useHomePostRealtime({
               .select(`
                 id, title, content, images, is_pinned, created_at, updated_at,
                 author_id, channel_id, approval_status, is_moderated, moderation_reason, likes_count, expires_at, post_contact,
-                author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role),
+                author:profiles!posts_author_id_fkey(id, full_name, avatar_url, role, flair),
                 channel:channels(id, name, slug, description)
               `)
               .eq('id', updated.id)

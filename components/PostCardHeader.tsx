@@ -80,6 +80,11 @@ export default function PostCardHeader({
             <span className={`text-xs px-1.5 py-0.5 rounded-full shrink-0 ${getRoleBadgeColor(post.author?.role)}`}>
               {post.author?.role}
             </span>
+            {post.author?.flair && (
+              <span className="text-xs px-1.5 py-0.5 rounded-full shrink-0 bg-muted text-muted-foreground border border-border">
+                {post.author.flair}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1 flex-wrap text-xs text-card-subtext mt-0.5">
             {post.channel?.slug && (
