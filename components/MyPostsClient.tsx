@@ -198,15 +198,20 @@ export default function MyPostsClient({
                 </CardHeader>
 
                 <CardContent className="space-y-3 pb-0">
-                  <h3 className="text-xl font-bold text-card-header-text">
-                    {post.title}
-                  </h3>
-                  <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {post.content.length > 300
-                      ? `${post.content.substring(0, 300)}...`
-                      : post.content
-                    }
-                  </p>
+                  <div
+                    className={post.approval_status === 'approved' ? 'cursor-pointer space-y-3' : 'space-y-3'}
+                    onClick={post.approval_status === 'approved' ? () => setActivePostId(post.id) : undefined}
+                  >
+                    <h3 className="text-xl font-bold text-card-header-text">
+                      {post.title}
+                    </h3>
+                    <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                      {post.content.length > 300
+                        ? `${post.content.substring(0, 300)}...`
+                        : post.content
+                      }
+                    </p>
+                  </div>
 
                   {post.images && post.images.length > 0 && (
                     <div className="-mx-6 mt-3">

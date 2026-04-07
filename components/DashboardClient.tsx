@@ -270,10 +270,15 @@ export default function DashboardClient({
                         />
                       </CardHeader>
                       <CardContent className="space-y-2 sm:space-y-3 px-3 sm:px-6 pb-0 pt-0">
-                        <h3 className="text-xl font-bold text-card-header-text">{post.title}</h3>
-                        <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                          {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
-                        </p>
+                        <div
+                          className="cursor-pointer space-y-2 sm:space-y-3"
+                          onClick={() => setActivePostId(post.id)}
+                        >
+                          <h3 className="text-xl font-bold text-card-header-text">{post.title}</h3>
+                          <p className="text-card-subtext whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                            {post.content.length > 300 ? `${post.content.substring(0, 300)}...` : post.content}
+                          </p>
+                        </div>
                         {post.post_contact && post.post_contact.length > 0 && (
                           <div className="rounded-md border border-border bg-muted/40 px-3 py-2 space-y-1">
                             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contact</p>
