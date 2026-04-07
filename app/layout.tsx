@@ -3,6 +3,7 @@ import { Inter } from "next/font/google"
 import { headers } from "next/headers"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import WIPBanner from "@/components/WIPBanner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -33,13 +34,7 @@ export default async function RootLayout({
           disableTransitionOnChange
           nonce={nonce}
         >
-          <div className="w-full flex-shrink-0 bg-yellow-400 text-yellow-900 text-center text-sm font-medium px-4 py-2">
-            This site is currently a work in progress and is not yet deployed.{' '}
-            Found a bug?{' '}
-            <a href="mailto:support@aggieshelpingaggies.org" className="underline font-semibold hover:text-yellow-950">
-              support@aggieshelpingaggies.org
-            </a>
-          </div>
+          <WIPBanner />
           {children}
         </ThemeProvider>
       </body>

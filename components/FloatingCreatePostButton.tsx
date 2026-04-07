@@ -7,6 +7,8 @@ import { Plus } from "lucide-react"
 const DEFAULT_OFFSET = 24
 // h-16 = 64px bottom nav on mobile (lg:hidden); add gap so FAB clears it
 const MOBILE_NAV_HEIGHT = 64
+// h-14 = 56px FAB height
+const FAB_HEIGHT = 56
 
 interface FloatingCreatePostButtonProps {
   onClick?: () => void
@@ -18,6 +20,7 @@ export default function FloatingCreatePostButton({
   href = '/dashboard/post-creation',
 }: FloatingCreatePostButtonProps) {
   const [bottomOffset, setBottomOffset] = useState(DEFAULT_OFFSET)
+  const [hidden, setHidden] = useState(false)
 
   useEffect(() => {
     let frameId = 0
@@ -27,23 +30,21 @@ export default function FloatingCreatePostButton({
       const isMobile = window.innerWidth < 1024
       const baseOffset = isMobile ? MOBILE_NAV_HEIGHT + DEFAULT_OFFSET : DEFAULT_OFFSET
 
+      setBottomOffset(baseOffset)
+
       const footer = document.querySelector("footer")
       if (!footer || !scrollEl) {
-        setBottomOffset(baseOffset)
+        setHidden(false)
         return
       }
 
-      // getBoundingClientRect gives position relative to the viewport.
-      // On mobile the scroll container IS the viewport proxy, so this works.
+      // Hide the FAB when the footer would overlap it rather than pushing it
+      // way up — a tall footer would otherwise send the button off-screen.
       const footerRect = footer.getBoundingClientRect()
-      const viewportHeight = window.innerHeight
-      const overlap = viewportHeight - footerRect.top
-
-      if (overlap > 0) {
-        setBottomOffset(overlap + baseOffset)
-      } else {
-        setBottomOffset(baseOffset)
-      }
+      const navHeight = isMobile ? MOBILE_NAV_HEIGHT : 0
+      // Top edge of the FAB in viewport coordinates
+      const fabTop = window.innerHeight - navHeight - baseOffset - FAB_HEIGHT
+      setHidden(footerRect.top < fabTop + DEFAULT_OFFSET)
     }
 
     const onScroll = () => {
@@ -67,7 +68,7 @@ export default function FloatingCreatePostButton({
     }
   }, [])
 
-  const className = "fixed right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-maroon text-white shadow-lg transition-colors hover:bg-brand-maroon-hover"
+  const className = `fixed right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-maroon text-white shadow-lg transition-[colors,opacity] hover:bg-brand-maroon-hover ${hidden ? 'opacity-0 pointer-events-none' : 'opacity-100'}`
 
   if (onClick) {
     return (
