@@ -13,8 +13,11 @@ export default function WIPBanner() {
     // Only flip visibility once the user has moved a significant distance in
     // one direction — this prevents iOS momentum-bounce jitter from toggling
     // the banner back and forth.
-    const HIDE_THRESHOLD = 40  // px scrolled down before hiding
-    const SHOW_THRESHOLD = 40  // px scrolled up before showing
+    const HIDE_THRESHOLD = 40   // px scrolled down before hiding
+    // Must exceed the banner's own height (~80px / 5rem) so that the iOS
+    // scroll-position compensation fired when the banner collapses (which
+    // shifts the container by the banner height) cannot re-trigger a show.
+    const SHOW_THRESHOLD = 100  // px scrolled up before showing
     // The banner may only reappear when the user is in the top portion of the
     // scroll range. iOS momentum bounce at the bottom sits at ~95-100% of
     // scroll depth and can never reach this threshold, making the gate
@@ -49,7 +52,7 @@ export default function WIPBanner() {
     <div
       style={{
         overflow: 'hidden',
-        maxHeight: visible ? '3rem' : '0px',
+        maxHeight: visible ? '5rem' : '0px',
         transition: 'max-height 0.25s ease',
       }}
     >
