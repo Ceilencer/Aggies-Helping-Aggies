@@ -73,12 +73,18 @@ export async function GET(request: Request) {
   const email = rawEmail ?? ''
   const provider = (data.user.app_metadata?.provider as string | undefined) ?? 'google'
 
+  // The OAuth provider's stable user ID (e.g. Facebook UID, Google sub).
+  // Unlike auth.users.id, this survives user deletion + re-registration,
+  // making it the only reliable identifier for phone-only users.
+  const providerSub = (data.user.identities?.[0]?.identity_data?.sub as string | undefined) ?? null
+
   // Diagnostic: log what Facebook actually returned so we can confirm the fix.
   if (provider === 'facebook') {
     console.log('[FB OAuth] user.email:', data.user.email)
     console.log('[FB OAuth] identity_data.email:', data.user.identities?.[0]?.identity_data?.email)
     console.log('[FB OAuth] user_metadata.email:', data.user.user_metadata?.email)
     console.log('[FB OAuth] resolved rawEmail:', rawEmail)
+    console.log('[FB OAuth] providerSub:', providerSub)
   }
 
   // --- Routing decision (modular – see lib/utils/auth-routing.ts) ---
@@ -86,7 +92,10 @@ export async function GET(request: Request) {
 
   const service = createServiceClient()
 
-  // --- Permanent ban / suspend checks (email-based, skipped for no-email users) ---
+  // --- Permanent ban / suspend checks ---
+  // Email-based checks run when we have an email (catches cross-provider
+  // ban-bypass where the same person re-registers with a different provider
+  // but keeps the same email address).
   if (rawEmail) {
     const { count: rejectionCount } = await service
       .from('rejected_accounts')
@@ -112,6 +121,21 @@ export async function GET(request: Request) {
     if (suspendedByEmail) {
       await supabase.auth.signOut()
       return redirectWith(`${origin}/?suspended=true`)
+    }
+  }
+
+  // Provider-sub-based ban check — runs for phone-only users (no email).
+  // The provider sub is stable across deletion + re-registration, so
+  // rejected phone-only users can still be caught on their next attempt.
+  if (!rawEmail && providerSub) {
+    const { count: rejectionByProvider } = await service
+      .from('rejected_accounts')
+      .select('id', { count: 'exact', head: true })
+      .eq('provider_id', providerSub)
+
+    if ((rejectionByProvider ?? 0) >= 2) {
+      await service.auth.admin.deleteUser(data.user.id)
+      return redirectWith(`${origin}/login?error=banned`)
     }
   }
 
