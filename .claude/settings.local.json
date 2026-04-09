@@ -51,7 +51,11 @@
       "Bash(python3 -c \":*)",
       "Bash(mkdir -p \"$TEMP/docx_extract\")",
       "Read(//c/Users/cobyr/Capstone/Howdy-Helps-Capstone/$TEMP/**)",
-      "Bash(unzip -o \"c:/Users/cobyr/Capstone/Howdy-Helps-Capstone/3_22_26 Final AGGIE RING application.docx\" word/document.xml)"
+      "Bash(unzip -o \"c:/Users/cobyr/Capstone/Howdy-Helps-Capstone/3_22_26 Final AGGIE RING application.docx\" word/document.xml)",
+      "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__list_projects",
+      "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__list_tables",
+      "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__execute_sql",
+      "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__apply_migration"
     ]
   }
 }
