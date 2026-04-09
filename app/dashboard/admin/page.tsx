@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRealtimeStatus } from '@/lib/realtime/RealtimeStatusContext'
 import { getInitials } from '@/lib/utils'
 import UserProfileModal from '@/components/UserProfileModal'
+import AdminPostReviewModal from '@/components/AdminPostReviewModal'
 import type { AdminPendingPostDTO, FeedChannelDTO } from '@/lib/types'
 
 type PostItem = AdminPendingPostDTO
@@ -63,6 +64,7 @@ export default function AdminDashboardPage() {
   const [postOverrides, setPostOverrides] = useState<Record<string, PostOverrides>>({})
   const [channels, setChannels] = useState<FeedChannelDTO[]>([])
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [reviewPostId, setReviewPostId] = useState<string | null>(null)
   const { reportStatus } = useRealtimeStatus()
 
   const loadedPostIdsRef = useRef<Set<string>>(new Set())
@@ -284,6 +286,32 @@ export default function AdminDashboardPage() {
         onClose={() => setSelectedUserId(null)}
       />
 
+      {(() => {
+        const reviewPost = posts.find((p) => p.id === reviewPostId) ?? null
+        const overrides = reviewPostId ? postOverrides[reviewPostId] : null
+        return (
+          <AdminPostReviewModal
+            isOpen={reviewPostId !== null}
+            onClose={() => setReviewPostId(null)}
+            post={reviewPost}
+            channels={channels}
+            overrides={overrides ?? { duration: 7, channelId: '' }}
+            denyState={reviewPostId ? denyState[reviewPostId] : undefined}
+            busy={actioning === reviewPostId}
+            defaultDuration={reviewPost ? getDefaultDuration(reviewPost) : 7}
+            onSetDuration={(d) => reviewPostId && setPostOverrides((prev) => ({ ...prev, [reviewPostId]: { ...prev[reviewPostId], duration: d } }))}
+            onSetChannel={(id) => reviewPostId && setPostOverrides((prev) => ({ ...prev, [reviewPostId]: { ...prev[reviewPostId], channelId: id } }))}
+            onApprove={() => { if (reviewPostId) { void approve(reviewPostId); setReviewPostId(null) } }}
+            onStartDeny={() => reviewPostId && toggleDeny(reviewPostId)}
+            onConfirmDeny={() => { if (reviewPostId) { void deny(reviewPostId); setReviewPostId(null) } }}
+            onCancelDeny={() => reviewPostId && toggleDeny(reviewPostId)}
+            onToggleDenyReason={(reason) => reviewPostId && toggleDenyReason(reviewPostId, reason)}
+            onDenyCustomChange={(v) => reviewPostId && setDenyCustom(reviewPostId, v)}
+            onViewProfile={(userId) => { setSelectedUserId(userId); setReviewPostId(null) }}
+          />
+        )
+      })()}
+
       {accessDenied && (
         <div className="rounded-md border p-4">
           <p className="text-sm text-muted-foreground">You no longer have admin access.</p>
@@ -327,7 +355,37 @@ export default function AdminDashboardPage() {
                 const deny_ = denyState[post.id]
 
                 return (
-                  <li key={post.id} className="flex gap-4 items-start">
+                  <li key={post.id}>
+
+                    {/* ── Mobile: compact tap-to-review row ────────────── */}
+                    <button
+                      type="button"
+                      onClick={() => setReviewPostId(post.id)}
+                      className="md:hidden w-full flex items-center gap-3 rounded-lg border bg-card shadow-sm px-4 py-3 text-left active:bg-muted/60 transition-colors"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">
+                        {getInitials(post.author?.full_name || 'U')}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium leading-tight truncate">
+                          {post.author?.full_name || 'Unknown'}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">
+                          {isEditReview ? post.pending_edit?.proposed_title || post.title : post.title}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isEditReview ? (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">Edit</span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">New</span>
+                        )}
+                        <svg className="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      </div>
+                    </button>
+
+                    {/* ── Desktop: full card + action panel ────────────── */}
+                    <div className="hidden md:flex gap-4 items-start">
 
                     {/* ── Left: post card ───────────────────────────────── */}
                     <div className="flex-1 min-w-0 rounded-lg border bg-card shadow-sm overflow-hidden">
@@ -347,7 +405,10 @@ export default function AdminDashboardPage() {
                       </div>
 
                       {/* Post content */}
-                      <div className="px-4 pb-4 space-y-2">
+                      <div
+                        onClick={() => setReviewPostId(post.id)}
+                        className="w-full px-4 pb-4 space-y-2 cursor-pointer hover:bg-muted/30 transition-colors"
+                      >
                         {isEditReview && post.pending_edit ? (
                           <div className="space-y-3">
                             <div className="rounded border border-muted bg-muted/30 p-3">
@@ -377,7 +438,7 @@ export default function AdminDashboardPage() {
                     </div>
 
                     {/* ── Right: admin action panel ─────────────────────── */}
-                    <div className="w-56 shrink-0 rounded-lg border bg-card shadow-sm p-4 flex flex-col gap-3">
+                    <div className="w-full md:w-56 md:shrink-0 rounded-lg border bg-card shadow-sm p-4 flex flex-col gap-3">
                       {/* Badge */}
                       <div>
                         {isEditReview ? (
@@ -532,6 +593,7 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
+                    </div>{/* end desktop wrapper */}
                   </li>
                 )
               })}

@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuthenticatedUser, requireAdminUser } from '@/lib/utils/api-auth'
 import { channelPatchRequestSchema } from '@/lib/validations'
+import { deletePostImages } from '@/lib/utils/deletePostImages'
 
 export async function DELETE(
   request: NextRequest,
@@ -48,6 +50,8 @@ export async function DELETE(
       console.error('Error deleting post:', error)
       return NextResponse.json({ error: 'Failed to delete post' }, { status: 500 })
     }
+
+    await deletePostImages(createServiceClient(), postId)
 
     return NextResponse.json({ success: true })
   } catch (error) {

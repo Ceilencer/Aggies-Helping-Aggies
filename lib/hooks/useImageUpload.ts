@@ -110,6 +110,10 @@ export function useImageUpload() {
             .upload(fileName, image.file, { cacheControl: '3600', upsert: false })
 
           if (uploadError) {
+            const msg = uploadError.message?.toLowerCase() ?? ''
+            if (msg.includes('exceeded') || msg.includes('limit') || msg.includes('quota') || msg.includes('storage')) {
+              throw new Error('__STORAGE_LIMIT__')
+            }
             throw new Error(`Upload failed for ${image.file.name}: ${uploadError.message}`)
           }
 
@@ -133,7 +137,10 @@ export function useImageUpload() {
         console.error('Cleanup error:', cleanupErr)
       }
 
-      return { success: false, urls: [], paths: [], error: err.message || 'Failed to upload images' }
+      const userMessage = err.message === '__STORAGE_LIMIT__'
+        ? 'Image uploads are temporarily unavailable. You can still post without images.'
+        : 'Failed to upload images. Please try again.'
+      return { success: false, urls: [], paths: [], error: userMessage }
     }
   }, [uploadedImages, supabase])
 

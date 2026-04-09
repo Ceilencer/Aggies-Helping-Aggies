@@ -3,7 +3,6 @@
 import { useRef } from 'react'
 import Image from 'next/image'
 import { Upload, AlertCircle, Plus, X } from 'lucide-react'
-import { Label } from '@/components/ui/label'
 
 interface ImageUploadInputProps {
   onImagesSelected: (files: FileList) => void
@@ -55,10 +54,6 @@ export function ImageUploadInput({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="image-upload" className="dark:text-white">
-        Upload Images
-      </Label>
-
       {images.length === 0 ? (
         /* Empty state — full drag-and-drop prompt */
         <div

@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/utils/api-auth'
+import { deletePostImages } from '@/lib/utils/deletePostImages'
 
 export async function DELETE(
   request: NextRequest,
@@ -44,6 +46,8 @@ export async function DELETE(
         { status: 500 }
       )
     }
+
+    await deletePostImages(createServiceClient(), id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

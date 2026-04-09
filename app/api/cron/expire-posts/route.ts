@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { deletePostImages } from '@/lib/utils/deletePostImages'
 
 // GET /api/cron/expire-posts
 // Called nightly by Vercel cron (see vercel.json).
@@ -12,21 +13,40 @@ export async function GET(request: Request) {
   }
 
   const service = createServiceClient()
-
   const now = new Date().toISOString()
 
-  const { data, error } = await service
+  // Fetch expired post IDs before deleting so we can clean up storage
+  const { data: expiredPosts, error: fetchError } = await service
+    .from('posts')
+    .select('id')
+    .lt('expires_at', now)
+
+  if (fetchError) {
+    console.error('[cron/expire-posts] Failed to fetch expired posts:', fetchError)
+    return NextResponse.json({ error: 'Failed to fetch expired posts' }, { status: 500 })
+  }
+
+  if (!expiredPosts || expiredPosts.length === 0) {
+    console.log('[cron/expire-posts] No expired posts found')
+    return NextResponse.json({ deleted: 0 })
+  }
+
+  const ids = expiredPosts.map((p) => p.id)
+
+  // Delete the post rows
+  const { error: deleteError } = await service
     .from('posts')
     .delete()
-    .lt('expires_at', now)
-    .select('id')
+    .in('id', ids)
 
-  if (error) {
-    console.error('[cron/expire-posts] Failed to delete expired posts:', error)
+  if (deleteError) {
+    console.error('[cron/expire-posts] Failed to delete expired posts:', deleteError)
     return NextResponse.json({ error: 'Failed to delete expired posts' }, { status: 500 })
   }
 
-  const count = data?.length ?? 0
-  console.log(`[cron/expire-posts] Deleted ${count} expired post(s)`)
-  return NextResponse.json({ deleted: count })
+  // Clean up storage for each deleted post (errors logged, not fatal)
+  await Promise.all(ids.map((id) => deletePostImages(service, id)))
+
+  console.log(`[cron/expire-posts] Deleted ${ids.length} expired post(s) and cleaned up storage`)
+  return NextResponse.json({ deleted: ids.length })
 }

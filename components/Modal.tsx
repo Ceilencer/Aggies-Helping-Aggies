@@ -57,7 +57,7 @@ export default function Modal({
       aria-modal="true"
     >
       <div
-        className={`relative w-full ${sizeClasses[size]} h-[95dvh] sm:h-auto sm:max-h-[min(90vh,56rem)] overflow-hidden rounded-t-2xl sm:rounded-lg bg-background shadow-xl flex flex-col`}
+        className={`relative w-full ${sizeClasses[size]} h-[95dvh] sm:h-auto sm:max-h-[min(90vh,56rem)] overflow-hidden sm:overflow-y-auto rounded-t-2xl sm:rounded-lg bg-background shadow-xl flex flex-col`}
         onClick={(event) => event.stopPropagation()}
       >
         <button

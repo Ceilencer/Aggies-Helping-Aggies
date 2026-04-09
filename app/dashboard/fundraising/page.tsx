@@ -660,7 +660,10 @@ export default function FundraisingPage() {
               </div>
             </div>
           ) : (
-            <Button onClick={() => { resetForm(); setModalOpen(true) }}>Apply for Sponsorship</Button>
+            <Button disabled className="opacity-50 cursor-not-allowed">
+              Apply for Sponsorship
+              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide rounded-full border border-current px-2 py-0.5">Under Construction</span>
+            </Button>
           )
         )}
       </section>
