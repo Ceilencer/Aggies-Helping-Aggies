@@ -53,12 +53,19 @@ export async function POST(request: Request) {
     .single()
 
   if (action === 'approve') {
-    // Fetch avatar_url from auth metadata
+    // Fetch avatar_url and auth-level email from auth metadata
     const { data: { user: authUser } } = await service.auth.admin.getUserById(userId)
     const avatarUrl =
       authUser?.user_metadata?.avatar_url ||
       authUser?.user_metadata?.picture ||
       null
+
+    // Prefer the VR's stored email; fall back to auth user_metadata email.
+    // For phone-only users the VR email may be '' — use null in that case
+    // so the partial unique index isn't violated by multiple empty strings.
+    const profileEmail =
+      (vr?.email && vr.email !== '') ? vr.email :
+      (authUser?.user_metadata?.email as string | undefined) || null
 
     const flair = vr?.affiliation ? (AFFILIATION_TO_FLAIR[vr.affiliation] ?? null) : null
 
@@ -67,7 +74,7 @@ export async function POST(request: Request) {
       .from('profiles')
       .insert({
         id:             userId,
-        email:          vr?.email ?? '',
+        email:          profileEmail,
         full_name:      vr?.full_name ?? '',
         avatar_url:     avatarUrl,
         flair:          flair ?? 'Student',
@@ -92,15 +99,34 @@ export async function POST(request: Request) {
 
   // action === 'reject'
 
-  const rejectedEmail = vr?.email ?? ''
+  // Fetch the auth user to get the stable provider sub (survives deletion
+  // + re-registration — the only reliable ID for phone-only Facebook users).
+  const { data: { user: authUserToReject } } = await service.auth.admin.getUserById(userId)
+  const providerSub  = (authUserToReject?.identities?.[0]?.identity_data?.sub as string | undefined) ?? null
+  const providerName = (authUserToReject?.app_metadata?.provider as string | undefined) ?? null
 
-  // Count prior rejections by EMAIL (user_id changes each time they re-register)
-  const { count: priorRejectionCount } = await service
-    .from('rejected_accounts')
-    .select('id', { count: 'exact', head: true })
-    .eq('email', rejectedEmail)
+  // Store null instead of '' so the email field doesn't hold a meaningless
+  // empty string that could pollute future rejection-count lookups.
+  const rejectedEmail = (vr?.email && vr.email !== '') ? vr.email : null
 
-  const isPermanentBan = (priorRejectionCount ?? 0) >= 1
+  // Count prior rejections — prefer email lookup if available, else fall
+  // back to the provider sub for phone-only users whose email is unknown.
+  let priorRejectionCount = 0
+  if (rejectedEmail) {
+    const { count } = await service
+      .from('rejected_accounts')
+      .select('id', { count: 'exact', head: true })
+      .eq('email', rejectedEmail)
+    priorRejectionCount = count ?? 0
+  } else if (providerSub) {
+    const { count } = await service
+      .from('rejected_accounts')
+      .select('id', { count: 'exact', head: true })
+      .eq('provider_id', providerSub)
+    priorRejectionCount = count ?? 0
+  }
+
+  const isPermanentBan = priorRejectionCount >= 1
 
   // Insert the rejection record BEFORE deleting the user.
   // FK user_id → auth.users ON DELETE SET NULL keeps the record after deletion.
@@ -111,6 +137,8 @@ export async function POST(request: Request) {
     rejected_by:      user.id,
     rejected_at:      now,
     rejection_reason: rejectionReasons ? rejectionReasons.join(' | ') : null,
+    provider_id:      providerSub,
+    provider:         providerName,
   })
 
   if (insertError) {

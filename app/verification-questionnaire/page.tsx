@@ -60,11 +60,23 @@ export default function VerificationQuestionnairePage() {
       if (!user) { router.replace('/login'); return }
 
       setUserId(user.id)
-      setUserEmail(
+
+      // Resolve email the same way the auth callback does.
+      const resolvedEmail = (
         user.email ??
         (user.user_metadata?.email as string | undefined) ??
-        ''
+        null
       )
+
+      // Hard gate: phone-only Facebook users must provide an email before
+      // reaching this page. The auth callback routes them to /collect-email
+      // first, but this guard catches direct navigation or page refreshes.
+      if (!resolvedEmail) {
+        router.replace('/collect-email')
+        return
+      }
+
+      setUserEmail(resolvedEmail)
 
       // Pre-fill name from Google metadata
       if (!formData.full_name) {
@@ -95,23 +107,17 @@ export default function VerificationQuestionnairePage() {
 
       // Duplicate account check: if a *different* active profile shares this email,
       // the user likely has an existing account via another provider (e.g. Google).
-      const userEmail = (
-        user.email ??
-        (user.user_metadata?.email as string | undefined) ??
-        ''
-      ).toLowerCase().trim()
-      if (userEmail) {
-        const { data: emailMatch } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', userEmail)
-          .eq('account_status', 'active')
-          .neq('id', user.id)
-          .maybeSingle()
+      // resolvedEmail is guaranteed non-null at this point (gate above).
+      const { data: emailMatch } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', resolvedEmail.toLowerCase().trim())
+        .eq('account_status', 'active')
+        .neq('id', user.id)
+        .maybeSingle()
 
-        if (emailMatch) {
-          setDuplicateAccountWarning(true)
-        }
+      if (emailMatch) {
+        setDuplicateAccountWarning(true)
       }
 
       // If a VR already exists, the user already submitted — send to hold page

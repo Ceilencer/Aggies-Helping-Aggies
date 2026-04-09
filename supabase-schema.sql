@@ -23,7 +23,7 @@ CREATE TYPE account_status AS ENUM ('active', 'pending_approval', 'suspended');
 
 CREATE TABLE profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT,  -- nullable: phone-only OAuth users may not have an email
     full_name TEXT NOT NULL,
     avatar_url TEXT,
     role user_role DEFAULT 'Personal' NOT NULL,
@@ -252,13 +252,15 @@ CREATE TABLE user_bans (
 CREATE TABLE rejected_accounts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-    email TEXT NOT NULL,
+    email TEXT,                -- nullable: phone-only users may have no email
     full_name TEXT NOT NULL,
     rejected_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
     rejected_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     rejection_reason TEXT,
     questionnaire JSONB,
-    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+    provider_id TEXT,          -- OAuth provider sub (stable across re-registration)
+    provider TEXT              -- e.g. 'facebook', 'google'
 );
 
 -- =============================================
@@ -287,7 +289,10 @@ CREATE TABLE verification_requests (
 -- =============================================
 
 -- profiles
-CREATE INDEX idx_profiles_email ON profiles(email);
+-- Partial unique index: enforces uniqueness only for real non-empty emails.
+-- Allows multiple NULL/empty-string rows (phone-only OAuth users).
+CREATE UNIQUE INDEX profiles_email_unique ON profiles(email) WHERE email IS NOT NULL AND email != '';
+CREATE INDEX idx_profiles_email ON profiles(email) WHERE email IS NOT NULL;
 CREATE INDEX idx_profiles_role ON profiles(role);
 CREATE INDEX idx_profiles_account_status ON profiles(account_status);
 
