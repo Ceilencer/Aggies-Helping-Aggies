@@ -66,10 +66,10 @@ export default function HomeAnnouncementSection({
 
   return (
     <>
-      {isAdmin && (
+      {isAdmin && !announcement && (
         <div className="flex justify-end">
           <Button size="sm" variant="outline" onClick={() => setEditorOpen(true)}>
-            {announcement ? 'Edit Announcement' : 'Post Announcement'}
+            Post Announcement
           </Button>
         </div>
       )}
@@ -79,12 +79,14 @@ export default function HomeAnnouncementSection({
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-2xl font-bold text-page-heading-text">Announcement</h2>
           </div>
-          <AnnouncementCard
-            announcement={announcement}
-            isAdmin={isAdmin}
-            onEditClick={() => setEditorOpen(true)}
-            onExpire={() => onAnnouncementChange(null)}
-          />
+          <div className="-mx-4 sm:mx-0">
+            <AnnouncementCard
+              announcement={announcement}
+              isAdmin={isAdmin}
+              onEditClick={() => setEditorOpen(true)}
+              onExpire={() => onAnnouncementChange(null)}
+            />
+          </div>
         </>
       )}
 

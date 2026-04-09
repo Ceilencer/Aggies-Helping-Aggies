@@ -73,7 +73,7 @@ export default function AnnouncementCard({ announcement, isAdmin, onEditClick, o
   if (hidden) return null
 
   return (
-    <Card className="bg-pinned-announcement-bg/5 border-l-4 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-l-4 dark:border-pinned-announcement-border-dark">
+    <Card className="bg-pinned-announcement-bg/5 border-pinned-announcement-border dark:bg-pinned-announcement-bg/20 dark:border-pinned-announcement-border-dark rounded-none border-x-0 shadow-none sm:rounded-lg sm:border sm:border-l-4 sm:shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {/* Author + timestamp */}

@@ -199,35 +199,37 @@ export default function ChannelAnnouncementModal({
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-3 pt-2 border-t">
+          <div className="flex flex-col gap-3 pt-2 border-t sm:flex-row sm:items-center sm:justify-between">
             {/* Delete zone */}
             <div>
               {initialAnnouncement && onDeleted && (
                 confirmingDelete ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     <span className="text-sm text-destructive">Remove this announcement?</span>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => void handleDelete()}
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? 'Removing…' : 'Yes, remove'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setConfirmingDelete(false)}
-                      disabled={isDeleting}
-                    >
-                      Cancel
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => void handleDelete()}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? 'Removing…' : 'Yes, remove'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setConfirmingDelete(false)}
+                        disabled={isDeleting}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <Button
                     size="sm"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    variant="outline"
+                    className="text-destructive border-destructive/40 hover:text-destructive hover:bg-destructive/10"
                     onClick={() => setConfirmingDelete(true)}
                   >
                     Clear Announcement
@@ -237,7 +239,7 @@ export default function ChannelAnnouncementModal({
             </div>
 
             {/* Save zone */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 sm:ml-auto">
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>

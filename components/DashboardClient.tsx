@@ -187,7 +187,8 @@ export default function DashboardClient({
       />
 
       <div className="mx-auto w-full max-w-2xl space-y-6">
-        <Card>
+        <div className="-mx-4 sm:mx-0">
+        <Card className="rounded-none border-0 shadow-none sm:rounded-lg sm:border sm:shadow-sm">
           <CardHeader className="bg-dash-header-bg text-dash-header-text">
             <CardTitle className="text-2xl text-dash-header-text">
               <span className="inline-flex items-center gap-3">
@@ -219,6 +220,7 @@ export default function DashboardClient({
             </Button>
           </CardContent>
         </Card>
+        </div>
 
         <HomeAnnouncementSection
           announcement={homeAnnouncement}

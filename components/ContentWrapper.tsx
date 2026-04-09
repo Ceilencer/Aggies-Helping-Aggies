@@ -7,7 +7,7 @@ export default function ContentWrapper({ children }: { children: React.ReactNode
   const isAdmin = pathname?.startsWith('/dashboard/admin')
 
   return (
-    <div className={`w-full px-4 lg:px-0 py-8 ${isAdmin ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>
+    <div className={`w-full px-4 lg:px-0 pt-0 pb-8 sm:py-8 ${isAdmin ? 'lg:max-w-5xl' : 'lg:max-w-2xl'}`}>
       {children}
     </div>
   )
