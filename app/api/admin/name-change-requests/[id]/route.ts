@@ -34,16 +34,26 @@ export async function PATCH(
   const service = createServiceClient()
   const now = new Date().toISOString()
 
-  // Fetch the request
-  const { data: ncr, error: fetchError } = await service
+  // Atomically claim the request — only succeeds if still pending.
+  // This prevents two admins from acting on the same request simultaneously.
+  const { data: ncr, error: claimError } = await service
     .from('name_change_requests')
-    .select('*')
+    .update({
+      status: action === 'approve' ? 'approved' : 'denied',
+      reviewed_by: user.id,
+      reviewed_at: now,
+      denial_reason: action === 'deny' ? (denial_reason?.trim() || null) : null,
+    })
     .eq('id', id)
     .eq('status', 'pending')
-    .single()
+    .select('*')
+    .maybeSingle()
 
-  if (fetchError || !ncr) {
-    return NextResponse.json({ error: 'Request not found or already resolved' }, { status: 404 })
+  if (claimError || !ncr) {
+    return NextResponse.json(
+      { error: 'Request not found or already resolved by another admin' },
+      { status: 409 }
+    )
   }
 
   if (action === 'approve') {
@@ -57,22 +67,6 @@ export async function PATCH(
       console.error('Error updating profile name:', profileError)
       return NextResponse.json({ error: 'Failed to update name' }, { status: 500 })
     }
-  }
-
-  // Mark request as resolved
-  const { error: updateError } = await service
-    .from('name_change_requests')
-    .update({
-      status: action === 'approve' ? 'approved' : 'denied',
-      reviewed_by: user.id,
-      reviewed_at: now,
-      denial_reason: action === 'deny' ? (denial_reason?.trim() || null) : null,
-    })
-    .eq('id', id)
-
-  if (updateError) {
-    console.error('Error updating name change request:', updateError)
-    return NextResponse.json({ error: 'Failed to update request' }, { status: 500 })
   }
 
   // Notify the user

@@ -63,8 +63,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       if (approve) {
-        // Apply the proposed edit to the live post
-        const { error: applyError } = await supabase
+        // Apply the proposed edit to the live post (only if still pending_edit)
+        const { data: updated, error: applyError } = await supabase
           .from('posts')
           .update({
             title: pendingEdit.proposed_title,
@@ -75,10 +75,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             moderation_reason: null,
           })
           .eq('id', id)
+          .eq('approval_status', 'pending_edit')
+          .select('id')
+          .maybeSingle()
 
         if (applyError) {
           console.error('Error applying post edit:', applyError)
           return NextResponse.json({ error: 'Failed to apply edit' }, { status: 500 })
+        }
+
+        if (!updated) {
+          return NextResponse.json({ error: 'This edit has already been reviewed by another admin' }, { status: 409 })
         }
 
         await supabase.from('post_history').insert({
@@ -96,15 +103,22 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           link: channelSlug ? `/dashboard/channels/${channelSlug}?post=${id}` : '/dashboard/my-posts',
         })
       } else {
-        // Reject: discard proposed changes, restore post to approved (original content untouched)
-        const { error: rejectStatusError } = await supabase
+        // Reject: discard proposed changes, restore post to approved (only if still pending_edit)
+        const { data: updated, error: rejectStatusError } = await supabase
           .from('posts')
           .update({ approval_status: 'approved' })
           .eq('id', id)
+          .eq('approval_status', 'pending_edit')
+          .select('id')
+          .maybeSingle()
 
         if (rejectStatusError) {
           console.error('Error restoring post approval status:', rejectStatusError)
           return NextResponse.json({ error: 'Failed to reject edit' }, { status: 500 })
+        }
+
+        if (!updated) {
+          return NextResponse.json({ error: 'This edit has already been reviewed by another admin' }, { status: 409 })
         }
 
         await supabase.from('post_history').insert({
@@ -138,14 +152,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (channel_id) updates.channel_id = channel_id
       if (duration_days != null) updates.expires_at = new Date(Date.now() + duration_days * 86400 * 1000).toISOString()
 
-      const { error } = await serviceClient
+      const { data: updated, error } = await serviceClient
         .from('posts')
         .update(updates)
         .eq('id', id)
+        .eq('approval_status', 'pending')
+        .select('id')
+        .maybeSingle()
 
       if (error) {
         console.error('Error approving post:', error)
         return NextResponse.json({ error: 'Failed to approve' }, { status: 500 })
+      }
+
+      if (!updated) {
+        return NextResponse.json({ error: 'This post has already been reviewed by another admin' }, { status: 409 })
       }
 
       await supabase.from('post_history').insert({
@@ -176,7 +197,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ success: true })
     } else {
       const rejectionNote = reason || 'Post did not meet community guidelines'
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from('posts')
         .update({
           is_moderated: false,
@@ -184,10 +205,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           moderation_reason: rejectionNote,
         })
         .eq('id', id)
+        .eq('approval_status', 'pending')
+        .select('id')
+        .maybeSingle()
 
       if (error) {
         console.error('Error rejecting post:', error)
         return NextResponse.json({ error: 'Failed to reject' }, { status: 500 })
+      }
+
+      if (!updated) {
+        return NextResponse.json({ error: 'This post has already been reviewed by another admin' }, { status: 409 })
       }
 
       await supabase.from('post_history').insert({

@@ -51,12 +51,22 @@ export async function POST(request: Request) {
   const service = createServiceClient()
   const now = new Date().toISOString()
 
-  // Fetch the verification request — needed by both approve and reject paths
+  // Atomically claim the verification request — only succeeds if still pending.
+  // This prevents two admins from acting on the same application simultaneously.
   const { data: vr } = await service
     .from('verification_requests')
-    .select('email, full_name, graduation_year, major, affiliation')
+    .update({ status: action === 'approve' ? 'approved' : 'rejected', reviewed_by: user.id, reviewed_at: now })
     .eq('user_id', userId)
-    .single()
+    .eq('status', 'pending')
+    .select('email, full_name, graduation_year, major, affiliation')
+    .maybeSingle()
+
+  if (!vr) {
+    return NextResponse.json(
+      { error: 'This application has already been reviewed by another admin' },
+      { status: 409 }
+    )
+  }
 
   if (action === 'approve') {
     // Fetch avatar_url and auth-level email from auth metadata
