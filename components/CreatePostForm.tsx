@@ -127,10 +127,27 @@ export default function CreatePostForm({
 
           {/* ── DESKTOP: independent two-column layout / MOBILE: stacked ── */}
           {/* Each column is its own flex container so heights are fully decoupled. */}
-          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-5 sm:items-start sm:gap-6">
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-5 sm:items-start sm:gap-x-6 sm:gap-y-3">
 
-            {/* RIGHT column (Content + Images) — first in DOM → appears first on mobile */}
-            <div className="sm:col-start-3 sm:col-span-3 sm:row-start-1 flex flex-col gap-3">
+            {/* Title — first on mobile; positioned in left-col area on desktop */}
+            <div className="sm:col-start-1 sm:col-span-2 sm:row-start-1 space-y-1.5">
+              <Label htmlFor="title" className="dark:text-white">Title *</Label>
+              <Input
+                id="title"
+                type="text"
+                placeholder="5–200 chars"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                maxLength={200}
+                required
+              />
+              <p className="text-xs text-muted-foreground dark:text-white/60">
+                {formData.title.length}/200
+              </p>
+            </div>
+
+            {/* RIGHT column (Content + Images) */}
+            <div className="sm:col-start-3 sm:col-span-3 sm:row-start-1 sm:row-span-2 flex flex-col gap-3">
 
               {/* Content */}
               <div className="space-y-1.5">
@@ -168,8 +185,8 @@ export default function CreatePostForm({
 
             </div>
 
-            {/* LEFT column (Channel + Title + Contact + Duration) — second in DOM */}
-            <div className="sm:col-start-1 sm:col-span-2 sm:row-start-1 flex flex-col gap-3">
+            {/* LEFT column (Channel + Contact + Duration) */}
+            <div className="sm:col-start-1 sm:col-span-2 sm:row-start-2 flex flex-col gap-3">
 
               {/* Channel */}
               <div className="space-y-1.5">
@@ -188,23 +205,6 @@ export default function CreatePostForm({
                     </option>
                   ))}
                 </select>
-              </div>
-
-              {/* Title */}
-              <div className="space-y-1.5">
-                <Label htmlFor="title" className="dark:text-white">Title *</Label>
-                <Input
-                  id="title"
-                  type="text"
-                  placeholder="5–200 chars"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  maxLength={200}
-                  required
-                />
-                <p className="text-xs text-muted-foreground dark:text-white/60">
-                  {formData.title.length}/200
-                </p>
               </div>
 
               {/* Contact */}
