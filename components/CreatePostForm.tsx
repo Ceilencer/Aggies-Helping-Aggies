@@ -271,7 +271,8 @@ export default function CreatePostForm({
               <div className="space-y-1.5">
                 <Label className="dark:text-white">Duration</Label>
                 <div className="flex gap-1.5 flex-wrap">
-                  {([1, 3, 7, 14] as const).map((days) => (
+                  {/* Added 30 to the array here */}
+                  {([1, 3, 7, 14, 30] as const).map((days) => (
                     <button
                       key={days}
                       type="button"
@@ -282,7 +283,7 @@ export default function CreatePostForm({
                           : 'bg-background text-foreground border-border hover:bg-muted'
                       }`}
                     >
-                      {days === 1 ? '1 day' : days === 7 ? '1 week' : days === 14 ? '2 weeks' : `${days} days`}
+                      {days === 1 ? '1 day' : days === 7 ? '1 week' : days === 14 ? '2 weeks' : days === 30 ? '1 month' : `${days} days`}
                     </button>
                   ))}
                 </div>

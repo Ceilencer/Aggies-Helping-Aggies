@@ -72,7 +72,7 @@ export const createPostSchema = z.object({
     .min(10, 'Content must be at least 10 characters')
     .max(5000, 'Content must be less than 5000 characters'),
   duration_days: z.union([
-    z.literal(1), z.literal(3), z.literal(7), z.literal(14),
+    z.literal(1), z.literal(3), z.literal(7), z.literal(14), z.literal(30),
   ]).default(7),
   post_contact: z.array(
     z.object({ label: z.string(), value: z.string() })
@@ -200,7 +200,7 @@ export const adminPostReviewSchema = z.object({
   approve: z.boolean(),
   reason: z.string().optional(),
   channel_id: z.string().uuid().optional(),
-  duration_days: z.number().int().min(1).max(14).optional(),
+  duration_days: z.number().int().min(1).max(30).optional(),
 })
 
 export const REJECTION_REASONS = [

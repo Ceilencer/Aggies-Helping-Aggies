@@ -39,7 +39,7 @@ const EMPTY_FORM = {
   channel_id: '',
   title: '',
   content: '',
-  duration_days: 7 as 1 | 3 | 7 | 14,
+  duration_days: 7 as 1 | 3 | 7 | 14 | 30,
   selected_contact_keys: [] as string[],
 }
 
