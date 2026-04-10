@@ -45,6 +45,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      if (error.code === '23505') {
+        return NextResponse.json({ error: 'Already liked this post' }, { status: 409 })
+      }
       console.error('Error creating like:', error)
       return NextResponse.json(
         { error: 'Failed to like post' },

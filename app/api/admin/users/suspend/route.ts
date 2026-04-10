@@ -9,7 +9,12 @@ export async function POST(request: Request) {
   const admin = await requireAdminUser(supabase)
   if ('error' in admin) return admin.error
 
-  const body = await request.json()
+  let body: Record<string, unknown>
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
   const { userId, banType, durationHours, reason } = body as {
     userId?: string
     banType?: 'temporary' | 'permanent'
@@ -46,7 +51,7 @@ export async function POST(request: Request) {
       .eq('id', userId)
       .single()
 
-    if (targetProfile?.role === 'admin') {
+    if (targetProfile?.role === 'Admin') {
       return NextResponse.json({ error: 'Cannot suspend an admin account' }, { status: 403 })
     }
 

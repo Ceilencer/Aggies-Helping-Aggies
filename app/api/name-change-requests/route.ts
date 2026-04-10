@@ -9,9 +9,14 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  const body = await request.json()
-  const requestedName = (body?.requested_name ?? '').trim()
-  const reason = (body?.reason ?? '').trim() || null
+  let body: Record<string, unknown>
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+  }
+  const requestedName = (body?.requested_name as string ?? '').trim()
+  const reason = (body?.reason as string ?? '').trim() || null
 
   if (!requestedName || requestedName.length < 2) {
     return NextResponse.json({ error: 'Name must be at least 2 characters' }, { status: 400 })
