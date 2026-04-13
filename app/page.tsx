@@ -12,6 +12,7 @@ import {
   Heart,
   BookOpen,
   MapPin,
+  Building2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -72,6 +73,7 @@ export default function Home() {
           {[
             { icon: <HomeIcon className="h-5 w-5" />, label: "Home" },
             { icon: <MessagesSquare className="h-5 w-5" />, label: "General" },
+            { icon: <Building2 className="h-5 w-5" />, label: "Housing & Roommates" },
             { icon: <Briefcase className="h-5 w-5" />, label: "Jobs & Networking" },
             { icon: <Ticket className="h-5 w-5" />, label: "Tickets" },
             { icon: <Megaphone className="h-5 w-5" />, label: "Promotions" },
@@ -110,6 +112,18 @@ export default function Home() {
               <CardDescription className="text-page-subtext">
                 Be the reason a student gets their Aggie Ring. Support fellow Aggies with ring funds,
                 graduation regalia, and other community causes unique to the Aggie tradition.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          {/* Housing & Roommates */}
+          <Card>
+            <CardHeader>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center text-icon dark:text-white"><Building2 className="h-6 w-6" /></div>
+              <CardTitle className="text-card-header-text">Housing &amp; Roommates</CardTitle>
+              <CardDescription className="text-page-subtext">
+                Find off-campus housing, sublets, and roommates near Texas A&amp;M. Post your
+                listing or search for the right fit in the Aggie community.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -158,7 +172,7 @@ export default function Home() {
             </CardHeader>
           </Card>
 
-          <Card className="border-2 border-icon/30 bg-muted/30">
+          {/* <Card className="border-2 border-icon/30 bg-muted/30">
             <CardHeader>
               <div className="mb-4 flex h-12 w-12 items-center justify-center text-icon dark:text-white"><Shield className="h-6 w-6" /></div>
               <CardTitle className="text-card-header-text">Aggie-Focused Community</CardTitle>
@@ -166,7 +180,7 @@ export default function Home() {
                 A questionnaire-based screening process keeps the community Aggie-focused.
               </CardDescription>
             </CardHeader>
-          </Card>
+          </Card> */}
 
         </div>
       </section>
@@ -191,22 +205,22 @@ export default function Home() {
               {
                 icon: <Users className="h-7 w-7 text-icon dark:text-white" />,
                 label: "Former Students",
-                description: "Aggies who have walked across the stage and carry the ring",
+                description: "Aggies who have walked across the stage — apply with a short questionnaire, approved by an admin",
               },
               {
                 icon: <Heart className="h-7 w-7 text-icon dark:text-white" />,
                 label: "Parents & Family",
-                description: "Aggie Moms, dads, and family members who bleed maroon",
+                description: "Aggie Moms, dads, and family — apply with a short questionnaire, approved by an admin",
               },
               {
                 icon: <BookOpen className="h-7 w-7 text-icon dark:text-white" />,
                 label: "Faculty & Staff",
-                description: "TAMU faculty and staff who are part of the Aggie community",
+                description: "TAMU faculty and staff — apply with a short questionnaire, approved by an admin",
               },
               {
                 icon: <MapPin className="h-7 w-7 text-icon dark:text-white" />,
                 label: "BCS Locals",
-                description: "Bryan-College Station community members connected to TAMU",
+                description: "Bryan-College Station community members — apply with a short questionnaire, approved by an admin",
               },
             ].map(({ icon, label, description }) => (
               <div key={label} className="flex flex-col items-center text-center rounded-lg bg-card p-6 shadow-sm">
@@ -230,10 +244,10 @@ export default function Home() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-icon text-2xl font-bold text-steps-text">
                 1
               </div>
-              <h3 className="mb-2 text-xl font-semibold text-page-heading-text">Sign In with Google</h3>
+              <h3 className="mb-2 text-xl font-semibold text-page-heading-text">Sign In with Google or Facebook</h3>
               <p className="text-page-subtext">
-                Use your Google account to sign in. TAMU email addresses
-                (@tamu.edu) are recognized automatically.
+                Use your Google or Facebook account to sign in. TAMU email addresses
+                (@tamu.edu) via Google are recognized automatically.
               </p>
             </div>
             <div className="text-center">
@@ -242,8 +256,9 @@ export default function Home() {
               </div>
               <h3 className="mb-2 text-xl font-semibold text-page-heading-text">Verify Your Connection</h3>
               <p className="text-page-subtext">
-                TAMU email users get instant access. Others complete a short
-                questionnaire so we can confirm your Aggie connection.
+                TAMU email users get instant access. Everyone else completes a short
+                questionnaire — an admin reviews and approves your application before
+                you&apos;re granted access.
               </p>
             </div>
             <div className="text-center">
@@ -273,7 +288,7 @@ export default function Home() {
           </p>
           <Link href="/login">
             <Button size="lg" className="text-lg">
-              Get Started with Google
+              Get Started
             </Button>
           </Link>
         </div>
