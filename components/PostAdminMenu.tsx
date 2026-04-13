@@ -1,7 +1,15 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { MoreVertical, Flag, History } from 'lucide-react'
 import ReportModal from '@/components/ReportModal'
 import Modal from '@/components/Modal'
@@ -28,28 +36,10 @@ export default function PostAdminMenu({
   onChannelUpdated,
   onReported,
 }: PostAdminMenuProps) {
-  const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  // Close menu when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isOpen])
 
   const handleDeletePost = async () => {
     if (!window.confirm('Are you sure you want to delete this post?')) {
@@ -66,7 +56,6 @@ export default function PostAdminMenu({
         throw new Error('Failed to delete post')
       }
 
-      setIsOpen(false)
       onPostDeleted?.(postId)
     } catch (error) {
       console.error('Error deleting post:', error)
@@ -77,10 +66,7 @@ export default function PostAdminMenu({
   }
 
   const handleChangeChannel = async (channelId: string) => {
-    if (channelId === postChannelId) {
-      setIsOpen(false)
-      return
-    }
+    if (channelId === postChannelId) return
 
     setIsUpdating(true)
     try {
@@ -94,7 +80,6 @@ export default function PostAdminMenu({
         throw new Error('Failed to change channel')
       }
 
-      setIsOpen(false)
       onChannelUpdated?.(channelId)
     } catch (error) {
       console.error('Error changing channel:', error)
@@ -105,7 +90,7 @@ export default function PostAdminMenu({
   }
 
   return (
-    <div ref={menuRef} className="relative">
+    <>
       <ReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
@@ -123,78 +108,77 @@ export default function PostAdminMenu({
         <PostHistory postId={postId} />
       </Modal>
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsOpen(!isOpen)}
-        className="h-8 w-8 p-0"
-        title="More options"
-      >
-        <MoreVertical size={16} />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            title="More options"
+          >
+            <MoreVertical size={16} />
+          </Button>
+        </DropdownMenuTrigger>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-1 bg-background text-foreground border border-border rounded-md shadow-lg z-50 min-w-[220px]">
-          {/* Report Button */}
-          <button
-            onClick={() => {
-              setIsReportModalOpen(true)
-              setIsOpen(false)
-            }}
-            className="block w-full text-left px-3 py-2 text-sm whitespace-nowrap text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/30 flex items-center gap-2"
+        <DropdownMenuContent align="end" className="min-w-[220px]">
+          {/* Report Post */}
+          <DropdownMenuItem
+            onSelect={() => setIsReportModalOpen(true)}
+            className="text-orange-600 focus:text-orange-600 focus:bg-orange-50 dark:focus:bg-orange-950/30 gap-2"
           >
             <Flag size={14} />
             Report Post
-          </button>
+          </DropdownMenuItem>
 
+          {/* Admin-only section */}
           {isAdmin && (
             <>
-              {/* Divider */}
-              <div className="border-t border-border" />
+              <DropdownMenuSeparator />
 
-              {/* Change Channel Submenu */}
-              <div className="border-b border-border last:border-b-0">
-                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground">
-                  Move to Channel
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {channels
-                    .filter((c) => c.id !== postChannelId && c.slug !== 'announcements' && c.slug !== 'home')
-                    .map((channel) => (
-                      <button
-                        key={channel.id}
-                        onClick={() => handleChangeChannel(channel.id)}
-                        disabled={isUpdating}
-                        className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChannelIcon slug={channel.slug} size={14} className="shrink-0" />
-                        {channel.name}
-                      </button>
-                    ))}
-                </div>
+              {/* Move to Channel */}
+              <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground px-2 py-1.5">
+                Move to Channel
+              </DropdownMenuLabel>
+
+              <div className="max-h-48 overflow-y-auto">
+                {channels
+                  .filter((c) => c.id !== postChannelId && c.slug !== 'announcements' && c.slug !== 'home')
+                  .map((channel) => (
+                    <DropdownMenuItem
+                      key={channel.id}
+                      onSelect={() => handleChangeChannel(channel.id)}
+                      disabled={isUpdating}
+                      className="gap-2"
+                    >
+                      <ChannelIcon slug={channel.slug} size={14} className="shrink-0" />
+                      {channel.name}
+                    </DropdownMenuItem>
+                  ))}
               </div>
 
-              {/* View History Button */}
-              <button
-                onClick={() => { setIsHistoryOpen(true); setIsOpen(false) }}
-                className="flex items-center gap-2 w-full text-left px-3 py-2 text-sm whitespace-nowrap hover:bg-accent"
+              <DropdownMenuSeparator />
+
+              {/* View History */}
+              <DropdownMenuItem
+                onSelect={() => setIsHistoryOpen(true)}
+                className="gap-2"
               >
                 <History size={14} />
                 View History
-              </button>
+              </DropdownMenuItem>
 
-              {/* Delete Button */}
-              <button
-                onClick={handleDeletePost}
+              {/* Delete Post */}
+              <DropdownMenuItem
+                onSelect={handleDeletePost}
                 disabled={isDeleting}
-                className="block w-full text-left px-3 py-2 text-sm whitespace-nowrap text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30"
               >
-                Delete Post
-              </button>
+                {isDeleting ? 'Deleting…' : 'Delete Post'}
+              </DropdownMenuItem>
             </>
           )}
-        </div>
-      )}
-    </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
   )
 }
