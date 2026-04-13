@@ -12,7 +12,18 @@ export const metadata: Metadata = {
     google: 'lBYzRmAK-62abICBuO0MNeS9Rte-nxq9s3kQmt0165k',
   },
   title: "Aggies Helping Aggies - Texas A&M Community Platform",
-  description: "A verified community engagement platform for Texas A&M University affiliates",
+  description: "A verified community platform for Texas A&M University affiliates. Find housing, jobs, tickets, and connect with fellow Aggies.",
+  openGraph: {
+    title: "Aggies Helping Aggies",
+    description: "A verified community platform for Texas A&M University affiliates. Find housing, jobs, tickets, and connect with fellow Aggies.",
+    type: "website",
+    siteName: "Aggies Helping Aggies",
+  },
+  twitter: {
+    card: "summary",
+    title: "Aggies Helping Aggies",
+    description: "A verified community platform for Texas A&M University affiliates. Find housing, jobs, tickets, and connect with fellow Aggies.",
+  },
 }
 
 export default async function RootLayout({

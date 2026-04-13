@@ -660,10 +660,16 @@ export default function FundraisingPage() {
               </div>
             </div>
           ) : (
-            <Button disabled className="opacity-50 cursor-not-allowed">
-              Apply for Sponsorship
-              <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide rounded-full border border-current px-2 py-0.5">Under Construction</span>
-            </Button>
+            <div className="space-y-3">
+              <Button disabled className="opacity-50 cursor-not-allowed">
+                Apply for Sponsorship
+                <span className="ml-2 text-[10px] font-semibold uppercase tracking-wide rounded-full border border-current px-2 py-0.5">Coming Soon</span>
+              </Button>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Applications are not yet open for this cycle. Check back soon — we will announce
+                when the application window opens.
+              </p>
+            </div>
           )
         )}
       </section>
