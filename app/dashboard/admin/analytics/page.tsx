@@ -40,17 +40,84 @@ interface ActionLogEntry {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function Sparkbar({ data, color = 'bg-primary' }: { data: number[]; color?: string }) {
+function Sparkbar({
+  data,
+  labels,
+  color = 'bg-primary',
+}: {
+  data: number[]
+  labels?: string[]
+  color?: string
+}) {
+  const [hovered, setHovered] = useState<number | null>(null)
   const max = Math.max(...data, 1)
+
+  // ~5 evenly-spaced x-axis label positions
+  const xAxis = new Set<number>()
+  if (data.length > 0) {
+    xAxis.add(0)
+    xAxis.add(data.length - 1)
+    if (data.length > 6) {
+      xAxis.add(Math.round(data.length / 4))
+      xAxis.add(Math.round(data.length / 2))
+      xAxis.add(Math.round((data.length * 3) / 4))
+    }
+  }
+
+  const fmt = (n: number) => n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
+
   return (
-    <div className="flex items-end gap-px h-14">
-      {data.map((v, i) => (
-        <div
-          key={i}
-          className={`flex-1 rounded-sm ${color} opacity-80`}
-          style={{ height: `${Math.max((v / max) * 100, v > 0 ? 4 : 1)}%` }}
-        />
-      ))}
+    <div className="space-y-1">
+      <div className="flex gap-1.5">
+        {/* Y-axis */}
+        <div className="flex flex-col justify-between text-[9px] text-muted-foreground text-right w-5 shrink-0 h-16 select-none">
+          <span>{fmt(max)}</span>
+          <span>{fmt(Math.round(max / 2))}</span>
+          <span>0</span>
+        </div>
+
+        {/* Bars */}
+        <div className="flex-1 flex items-end gap-px h-16">
+          {data.map((v, i) => (
+            <div
+              key={i}
+              className="relative flex-1 h-full cursor-default"
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+            >
+              {/* Tooltip */}
+              {hovered === i && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-20 bg-popover border border-border text-foreground rounded px-2 py-1 text-xs text-center whitespace-nowrap shadow-lg pointer-events-none">
+                  <div className="font-semibold">{v.toLocaleString()}</div>
+                  {labels?.[i] && (
+                    <div className="text-muted-foreground text-[10px]">
+                      {new Date(labels[i]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </div>
+                  )}
+                </div>
+              )}
+              {/* Bar */}
+              <div
+                className={`absolute bottom-0 left-0 right-0 rounded-sm transition-opacity ${color} ${hovered === i ? 'opacity-100' : 'opacity-70'}`}
+                style={{ height: `${Math.max((v / max) * 100, v > 0 ? 3 : 1)}%` }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* X-axis date labels */}
+      {labels && (
+        <div className="flex ml-6 text-[9px] text-muted-foreground select-none">
+          {data.map((_, i) => (
+            <div key={i} className="flex-1 text-center overflow-hidden">
+              {xAxis.has(i)
+                ? new Date(labels[i]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                : null}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -262,7 +329,7 @@ export default function AnalyticsPage() {
             {metricsLoading ? (
               <div className="h-14 bg-muted/40 animate-pulse rounded" />
             ) : (
-              <Sparkbar data={userBars} color="bg-blue-500" />
+              <Sparkbar data={userBars} labels={daily.map(d => d.day)} color="bg-blue-500" />
             )}
           </CardContent>
         </Card>
@@ -278,7 +345,7 @@ export default function AnalyticsPage() {
             {metricsLoading ? (
               <div className="h-14 bg-muted/40 animate-pulse rounded" />
             ) : (
-              <Sparkbar data={postBars} color="bg-primary" />
+              <Sparkbar data={postBars} labels={daily.map(d => d.day)} color="bg-primary" />
             )}
           </CardContent>
         </Card>
@@ -294,7 +361,7 @@ export default function AnalyticsPage() {
             {metricsLoading ? (
               <div className="h-14 bg-muted/40 animate-pulse rounded" />
             ) : (
-              <Sparkbar data={commentBars} color="bg-purple-500" />
+              <Sparkbar data={commentBars} labels={daily.map(d => d.day)} color="bg-purple-500" />
             )}
           </CardContent>
         </Card>

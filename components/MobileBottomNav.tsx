@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
   Home, MessagesSquare, Briefcase, Megaphone,
   Building2, Ticket, Bell, FileText, User,
-  Shield, Flag, UserPlus, Users, UserX, UserCog,
+  Shield, Flag, UserPlus, Users, UserX, UserCog, BarChart2,
 } from 'lucide-react'
 import type { Channel } from '@/lib/types'
 import { useNotificationCount } from '@/components/NotificationCountProvider'
@@ -259,6 +259,13 @@ export default function MobileBottomNav({ channels, isAdmin }: MobileBottomNavPr
                     <Link href="/dashboard/admin/ring-sponsorship" className={drawerLinkClass('/dashboard/admin/ring-sponsorship')} onClick={closeDrawer}>
                       <AggieRingIcon className="shrink-0" style={{ width: 17, height: 17 }} />Ring Sponsorship
                       {adminCounts.pendingRingApplications > 0 && <InlineBadge count={adminCounts.pendingRingApplications} />}
+                    </Link>
+                  </nav>
+
+                  <nav className="border-t border-border pt-4 space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-4 pb-2">Insights</p>
+                    <Link href="/dashboard/admin/analytics" className={drawerLinkClass('/dashboard/admin/analytics')} onClick={closeDrawer}>
+                      <BarChart2 size={17} />Analytics
                     </Link>
                   </nav>
                 </>
