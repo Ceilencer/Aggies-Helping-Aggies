@@ -35,13 +35,6 @@ export async function POST(request: Request) {
     ''
   ).toLowerCase().trim()
 
-  if (!userEmail.endsWith('@tamu.edu')) {
-    return NextResponse.json(
-      { error: 'Ring sponsorship applications are only open to Texas A&M students.' },
-      { status: 403 }
-    )
-  }
-
   const body = await request.json().catch(() => null)
   if (!body) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 })

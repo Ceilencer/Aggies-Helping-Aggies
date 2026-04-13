@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import AggieRingIcon from '@/components/AggieRingIcon'
 import Modal from '@/components/Modal'
-import { Heart, Users, Lock } from 'lucide-react'
+import { Heart, Users } from 'lucide-react'
 
 const TOTAL_STEPS = 6
 const STEP_LABELS = [
@@ -105,8 +105,6 @@ export default function FundraisingPage() {
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  const isTamuStudent = email.endsWith('@tamu.edu')
 
   const resetForm = () => {
     setStep(1)
@@ -617,19 +615,7 @@ export default function FundraisingPage() {
         </div>
 
         {pageReady && existingApplication !== undefined && (
-          !isTamuStudent ? (
-            <div className="rounded-lg border border-border bg-muted/30 p-5 flex items-start gap-3">
-              <Lock size={16} className="text-muted-foreground mt-0.5 shrink-0" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">TAMU students only</p>
-                <p className="text-sm text-muted-foreground">
-                  Ring sponsorship applications are only open to current Texas A&amp;M students. You
-                  must be signed in with your <span className="font-mono text-xs">@tamu.edu</span> email
-                  to apply. If you are a student, sign out and sign back in with your TAMU email.
-                </p>
-              </div>
-            </div>
-          ) : existingApplication ? (
+          existingApplication ? (
             <div className={`rounded-lg border p-5 flex items-start gap-3 ${
               existingApplication.status === 'approved'
                 ? 'border-green-300 bg-green-500/5 dark:border-green-800'
