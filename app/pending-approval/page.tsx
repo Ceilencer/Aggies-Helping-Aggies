@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -15,6 +15,8 @@ export default function PendingApprovalPage() {
   const [checking, setChecking] = useState(false)
   const [rejectionReason, setRejectionReason] = useState<string | null>(null)
   const [sessionExpired, setSessionExpired] = useState(false)
+  const [realtimeOk, setRealtimeOk] = useState(true)
+  const handleCheckStatusRef = useRef<() => Promise<void>>(async () => {})
 
   const fetchRejectionStatus = async () => {
     const res = await fetch('/api/user/rejection-status', { credentials: 'include' })
@@ -94,6 +96,63 @@ export default function PendingApprovalPage() {
 
     setChecking(false)
   }
+
+  // Keep a stable ref so the Realtime/polling effects always call the latest version.
+  useEffect(() => {
+    handleCheckStatusRef.current = handleCheckStatus
+  })
+
+  // Realtime subscription: automatically redirect when admin approves the user.
+  // A pending user has no profile row — approval creates one, so we listen for INSERT.
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let mounted = true
+
+    const setup = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !mounted) return
+
+      channel = supabase
+        .channel(`approval-watch-${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`,
+          },
+          (payload) => {
+            const newProfile = payload.new as { account_status?: string }
+            if (newProfile.account_status === 'active') {
+              router.replace('/dashboard')
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setRealtimeOk(false)
+          } else if (status === 'SUBSCRIBED') {
+            setRealtimeOk(true)
+          }
+        })
+    }
+
+    void setup()
+
+    return () => {
+      mounted = false
+      if (channel) void supabase.removeChannel(channel)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Fallback: poll every 30 seconds if the Realtime connection failed.
+  useEffect(() => {
+    if (realtimeOk) return
+    const id = setInterval(() => void handleCheckStatusRef.current(), 30_000)
+    return () => clearInterval(id)
+  }, [realtimeOk])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
