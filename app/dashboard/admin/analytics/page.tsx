@@ -91,7 +91,7 @@ function Sparkbar({
                   <div className="font-semibold">{v.toLocaleString()}</div>
                   {labels?.[i] && (
                     <div className="text-muted-foreground text-[10px]">
-                      {new Date(labels[i]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      {new Date(labels[i] + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </div>
                   )}
                 </div>
@@ -112,7 +112,7 @@ function Sparkbar({
           {data.map((_, i) => (
             <div key={i} className="flex-1 text-center overflow-hidden">
               {xAxis.has(i)
-                ? new Date(labels[i]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                ? new Date(labels[i] + 'T12:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                 : null}
             </div>
           ))}
