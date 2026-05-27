@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { PostImageGrid } from '@/components/PostImageGrid'
 import { notifyAdminCountChanged } from '@/lib/hooks/useAdminPendingCount'
 import { createClient } from '@/lib/supabase/client'
@@ -609,6 +610,138 @@ export default function AdminDashboardPage() {
           </>
         )}
       </section>
+
+      {/* ── Email Testing Panel ─────────────────────────────────────────── */}
+      <EmailTestPanel />
     </div>
+  )
+}
+
+// ─── Email Testing Panel ──────────────────────────────────────────────────────
+
+const EMAIL_TEMPLATES = [
+  { value: 'verification-request', label: '(Admin) New Verification Request',     badge: 'ADMIN' },
+  { value: 'new-post',             label: '(Admin) New Post Pending Review',       badge: 'ADMIN' },
+  { value: 'edit-request',         label: '(Admin) New Edit Request',              badge: 'ADMIN' },
+  { value: 'ring-application',     label: '(Admin) New Ring Sponsorship Application', badge: 'ADMIN' },
+  { value: 'report',               label: '(Admin) New Content Report',            badge: 'ADMIN' },
+  { value: 'user-approved',        label: '(User)  Account Approved',              badge: 'USER'  },
+  { value: 'user-rejected',        label: '(User)  Account Rejected',              badge: 'USER'  },
+] as const
+
+function EmailTestPanel() {
+  const [open, setOpen]       = useState(false)
+  const [template, setTemplate] = useState(EMAIL_TEMPLATES[0].value)
+  const [to, setTo]           = useState('')
+  const [sending, setSending] = useState(false)
+  const [result, setResult]   = useState<{ ok: boolean; msg: string } | null>(null)
+
+  const send = async () => {
+    setResult(null)
+    setSending(true)
+    try {
+      const res = await fetch('/api/admin/send-test-email', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template, to }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setResult({ ok: true, msg: `✓ Test email sent to ${data.sentTo}` })
+      } else {
+        setResult({ ok: false, msg: data.error ?? 'Failed to send.' })
+      }
+    } catch {
+      setResult({ ok: false, msg: 'Network error. Please try again.' })
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return (
+    <section className="rounded-lg border bg-card shadow-sm overflow-hidden">
+      {/* Collapsible header */}
+      <button
+        type="button"
+        onClick={() => { setOpen((v) => !v); setResult(null) }}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-muted/30 transition-colors"
+      >
+        <div className="flex items-center gap-2.5">
+          <span className="text-base">✉️</span>
+          <span className="font-semibold text-sm">Email Testing</span>
+          <span className="text-xs text-muted-foreground">— send a test email to any address</span>
+        </div>
+        <svg
+          className={`h-4 w-4 text-muted-foreground transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 border-t space-y-4">
+          <p className="text-xs text-muted-foreground pt-4">
+            Sends a realistic test version of any email template using sample data.
+            The email goes to the address you specify — not to the real admin list or users.
+          </p>
+
+          {/* Template picker */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Template
+            </label>
+            <select
+              value={template}
+              onChange={(e) => { setTemplate(e.target.value as typeof template); setResult(null) }}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={sending}
+            >
+              {EMAIL_TEMPLATES.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Recipient */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Send to
+            </label>
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="recipient@aggieshelpingaggies.org"
+                value={to}
+                onChange={(e) => { setTo(e.target.value); setResult(null) }}
+                disabled={sending}
+                className="flex-1 text-sm"
+                onKeyDown={(e) => { if (e.key === 'Enter' && to) void send() }}
+              />
+              <Button
+                onClick={() => void send()}
+                disabled={sending || !to}
+                size="sm"
+                className="shrink-0"
+              >
+                {sending ? 'Sending…' : 'Send Test'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Result */}
+          {result && (
+            <div className={`rounded-md px-4 py-3 text-sm font-medium ${
+              result.ok
+                ? 'bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400'
+                : 'bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-400'
+            }`}>
+              {result.msg}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   )
 }

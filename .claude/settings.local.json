@@ -59,7 +59,12 @@
       "Bash(xargs wc -l)",
       "Bash(npm list *)",
       "Bash(npm install *)",
-      "Bash(not exist *)"
+      "Bash(not exist *)",
+      "Read(//c/Users/Ceilencer/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/8ddcc5cc-5b37-4dbf-880c-55deac885921/11ff0181-7be5-4728-b357-08f77a66bb38/skills/web-artifacts-builder/**)",
+      "Bash(bash scripts/init-artifact.sh email-preview)",
+      "Bash(npx tailwindcss *)",
+      "Bash(bash scripts/bundle-artifact.sh email-preview)",
+      "Bash(bash ../scripts/bundle-artifact.sh)"
     ]
   }
 }
