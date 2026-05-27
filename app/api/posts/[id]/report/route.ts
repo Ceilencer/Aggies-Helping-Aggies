@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse, NextRequest } from 'next/server'
 import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 import { validateReportInput, checkReportRateLimit } from '@/lib/utils/reports'
+import { notifyNewReport } from '@/lib/email'
 
 export async function POST(
   request: NextRequest,
@@ -71,6 +72,15 @@ export async function POST(
         { status: 500 }
       )
     }
+
+    // Notify admins — fire-and-forget
+    void notifyNewReport({
+      contentType: 'post',
+      contentId:   id,
+      reason,
+      description: description ?? null,
+      reportedAt:  new Date().toISOString(),
+    })
 
     return NextResponse.json(report, { status: 201 })
   } catch (error) {

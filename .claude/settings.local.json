@@ -55,7 +55,11 @@
       "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__list_projects",
       "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__list_tables",
       "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__execute_sql",
-      "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__apply_migration"
+      "mcp__7ad3ddc5-5d93-40f6-be7d-3e200bab1139__apply_migration",
+      "Bash(xargs wc -l)",
+      "Bash(npm list *)",
+      "Bash(npm install *)",
+      "Bash(not exist *)"
     ]
   }
 }

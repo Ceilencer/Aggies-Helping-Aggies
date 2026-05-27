@@ -4,6 +4,7 @@ import { requireAuthenticatedUser } from '@/lib/utils/api-auth'
 import { createPostSchema } from '@/lib/validations'
 import { validatePost } from '@/lib/profanity-filter'
 import { POST_LIMITS, type UserRole } from '@/lib/types'
+import { notifyNewPendingPost } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -134,6 +135,17 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: insertError.message }, { status: 429 })
       }
       return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
+    }
+
+    // Notify admins when a non-admin post needs review — fire-and-forget
+    if (newPost.approval_status === 'pending') {
+      const authorName = (newPost.author as { full_name?: string } | null)?.full_name ?? 'Unknown'
+      void notifyNewPendingPost({
+        postTitle:   newPost.title,
+        authorName,
+        postId:      newPost.id,
+        submittedAt: new Date().toISOString(),
+      })
     }
 
     return NextResponse.json(newPost, { status: 201 })

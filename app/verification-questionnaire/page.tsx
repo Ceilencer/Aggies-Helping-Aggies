@@ -200,6 +200,18 @@ export default function VerificationQuestionnairePage() {
 
       if (insertError) throw insertError
 
+      // Notify admins — fire-and-forget, don't await so it never blocks UX
+      fetch('/api/verification-requests/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          full_name:   formData.full_name,
+          email:       userEmail,
+          affiliation: formData.affiliation || null,
+        }),
+      }).catch(() => {/* email errors are non-fatal */})
+
       setSubmitted(true)
       setTimeout(() => router.replace('/pending-approval'), 1500)
     } catch (err: unknown) {

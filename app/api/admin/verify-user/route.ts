@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { verifyUserSchema } from '@/lib/validations'
 import type { FlairType } from '@/lib/types'
+import { notifyUserVerificationApproved, notifyUserVerificationRejected } from '@/lib/email'
 
 const AFFILIATION_TO_FLAIR: Record<string, FlairType> = {
   'Student':        'Student',
@@ -110,6 +111,14 @@ export async function POST(request: Request) {
     // Delete the verification request
     await service.from('verification_requests').delete().eq('user_id', userId)
 
+    // Email the user — fire-and-forget (profileEmail may be null for phone-only users)
+    if (profileEmail) {
+      void notifyUserVerificationApproved({
+        userEmail: profileEmail,
+        userName:  vr?.full_name ?? 'Aggie',
+      })
+    }
+
     return NextResponse.json({ success: true, action: 'approved' })
   }
 
@@ -160,6 +169,16 @@ export async function POST(request: Request) {
   if (insertError) {
     console.error('❌ rejected_accounts insert failed:', insertError)
     return NextResponse.json({ error: 'Failed to save rejection record', detail: insertError.message }, { status: 500 })
+  }
+
+  // Email the user BEFORE deleting their auth account (we lose the email after deletion)
+  if (rejectedEmail) {
+    void notifyUserVerificationRejected({
+      userEmail:      rejectedEmail,
+      userName:       vr?.full_name ?? 'Applicant',
+      reasons:        rejectionReasons ?? null,
+      isPermanentBan,
+    })
   }
 
   // Delete the auth user — cascades: auth.users → verification_requests (CASCADE)

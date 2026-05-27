@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { editPostSchema } from '@/lib/validations'
 import { validatePost } from '@/lib/profanity-filter'
+import { notifyNewEditRequest } from '@/lib/email'
 
 export async function PUT(
   request: NextRequest,
@@ -44,7 +45,7 @@ export async function PUT(
     // Get the post to verify ownership
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .select('author_id, approval_status')
+      .select('author_id, approval_status, title')
       .eq('id', postId)
       .single()
 
@@ -151,6 +152,14 @@ export async function PUT(
       event_type: 'edit_submitted',
       actor_id: user.id,
       actor_name: authorProfile?.full_name ?? 'User',
+    })
+
+    // Notify admins of the pending edit — fire-and-forget
+    void notifyNewEditRequest({
+      postTitle:   post.title ?? postId,
+      authorName:  authorProfile?.full_name ?? 'Unknown',
+      postId,
+      submittedAt: new Date().toISOString(),
     })
 
     // Return the current (unmodified) post so the UI can update its state

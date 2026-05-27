@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { notifyNewRingApplication } from '@/lib/email'
 
 export async function GET() {
   const supabase = await createClient()
@@ -150,6 +151,16 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
+
+  // Notify admins — fire-and-forget (email failure never blocks the response)
+  void notifyNewRingApplication({
+    applicantName:  full_name.trim(),
+    applicantEmail: userEmail,
+    ringType:       ring_type,
+    ringDayCycle:   ring_day_cycle.trim(),
+    uin:            uin.trim(),
+    submittedAt:    new Date().toISOString(),
+  })
 
   return NextResponse.json({ success: true })
 }
