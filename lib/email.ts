@@ -10,22 +10,29 @@
 
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend  = new Resend(process.env.RESEND_API_KEY)
+const FROM_NAME = 'Howdy Helps'
+
+// APP_URL is stable across requests — fine as a module-level constant.
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://aggieshelpingaggies.org'
 
 /**
- * All admin recipients — comma-separated in ADMIN_EMAILS env var.
- * e.g. "cobyrafalik@aggieshelpingaggies.org,tclangford@aggieshelpingaggies.org"
+ * Read FROM_EMAIL and ADMIN_EMAILS fresh on every call.
+ * ADMIN_EMAILS must NOT be a module-level constant because Next.js evaluates
+ * modules at build/cold-start time, so a frozen array would be stale in
+ * server-side rendering and would ignore any runtime env changes.
  */
-const ADMIN_EMAILS: string[] = (process.env.ADMIN_EMAILS ?? '')
-  .split(',')
-  .map((e) => e.trim())
-  .filter(Boolean)
+function getEmailConfig() {
+  return {
+    fromEmail:   process.env.FROM_EMAIL ?? 'onboarding@resend.dev',
+    adminEmails: (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((e) => e.trim())
+      .filter(Boolean),
+  }
+}
 
-const FROM_EMAIL = process.env.FROM_EMAIL ?? 'onboarding@resend.dev'
-const FROM_NAME  = 'Howdy Helps'
-const APP_URL    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://aggieshelpingaggies.org'
-
-// ─── shared helpers ──────────────────────────────────────────────────────────
+// ─── shared HTML helpers ─────────────────────────────────────────────────────
 
 /** Branded HTML shell — maroon header, white body, grey footer. */
 function buildHtml(title: string, body: string, isAdminAlert = true): string {
@@ -43,22 +50,17 @@ function buildHtml(title: string, body: string, isAdminAlert = true): string {
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-          <!-- Header -->
           <tr>
             <td style="background:#500000;padding:24px 32px;">
-              <p style="margin:0;font-size:20px;font-weight:bold;color:#ffffff;">
-                ${headerLabel}
-              </p>
+              <p style="margin:0;font-size:20px;font-weight:bold;color:#ffffff;">${headerLabel}</p>
             </td>
           </tr>
-          <!-- Body -->
           <tr>
             <td style="padding:32px;">
               <h2 style="margin:0 0 16px;font-size:18px;color:#1a1a1a;">${title}</h2>
               ${body}
             </td>
           </tr>
-          <!-- Footer -->
           <tr>
             <td style="padding:16px 32px;background:#f9f9f9;border-top:1px solid #e5e5e5;">
               <p style="margin:0;font-size:12px;color:#888888;">
@@ -90,7 +92,7 @@ function row(label: string, value: string | number | null | undefined): string {
     </tr>`
 }
 
-/** CTA button shared by admin alert emails. */
+/** CTA button. */
 function adminButton(label: string, href: string): string {
   return `
     <a href="${href}"
@@ -102,16 +104,27 @@ function adminButton(label: string, href: string): string {
 
 // ─── low-level send helpers ───────────────────────────────────────────────────
 
-/** Send to all admin recipients. */
-async function sendAdminEmail(subject: string, html: string): Promise<void> {
-  if (ADMIN_EMAILS.length === 0) {
+/**
+ * Send to admin recipients.
+ * @param overrideTo  When provided, sends ONLY to this address instead of ADMIN_EMAILS.
+ *                    Used by the email test panel so real admins are never spammed.
+ */
+async function sendAdminEmail(
+  subject: string,
+  html: string,
+  overrideTo?: string,
+): Promise<void> {
+  const { fromEmail, adminEmails } = getEmailConfig()
+  const recipients = overrideTo ? [overrideTo] : adminEmails
+
+  if (recipients.length === 0) {
     console.warn('[email] ADMIN_EMAILS is not set — skipping admin email.')
     return
   }
   try {
     const { error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to:   ADMIN_EMAILS,
+      from: `${FROM_NAME} <${fromEmail}>`,
+      to:   recipients,
       subject,
       html,
     })
@@ -127,9 +140,10 @@ async function sendUserEmail(to: string, subject: string, html: string): Promise
     console.warn('[email] No user email provided — skipping user email.')
     return
   }
+  const { fromEmail } = getEmailConfig()
   try {
     const { error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
+      from: `${FROM_NAME} <${fromEmail}>`,
       to,
       subject,
       html,
@@ -150,8 +164,9 @@ export async function notifyNewVerificationRequest(opts: {
   applicantEmail: string
   affiliation: string | null
   submittedAt?: string
+  _overrideTo?: string
 }): Promise<void> {
-  const { applicantName, applicantEmail, affiliation, submittedAt } = opts
+  const { applicantName, applicantEmail, affiliation, submittedAt, _overrideTo } = opts
   const date = new Date(submittedAt ?? Date.now()).toLocaleString('en-US', { timeZone: 'America/Chicago' })
 
   const body = `
@@ -169,7 +184,8 @@ export async function notifyNewVerificationRequest(opts: {
 
   await sendAdminEmail(
     `New Verification Request — ${applicantName}`,
-    buildHtml('New User Verification Request', body)
+    buildHtml('New User Verification Request', body),
+    _overrideTo,
   )
 }
 
@@ -181,8 +197,9 @@ export async function notifyNewPendingPost(opts: {
   authorName: string
   postId: string
   submittedAt?: string
+  _overrideTo?: string
 }): Promise<void> {
-  const { postTitle, authorName, postId, submittedAt } = opts
+  const { postTitle, authorName, postId, submittedAt, _overrideTo } = opts
   const date = new Date(submittedAt ?? Date.now()).toLocaleString('en-US', { timeZone: 'America/Chicago' })
 
   const body = `
@@ -200,7 +217,8 @@ export async function notifyNewPendingPost(opts: {
 
   await sendAdminEmail(
     `New Post Pending Review — "${postTitle}"`,
-    buildHtml('New Post Pending Review', body)
+    buildHtml('New Post Pending Review', body),
+    _overrideTo,
   )
 }
 
@@ -212,8 +230,9 @@ export async function notifyNewEditRequest(opts: {
   authorName: string
   postId: string
   submittedAt?: string
+  _overrideTo?: string
 }): Promise<void> {
-  const { postTitle, authorName, postId, submittedAt } = opts
+  const { postTitle, authorName, postId, submittedAt, _overrideTo } = opts
   const date = new Date(submittedAt ?? Date.now()).toLocaleString('en-US', { timeZone: 'America/Chicago' })
 
   const body = `
@@ -232,7 +251,8 @@ export async function notifyNewEditRequest(opts: {
 
   await sendAdminEmail(
     `New Edit Request — "${postTitle}"`,
-    buildHtml('New Post Edit Request', body)
+    buildHtml('New Post Edit Request', body),
+    _overrideTo,
   )
 }
 
@@ -246,8 +266,9 @@ export async function notifyNewRingApplication(opts: {
   ringDayCycle: string
   uin: string
   submittedAt?: string
+  _overrideTo?: string
 }): Promise<void> {
-  const { applicantName, applicantEmail, ringType, ringDayCycle, uin, submittedAt } = opts
+  const { applicantName, applicantEmail, ringType, ringDayCycle, uin, submittedAt, _overrideTo } = opts
   const date = new Date(submittedAt ?? Date.now()).toLocaleString('en-US', { timeZone: 'America/Chicago' })
 
   const body = `
@@ -267,7 +288,8 @@ export async function notifyNewRingApplication(opts: {
 
   await sendAdminEmail(
     `New Ring Sponsorship Application — ${applicantName}`,
-    buildHtml('New Ring Sponsorship Application', body)
+    buildHtml('New Ring Sponsorship Application', body),
+    _overrideTo,
   )
 }
 
@@ -280,8 +302,9 @@ export async function notifyNewReport(opts: {
   reason: string
   description?: string | null
   reportedAt?: string
+  _overrideTo?: string
 }): Promise<void> {
-  const { contentType, contentId, reason, description, reportedAt } = opts
+  const { contentType, contentId, reason, description, reportedAt, _overrideTo } = opts
   const label = contentType === 'post' ? 'Post' : 'Comment'
   const date = new Date(reportedAt ?? Date.now()).toLocaleString('en-US', { timeZone: 'America/Chicago' })
 
@@ -301,7 +324,8 @@ export async function notifyNewReport(opts: {
 
   await sendAdminEmail(
     `New ${label} Report — Reason: ${reason}`,
-    buildHtml(`New ${label} Report`, body)
+    buildHtml(`New ${label} Report`, body),
+    _overrideTo,
   )
 }
 
@@ -386,4 +410,62 @@ export async function notifyUserVerificationRejected(opts: {
     'Update on your Howdy Helps application',
     buildHtml('Application Status Update', body, false)
   )
+}
+
+// ─── test helper ─────────────────────────────────────────────────────────────
+
+const TEST_SAMPLE = {
+  applicantName:  'Jordan Mitchell (Test)',
+  applicantEmail: 'jordan.mitchell@tamu.edu',
+  affiliation:    'Former Student' as const,
+  postTitle:      'Looking for chemistry tutor — offer $20/hr',
+  authorName:     'Jordan Mitchell (Test)',
+  postId:         'a3f9c821-test-0000-0000-000000000000',
+  ringType:       'large',
+  ringDayCycle:   'Spring 2026',
+  uin:            '731024856',
+  contentType:    'post' as const,
+  contentId:      'a3f9c821-test-0000-0000-000000000000',
+  reason:         'Spam or misleading',
+  description:    'This post has been flagged multiple times this week.',
+  userName:       'Jordan Mitchell (Test)',
+  reasons:        [
+    'We could not verify your connection to Texas A&M University.',
+    'The information provided did not match our records.',
+  ],
+}
+
+/**
+ * Sends a test version of any email template to an explicit address.
+ * Admin notification templates use `_overrideTo` so the real admin list is never hit.
+ * User templates send directly to `to` (they already accept an explicit address).
+ */
+export async function sendTestEmail(template: string, to: string): Promise<void> {
+  const now = new Date().toISOString()
+
+  switch (template) {
+    case 'verification-request':
+      await notifyNewVerificationRequest({ ...TEST_SAMPLE, submittedAt: now, _overrideTo: to })
+      break
+    case 'new-post':
+      await notifyNewPendingPost({ postTitle: TEST_SAMPLE.postTitle, authorName: TEST_SAMPLE.authorName, postId: TEST_SAMPLE.postId, submittedAt: now, _overrideTo: to })
+      break
+    case 'edit-request':
+      await notifyNewEditRequest({ postTitle: TEST_SAMPLE.postTitle, authorName: TEST_SAMPLE.authorName, postId: TEST_SAMPLE.postId, submittedAt: now, _overrideTo: to })
+      break
+    case 'ring-application':
+      await notifyNewRingApplication({ ...TEST_SAMPLE, submittedAt: now, _overrideTo: to })
+      break
+    case 'report':
+      await notifyNewReport({ contentType: TEST_SAMPLE.contentType, contentId: TEST_SAMPLE.contentId, reason: TEST_SAMPLE.reason, description: TEST_SAMPLE.description, reportedAt: now, _overrideTo: to })
+      break
+    case 'user-approved':
+      await notifyUserVerificationApproved({ userEmail: to, userName: TEST_SAMPLE.userName })
+      break
+    case 'user-rejected':
+      await notifyUserVerificationRejected({ userEmail: to, userName: TEST_SAMPLE.userName, reasons: TEST_SAMPLE.reasons, isPermanentBan: false })
+      break
+    default:
+      throw new Error(`Unknown email template: ${template}`)
+  }
 }
