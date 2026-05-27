@@ -11,7 +11,7 @@
 import { Resend } from 'resend'
 
 const resend  = new Resend(process.env.RESEND_API_KEY)
-const FROM_NAME = 'Howdy Helps'
+const FROM_NAME = 'Aggies Helping Aggies'
 
 // APP_URL is stable across requests — fine as a module-level constant.
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://aggieshelpingaggies.org'
@@ -36,7 +36,7 @@ function getEmailConfig() {
 
 /** Branded HTML shell — maroon header, white body, grey footer. */
 function buildHtml(title: string, body: string, isAdminAlert = true): string {
-  const headerLabel = isAdminAlert ? '🤠 Howdy Helps — Admin Alert' : '🤠 Howdy Helps'
+  const headerLabel = isAdminAlert ? 'Aggies Helping Aggies — Admin Alert' : 'Aggies Helping Aggies'
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -349,7 +349,7 @@ export async function notifyUserVerificationApproved(opts: {
       You can now log in and start connecting with the Aggie community.
     </p>
     <p style="color:#555555;margin:0 0 24px;">
-      Welcome to the family. Gig 'em! 🤠
+      Welcome to the family. Gig 'em!
     </p>
     <a href="${APP_URL}/login"
        style="display:inline-block;padding:12px 24px;background:#500000;color:#ffffff;
