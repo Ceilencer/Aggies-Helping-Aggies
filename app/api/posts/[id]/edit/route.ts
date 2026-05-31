@@ -154,8 +154,8 @@ export async function PUT(
       actor_name: authorProfile?.full_name ?? 'User',
     })
 
-    // Notify admins of the pending edit — fire-and-forget
-    void notifyNewEditRequest({
+    // Await so Vercel doesn't kill the function before the email sends
+    await notifyNewEditRequest({
       postTitle:   post.title ?? postId,
       authorName:  authorProfile?.full_name ?? 'Unknown',
       postId,

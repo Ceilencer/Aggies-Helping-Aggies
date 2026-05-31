@@ -73,8 +73,8 @@ export async function POST(
       )
     }
 
-    // Notify admins — fire-and-forget
-    void notifyNewReport({
+    // Await so Vercel doesn't kill the function before the email sends
+    await notifyNewReport({
       contentType: 'comment',
       contentId:   id,
       reason,

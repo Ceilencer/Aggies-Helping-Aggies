@@ -137,10 +137,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create post' }, { status: 500 })
     }
 
-    // Notify admins when a non-admin post needs review — fire-and-forget
+    // Await so Vercel doesn't kill the function before the email sends
     if (newPost.approval_status === 'pending') {
       const authorName = (newPost.author as { full_name?: string } | null)?.full_name ?? 'Unknown'
-      void notifyNewPendingPost({
+      await notifyNewPendingPost({
         postTitle:   newPost.title,
         authorName,
         postId:      newPost.id,

@@ -22,8 +22,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const { full_name, email, affiliation } = body ?? {}
 
-  // Fire-and-forget — email failure should never surface to the user
-  void notifyNewVerificationRequest({
+  // Await so Vercel doesn't kill the function before the email sends
+  await notifyNewVerificationRequest({
     applicantName:  full_name  ?? 'Unknown',
     applicantEmail: email      ?? user.email ?? '',
     affiliation:    affiliation ?? null,

@@ -152,8 +152,8 @@ export async function POST(request: Request) {
     )
   }
 
-  // Notify admins — fire-and-forget (email failure never blocks the response)
-  void notifyNewRingApplication({
+  // Await so Vercel doesn't kill the function before the email sends
+  await notifyNewRingApplication({
     applicantName:  full_name.trim(),
     applicantEmail: userEmail,
     ringType:       ring_type,
