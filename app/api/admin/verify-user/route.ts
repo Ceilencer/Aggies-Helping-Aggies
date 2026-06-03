@@ -14,6 +14,29 @@ const AFFILIATION_TO_FLAIR: Record<string, FlairType> = {
   'BCS Local':      'BCS Local',
 }
 
+/** Minimal shape of the fields we read off a Supabase auth user. */
+type AuthUserLike = {
+  email?: string | null
+  user_metadata?: { email?: unknown } | null
+} | null | undefined
+
+/**
+ * Resolve the best email to contact a user, across every auth method:
+ *   1. The verification request's stored email (set in the questionnaire)
+ *   2. The auth-level email (Google / Facebook-with-email)
+ *   3. The provider metadata email (phone-only Facebook, collected via
+ *      /collect-email and written to user_metadata.email)
+ * Returns null only for a user with no email anywhere (cannot be emailed).
+ */
+function resolveUserEmail(vrEmail: string | null | undefined, authUser: AuthUserLike): string | null {
+  if (vrEmail && vrEmail.trim() !== '') return vrEmail.trim()
+  const authEmail = authUser?.email
+  if (authEmail && authEmail.trim() !== '') return authEmail.trim()
+  const metaEmail = authUser?.user_metadata?.email
+  if (typeof metaEmail === 'string' && metaEmail.trim() !== '') return metaEmail.trim()
+  return null
+}
+
 // POST /api/admin/verify-user
 // Body: { userId: string, action: 'approve' | 'reject', rejectionReasons?: string[] }
 export async function POST(request: Request) {
@@ -77,12 +100,10 @@ export async function POST(request: Request) {
       authUser?.user_metadata?.picture ||
       null
 
-    // Prefer the VR's stored email; fall back to auth user_metadata email.
-    // For phone-only users the VR email may be '' — use null in that case
-    // so the partial unique index isn't violated by multiple empty strings.
-    const profileEmail =
-      (vr?.email && vr.email !== '') ? vr.email :
-      (authUser?.user_metadata?.email as string | undefined) || null
+    // Resolve the contact email across all auth methods (Google, Facebook
+    // with email, phone-only Facebook). Null only if the user has no email
+    // anywhere — in which case the partial unique index stays clean.
+    const profileEmail = resolveUserEmail(vr?.email, authUser)
 
     const flair = vr?.affiliation ? (AFFILIATION_TO_FLAIR[vr.affiliation] ?? null) : null
 
@@ -111,13 +132,14 @@ export async function POST(request: Request) {
     // Delete the verification request
     await service.from('verification_requests').delete().eq('user_id', userId)
 
-    // Await so Vercel doesn't kill the function before the email sends
-    // (profileEmail may be null for phone-only users)
+    // Await so Vercel doesn't kill the function before the email sends.
     if (profileEmail) {
       await notifyUserVerificationApproved({
         userEmail: profileEmail,
         userName:  vr?.full_name ?? 'Aggie',
       })
+    } else {
+      console.warn(`[verify-user] Approved user ${userId} has no email on file — approval email skipped.`)
     }
 
     return NextResponse.json({ success: true, action: 'approved' })
@@ -172,14 +194,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save rejection record', detail: insertError.message }, { status: 500 })
   }
 
-  // Await BEFORE deleting their auth account (we lose the email after deletion)
-  if (rejectedEmail) {
+  // Resolve the email to NOTIFY the user. This is separate from `rejectedEmail`
+  // (the dedup record above), which intentionally stays null for blank VR emails
+  // to avoid polluting rejection-count lookups. For the notification we fall back
+  // to the auth-level and provider metadata email so phone-only Facebook users
+  // (email collected via /collect-email) and Google/Facebook users are reachable.
+  const rejectNotifyEmail = resolveUserEmail(vr?.email, authUserToReject)
+
+  // Await BEFORE deleting their auth account (we lose the email after deletion).
+  if (rejectNotifyEmail) {
     await notifyUserVerificationRejected({
-      userEmail:      rejectedEmail,
+      userEmail:      rejectNotifyEmail,
       userName:       vr?.full_name ?? 'Applicant',
       reasons:        rejectionReasons ?? null,
       isPermanentBan,
     })
+  } else {
+    console.warn(`[verify-user] Rejected user ${userId} has no email on file — rejection email skipped.`)
   }
 
   // Delete the auth user — cascades: auth.users → verification_requests (CASCADE)
