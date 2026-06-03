@@ -1,7 +1,7 @@
 /**
  * lib/email.ts
  * -----------
- * Central email utility for Howdy Helps.
+ * Central email utility for Aggies Helping Aggies.
  * Uses Resend (https://resend.com) to send transactional emails.
  *
  * All functions are fire-and-forget safe — they catch their own errors
@@ -68,7 +68,7 @@ function buildHtml(title: string, body: string, isAdminAlert = true): string {
           <tr>
             <td style="padding:16px 32px;background:#f9f9f9;border-top:1px solid #e5e5e5;">
               <p style="margin:0;font-size:12px;color:#888888;">
-                This is an automated notification from Howdy Helps.
+                This is an automated notification from Aggies Helping Aggies.
                 Do not reply to this email.
               </p>
             </td>
@@ -357,7 +357,7 @@ export async function notifyUserVerificationApproved(opts: {
       Hi ${userName},
     </p>
     <p style="color:#555555;margin:0 0 16px;">
-      Great news — your Howdy Helps account has been <strong style="color:#16a34a;">approved!</strong>
+      Great news — your Aggies Helping Aggies account has been <strong style="color:#16a34a;">approved!</strong>
       You can now log in and start connecting with the Aggie community.
     </p>
     <p style="color:#555555;margin:0 0 24px;">
@@ -366,13 +366,13 @@ export async function notifyUserVerificationApproved(opts: {
     <a href="${APP_URL}/login"
        style="display:inline-block;padding:12px 24px;background:#500000;color:#ffffff;
               text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;">
-      Log In to Howdy Helps →
+      Log In to Aggies Helping Aggies →
     </a>
   `
 
   await sendUserEmail(
     userEmail,
-    'Your Howdy Helps account has been approved! 🎉',
+    'Your Aggies Helping Aggies account has been approved! 🎉',
     buildHtml('Your Account Has Been Approved', body, false)
   )
 }
@@ -411,7 +411,7 @@ export async function notifyUserVerificationRejected(opts: {
       Hi ${userName},
     </p>
     <p style="color:#555555;margin:0 0 16px;">
-      After review, we were unable to approve your Howdy Helps account application at this time.
+      After review, we were unable to approve your Aggies Helping Aggies account application at this time.
     </p>
     ${reasonBlock}
     ${closingNote}
@@ -419,7 +419,7 @@ export async function notifyUserVerificationRejected(opts: {
 
   await sendUserEmail(
     userEmail,
-    'Update on your Howdy Helps application',
+    'Update on your Aggies Helping Aggies application',
     buildHtml('Application Status Update', body, false)
   )
 }
