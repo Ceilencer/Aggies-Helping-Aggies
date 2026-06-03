@@ -64,7 +64,9 @@
       "Bash(bash scripts/init-artifact.sh email-preview)",
       "Bash(npx tailwindcss *)",
       "Bash(bash scripts/bundle-artifact.sh email-preview)",
-      "Bash(bash ../scripts/bundle-artifact.sh)"
+      "Bash(bash ../scripts/bundle-artifact.sh)",
+      "mcp__16770db0-f302-4417-b7b5-6484de9df760__list_projects",
+      "mcp__16770db0-f302-4417-b7b5-6484de9df760__get_runtime_logs"
     ]
   }
 }

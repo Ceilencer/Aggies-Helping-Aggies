@@ -17,16 +17,20 @@ const FROM_NAME = 'Aggies Helping Aggies'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://aggieshelpingaggies.org'
 
 /**
- * Read FROM_EMAIL and ADMIN_EMAILS fresh on every call.
- * ADMIN_EMAILS must NOT be a module-level constant because Next.js evaluates
- * modules at build/cold-start time, so a frozen array would be stale in
- * server-side rendering and would ignore any runtime env changes.
+ * Read FROM_EMAIL and admin recipients fresh on every call.
+ * Must NOT be a module-level constant because Next.js evaluates modules at
+ * build/cold-start time, so a frozen array would ignore runtime env changes.
+ *
+ * Accepts BOTH `ADMIN_EMAILS` (plural, current) and `ADMIN_EMAIL` (singular,
+ * legacy) so a stale Vercel variable name still works. Splits on comma OR
+ * semicolon and tolerates surrounding whitespace.
  */
 function getEmailConfig() {
+  const rawAdmins = process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? ''
   return {
     fromEmail:   process.env.FROM_EMAIL ?? 'onboarding@resend.dev',
-    adminEmails: (process.env.ADMIN_EMAILS ?? '')
-      .split(',')
+    adminEmails: rawAdmins
+      .split(/[,;]/)
       .map((e) => e.trim())
       .filter(Boolean),
   }
@@ -118,7 +122,15 @@ async function sendAdminEmail(
   const recipients = overrideTo ? [overrideTo] : adminEmails
 
   if (recipients.length === 0) {
-    console.warn('[email] ADMIN_EMAILS is not set — skipping admin email.')
+    // Diagnostic: list which email-related env KEYS are present (names only,
+    // never values) so we can tell from logs whether the var is missing,
+    // misnamed, or scoped to the wrong environment.
+    const presentKeys = Object.keys(process.env).filter((k) =>
+      /^(ADMIN_EMAIL|ADMIN_EMAILS|FROM_EMAIL|RESEND_API_KEY)$/.test(k),
+    )
+    console.warn(
+      `[email] No admin recipients — skipping. Email env keys present: ${JSON.stringify(presentKeys)}`,
+    )
     return
   }
   try {
