@@ -1,0 +1,24 @@
+{
+  "name": "Aggies Helping Aggies",
+  "short_name": "Howdy Helps",
+  "description": "A verified community platform for Texas A&M University affiliates.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#500000",
+  "theme_color": "#500000",
+  "icons": [
+    {
+      "src": "/images/logos/logo-no-text.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/logos/logo-no-text.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

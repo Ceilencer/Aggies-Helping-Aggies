@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   },
   title: "Aggies Helping Aggies - Texas A&M Community Platform",
   description: "A verified community platform for Texas A&M University affiliates. Find housing, jobs, tickets, and connect with fellow Aggies.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Howdy Helps",
+  },
   openGraph: {
     title: "Aggies Helping Aggies",
     description: "A verified community platform for Texas A&M University affiliates. Find housing, jobs, tickets, and connect with fellow Aggies.",
@@ -37,6 +43,10 @@ export default async function RootLayout({
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="theme-color" content="#500000" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className={`${inter.className} flex flex-col h-[100dvh]`}>
         <ThemeProvider
           attribute="class"

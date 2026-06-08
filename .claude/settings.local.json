@@ -66,7 +66,8 @@
       "Bash(bash scripts/bundle-artifact.sh email-preview)",
       "Bash(bash ../scripts/bundle-artifact.sh)",
       "mcp__16770db0-f302-4417-b7b5-6484de9df760__list_projects",
-      "mcp__16770db0-f302-4417-b7b5-6484de9df760__get_runtime_logs"
+      "mcp__16770db0-f302-4417-b7b5-6484de9df760__get_runtime_logs",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Ceilencer\\\\Capstone\\\\Howdy-Helps-Capstone\\\\app\\\\api\" -Recurse -Filter \"route.ts\" | ForEach-Object { $lines = Get-Content $_.FullName; Write-Output \"=== $\\($_.FullName.Replace\\('C:\\\\Users\\\\Ceilencer\\\\Capstone\\\\Howdy-Helps-Capstone\\\\app\\\\api\\\\', ''\\)\\) ===\"; $lines | Select-Object -First 8; Write-Output \"\" })"
     ]
   }
 }
