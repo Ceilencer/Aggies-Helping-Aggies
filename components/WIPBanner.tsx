@@ -60,10 +60,10 @@ export default function WIPBanner() {
         This site is currently a work in progress and is not yet deployed.{' '}
         Found a bug or have a suggestion?{' '}
         <a
-          href="mailto:admin@aggieshelpingaggies.org"
+          href="mailto:cobyrafalik@aggieshelpingaggies.org"
           className="underline font-semibold hover:text-yellow-950"
         >
-          admin@aggieshelpingaggies.org
+          cobyrafalik@aggieshelpingaggies.org
         </a>
       </div>
     </div>
