@@ -57,7 +57,7 @@ export default function WIPBanner() {
       }}
     >
       <div className="w-full flex-shrink-0 bg-yellow-400 text-yellow-900 text-center text-sm font-medium px-4 py-2">
-        This site is currently a work in progress and is not yet deployed.{' '}
+        This site is currently a work in progress.{' '}
         Found a bug or have a suggestion?{' '}
         <a
           href="mailto:cobyrafalik@aggieshelpingaggies.org"
