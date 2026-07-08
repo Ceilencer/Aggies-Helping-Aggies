@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 import { editPostSchema } from '@/lib/validations'
 import { validatePost } from '@/lib/profanity-filter'
@@ -130,8 +131,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Failed to submit edit for review' }, { status: 500 })
     }
 
-    // Flag the post as having a pending edit (does NOT change visible content)
-    const { error: statusError } = await supabase
+    // Flag the post as having a pending edit (does NOT change visible content).
+    // approval_status is a moderation-controlled column that RLS forbids authors
+    // from changing directly, so this trusted server-side write uses the
+    // service-role client. Ownership was already verified above.
+    const service = createServiceClient()
+    const { error: statusError } = await service
       .from('posts')
       .update({ approval_status: 'pending_edit' })
       .eq('id', postId)

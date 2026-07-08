@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getCachedAllChannels } from '@/lib/supabase/cached-queries'
 import { sortChannelsByDisplayOrder } from '@/lib/utils'
 import DashboardLayoutShell from '@/components/DashboardLayoutShell'
@@ -60,12 +61,17 @@ export default async function DashboardLayout({
       if (isStillActive) {
         redirect('/auth/signout?reason=suspended')
       } else if (expiresAt && expiresAt <= now) {
-        await supabase
+        // The temporary ban has expired — reactivate the account. These writes
+        // touch privileged columns (account_status) that RLS forbids the user
+        // from changing directly, so use the service-role client for this
+        // trusted, server-controlled reactivation.
+        const service = createServiceClient()
+        await service
           .from('profiles')
           .update({ account_status: 'active' })
           .eq('id', user.id)
 
-        await supabase
+        await service
           .from('user_bans')
           .update({ is_active: false })
           .eq('id', activeBans.id)

@@ -78,15 +78,6 @@ export async function GET(request: Request) {
   // making it the only reliable identifier for phone-only users.
   const providerSub = (data.user.identities?.[0]?.identity_data?.sub as string | undefined) ?? null
 
-  // Diagnostic: log what Facebook actually returned so we can confirm the fix.
-  if (provider === 'facebook') {
-    console.log('[FB OAuth] user.email:', data.user.email)
-    console.log('[FB OAuth] identity_data.email:', data.user.identities?.[0]?.identity_data?.email)
-    console.log('[FB OAuth] user_metadata.email:', data.user.user_metadata?.email)
-    console.log('[FB OAuth] resolved rawEmail:', rawEmail)
-    console.log('[FB OAuth] providerSub:', providerSub)
-  }
-
   // --- Routing decision (modular – see lib/utils/auth-routing.ts) ---
   const decision = resolveAuthRoute(provider, email)
 
@@ -163,7 +154,7 @@ export async function GET(request: Request) {
     const newAvatar = data.user.user_metadata?.avatar_url ||
                       data.user.user_metadata?.picture ||
                       null
-    await supabase.rpc('upsert_profile_on_login', {
+    await service.rpc('upsert_profile_on_login', {
       p_id:             data.user.id,
       p_email:          email,
       p_full_name:      data.user.user_metadata?.full_name ||
@@ -192,7 +183,7 @@ export async function GET(request: Request) {
   // --- No existing profile: TAMU fast-track ----------------------------
   // Create the profile immediately and send to dashboard.
   if (decision.accountStatus === 'active') {
-    const { error: upsertError } = await supabase.rpc('upsert_profile_on_login', {
+    const { error: upsertError } = await service.rpc('upsert_profile_on_login', {
       p_id:             data.user.id,
       p_email:          email,
       p_full_name:      data.user.user_metadata?.full_name ||

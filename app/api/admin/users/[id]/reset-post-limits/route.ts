@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminUser } from '@/lib/utils/api-auth'
 
@@ -26,8 +27,11 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Reset both daily and monthly counters via SECURITY DEFINER function (bypasses RLS)
-    const { error: resetError } = await supabase.rpc('admin_reset_post_limits', {
+    // Reset both daily and monthly counters via SECURITY DEFINER function.
+    // Called through the service-role client so EXECUTE can be revoked from
+    // anon/authenticated (admin already verified above).
+    const service = createServiceClient()
+    const { error: resetError } = await service.rpc('admin_reset_post_limits', {
       p_user_id: id,
     })
 

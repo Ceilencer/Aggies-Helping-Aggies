@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { requireAdminUser } from '@/lib/utils/api-auth'
 
 export async function POST(request: Request) {
@@ -15,7 +16,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing userId' }, { status: 400 })
   }
 
-  const { error } = await supabase.rpc('admin_delete_user', { p_user_id: userId })
+  // admin_delete_user is SECURITY DEFINER; call it via the service-role client
+  // so EXECUTE can be revoked from anon/authenticated (admin already verified).
+  const service = createServiceClient()
+  const { error } = await service.rpc('admin_delete_user', { p_user_id: userId })
 
   if (error) {
     console.error('Delete user error:', error)
