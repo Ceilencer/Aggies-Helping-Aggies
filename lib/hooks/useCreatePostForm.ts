@@ -252,71 +252,64 @@ export function useCreatePostForm({
         .filter((f): f is AvailableContactField => !!f)
         .map(({ label, value }) => ({ label, value }))
 
+      // --- Upload images FIRST (if any) ---
+      // Storage upload stays client-side for progress feedback. Doing it before
+      // the post is created means a failed upload never creates a post and never
+      // consumes one of the user's daily post slots. Images are stored under the
+      // post's own id (generated here and reused as the row id) so that
+      // deletion-by-folder (deletePostImages) continues to work unchanged.
+      const postId = crypto.randomUUID()
+      let imageUrls: string[] = []
+      let imagePaths: string[] = []
+
+      if (imageUpload.uploadedImages.length > 0) {
+        setUploading(true)
+        const uploadResult = await imageUpload.uploadImages(postId)
+        setUploading(false)
+
+        if (!uploadResult.success) {
+          // uploadImages() already cleans up any partial uploads. No post was
+          // created, so nothing counts against the user's post limit.
+          setError(uploadResult.error || 'Failed to upload images. Please try again.')
+          return
+        }
+        imageUrls = uploadResult.urls
+        imagePaths = uploadResult.paths
+      }
+
       // --- Create the post via the server-side API route ---
       const response = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
+          id: postId,
           channel_id: formData.channel_id,
           title: formData.title.trim(),
           content: formData.content.trim(),
           duration_days: formData.duration_days,
           post_contact,
+          images: imageUrls,
         }),
       })
 
       const responseData = await response.json()
 
       if (!response.ok) {
+        // The post was not created (no slot consumed). Remove any images we
+        // uploaded ahead of time so they don't linger as orphans in storage.
+        if (imagePaths.length > 0) {
+          try {
+            await supabase.storage.from('post-images').remove(imagePaths)
+          } catch (cleanupErr) {
+            console.error('Failed to clean up images after post-create failure:', cleanupErr)
+          }
+        }
         setError(responseData.error || 'Failed to create post')
         return
       }
 
       const newPost = responseData
-
-      // --- Upload images if any (Storage upload stays client-side for progress feedback) ---
-      if (imageUpload.uploadedImages.length > 0) {
-        setUploading(true)
-        const uploadResult = await imageUpload.uploadImages(newPost.id)
-        setUploading(false)
-
-        if (!uploadResult.success) {
-          // Storage cleanup is handled inside uploadImages(). Delete the orphaned post.
-          const { error: deleteError } = await supabase
-            .from('posts')
-            .delete()
-            .eq('id', newPost.id)
-          if (deleteError) {
-            console.error('Failed to delete orphaned post after image upload failure:', deleteError)
-          }
-          setError(uploadResult.error || 'Failed to upload images. Post was not created.')
-          return
-        }
-
-        if (uploadResult.urls.length > 0) {
-          // Patch the post record with image URLs
-          const { error: patchError } = await supabase
-            .from('posts')
-            .update({ images: uploadResult.urls })
-            .eq('id', newPost.id)
-
-          if (patchError) {
-            // Images are in storage but not linked to the post — clean up both
-            console.error('Failed to patch post with image URLs:', patchError)
-            try {
-              await supabase.storage.from('post-images').remove(uploadResult.paths)
-            } catch (cleanupErr) {
-              console.error('Failed to clean up storage after patch failure:', cleanupErr)
-            }
-            await supabase.from('posts').delete().eq('id', newPost.id)
-            setError('Failed to attach images to post. Please try again.')
-            return
-          }
-
-          newPost.images = uploadResult.urls
-        }
-      }
 
       const selectedChannel = channels.find(c => c.id === formData.channel_id) || null
 
