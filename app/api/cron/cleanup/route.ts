@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { type User } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase/service'
 
 // GET /api/cron/cleanup
@@ -17,14 +18,19 @@ export async function GET(request: Request) {
   // These are people who OAuth'd but abandoned the process entirely.
   const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
-  // Fetch all auth users (paginated — Supabase returns max 1000 per call)
-  const { data: { users: authUsers }, error: listError } = await service.auth.admin.listUsers({
-    perPage: 1000,
-  })
-
-  if (listError) {
-    console.error('[cron/cleanup] Failed to list auth users:', listError)
-    return NextResponse.json({ error: 'Failed to list users' }, { status: 500 })
+  // Fetch ALL auth users. Supabase returns at most `perPage` per call, so we
+  // must page through until a short page signals the end — otherwise users
+  // beyond the first page are never considered for cleanup.
+  const perPage = 1000
+  const authUsers: User[] = []
+  for (let page = 1; ; page++) {
+    const { data, error: listError } = await service.auth.admin.listUsers({ page, perPage })
+    if (listError) {
+      console.error('[cron/cleanup] Failed to list auth users:', listError)
+      return NextResponse.json({ error: 'Failed to list users' }, { status: 500 })
+    }
+    authUsers.push(...data.users)
+    if (data.users.length < perPage) break
   }
 
   // Filter to users created before the cutoff
