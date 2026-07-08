@@ -24,7 +24,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    const { channel_id, title, content, duration_days, post_contact } = validation.data
+    const { id, channel_id, title, content, duration_days, post_contact, images } = validation.data
+
+    // If images are supplied they must live in this post's own storage folder
+    // (they are uploaded client-side before the row is created). This prevents
+    // a client from attaching arbitrary URLs or another post's images.
+    if (images.length > 0) {
+      const expectedPrefix = id
+        ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/post-images/${id}/`
+        : null
+      if (!expectedPrefix || !images.every((url) => url.startsWith(expectedPrefix))) {
+        return NextResponse.json({ error: 'Invalid image references' }, { status: 400 })
+      }
+    }
 
     // 3. Server-side profanity check
     const profanityCheck = validatePost(title, content)
@@ -112,6 +124,7 @@ export async function POST(request: NextRequest) {
     const { data: newPost, error: insertError } = await supabase
       .from('posts')
       .insert({
+        ...(id ? { id } : {}),
         channel_id,
         author_id: user.id,
         title: title.trim(),
@@ -121,6 +134,7 @@ export async function POST(request: NextRequest) {
         approval_status: isAdmin ? 'approved' : 'pending',
         expires_at: expiresAt,
         post_contact: post_contact.length > 0 ? post_contact : null,
+        images: images.length > 0 ? images : null,
       })
       .select(`
         *,

@@ -62,6 +62,10 @@ export const alumniVerificationSchema = z.object({
 
 // Create post form schema
 export const createPostSchema = z.object({
+  // Optional client-generated post id. Supplied when the post has images so the
+  // images can be uploaded to the post's own storage folder BEFORE the row is
+  // created (see /api/posts). Reused as the row id so deletion-by-folder works.
+  id: z.string().uuid('Invalid post id').optional(),
   channel_id: z.string().uuid('Invalid channel'),
   title: z
     .string()
@@ -77,6 +81,7 @@ export const createPostSchema = z.object({
   post_contact: z.array(
     z.object({ label: z.string(), value: z.string() })
   ).max(8).default([]),
+  images: z.array(z.string().url()).max(5).default([]),
 })
 
 // Edit post form schema
