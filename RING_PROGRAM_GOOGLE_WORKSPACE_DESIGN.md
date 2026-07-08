@@ -18,6 +18,14 @@ applicants to the right place, keep lightweight non-sensitive status, and give
 admins a link in. Every design choice below favors *less* sensitive data on our
 own infrastructure.
 
+**Confirmed decisions (from review):**
+- A **real Google Workspace exists** on the `@aggieshelpingaggies` domain — so we
+  have Shared Drives, Google Groups, and audit logging. (Open question #1 resolved.)
+- **Google-only for all sensitive data**, with **one exception**: the
+  currently-sponsored-students **showcase** (consented public photo + story shown
+  in the app's right-hand sidebar) is stored in Supabase. This is non-sensitive,
+  consented marketing content — see §6a.
+
 ---
 
 ## 2. What the requirements doc actually asks for
@@ -167,6 +175,37 @@ Notes:
 
 ---
 
+## 6a. The one Supabase exception: sponsored-students showcase
+
+The app's right-hand sidebar features the students AHA is currently sponsoring.
+This content is **consented and public by design** (questionnaire Q22: the
+applicant agrees their photo + story may be used on AHA social media and the
+website), so it is **not** sensitive and belongs in the app.
+
+Proposed minimal store (no financial data, no documents):
+
+```
+sponsored_students
+  id            uuid pk
+  display_name  text            -- e.g. first name + last initial, admin-chosen
+  photo_url     text            -- Supabase Storage (public bucket), admin-uploaded
+  story         text            -- the approved, public paragraph
+  cycle         text            -- e.g. "Spring 2026"
+  is_active     boolean         -- currently shown in the sidebar
+  display_order int
+  created_at    timestamptz
+```
+
+- Populated **by admins**, not by applicants — an admin selects a recipient and
+  enters the approved photo + story. Nothing flows automatically from the Google
+  application into this table.
+- Photo lives in a **public** Supabase Storage bucket (same pattern as
+  post-images); it's a marketing photo, not an ID.
+- Access: public read (it's shown on the site); write restricted to `Admin`.
+
+This keeps the sidebar feature working while every truly sensitive item
+(financials, tax returns, bank statements, IDs, UIN, family PII) stays in Google.
+
 ## 7. What happens to the existing Supabase data (must decide)
 
 Three coherent end-states:
@@ -182,8 +221,13 @@ Three coherent end-states:
 3. **Status quo + files:** don't touch the existing flow at all; bolt file
    uploads onto Google. Fastest, weakest privacy posture.
 
-The security goal points at **(1)**. Whichever we pick, the existing admin UI and
-`useAdminPendingCount` badge need to be reconciled with the new flow.
+**Decision (from review): end-state (1), Google-only** — plus the
+`sponsored_students` showcase table from §6a as the sole Supabase exception. The
+existing sensitive columns (`monthly_income`, `household_income`,
+`court_ordered_payments`, `monthly_obligations`, UIN, family contact fields) are
+retired; the app keeps only a minimal status row + the showcase. The existing
+admin review UI and `useAdminPendingCount` badge are reworked to point at the
+Google flow (or a lightweight status), not the old questionnaire table.
 
 ---
 
@@ -209,22 +253,76 @@ The security goal points at **(1)**. Whichever we pick, the existing admin UI an
 
 ---
 
+## 8a. Google Workspace access model — how the committee gets into the shared spaces
+
+New to Workspace? Here's the mental model for who can see the submissions.
+
+**Shared Drives ≠ regular Drive folders.** A **Shared Drive** is owned by the
+*organization* (`aggieshelpingaggies`), not a person. Files in it survive people
+leaving and are governed by the drive's membership. The Ring submissions live in
+a Shared Drive (e.g. **"Ring Submissions"**), *not* in someone's personal My Drive.
+
+**Grant access with a Google Group, not one-by-one.** Create a group like
+`ring-committee@aggieshelpingaggies.org` in the Admin console, add the committee
+members to it, then give **the group** access to the Shared Drive. Now access =
+group membership: to on/offboard a reviewer you add/remove them from the group in
+one place — you never re-share folders.
+
+**Five Shared Drive roles (least → most):**
+- **Viewer** — read only.
+- **Commenter** — read + comment.
+- **Contributor** — add/edit files (can't move/delete).
+- **Content manager** — add/edit/move/delete files (typical reviewer).
+- **Manager** — all of the above + manage members and the drive itself.
+
+For a committee reviewing documents, **Content manager** (or **Viewer** if they
+only need to look) is right; keep **Manager** to one or two people.
+
+**How a member actually opens it:** they sign into `drive.google.com` with their
+`@aggieshelpingaggies.org` account → **"Shared drives"** in the left sidebar →
+"Ring Submissions" → browse the per-applicant subfolders. A direct folder link
+also works *if* they're in the group.
+
+**Applicants never touch the Shared Drive.** Students only interact with the
+**Form**. Because the Form has file-upload questions, they must be signed into a
+Google account to submit (fine for `tamu.edu`; former students need any Google
+account). Their uploads flow through the Apps Script into the committee-only
+Shared Drive — they can't see anyone's submissions, including their own folder.
+
+**Locking it down (the Workspace/super admin does this in `admin.google.com`):**
+- Restrict this Shared Drive so contents **can't be shared outside the org**, and
+  disable "download/print/copy" for Viewers if you want to be strict.
+- Restrict Shared Drive **membership to the committee group** only.
+- **Enforce 2-Step Verification** on committee accounts.
+- Turn on the **Drive audit log** — it records who viewed/downloaded each file.
+- Consider who **owns the Form + Apps Script**: host the Form in the Shared Drive
+  or under a role account so ownership isn't orphaned when an individual leaves.
+
+**Roles you'll want to identify:**
+- **Workspace super admin** — manages `admin.google.com`, creates the Shared
+  Drive + group, sets sharing restrictions and 2FA. (Who is this today?)
+- **Ring committee** — the small group who actually review documents. Should be
+  **narrower** than the app's `Admin` role — fewer people should see tax returns
+  than can moderate posts.
+
 ## 9. Open questions (need answers before building)
 
-1. **Which Workspace account/domain** owns the Form + Shared Drive? Is there a
-   nonprofit Google Workspace already, or is it the `AggiesHelpingAggiesRings@
-   gmail.com` mailbox (a personal Gmail, which is **not** a Workspace and lacks
-   Shared Drives / admin audit)? This materially affects the design.
+1. ~~Which Workspace owns this?~~ **Resolved:** real Workspace on
+   `@aggieshelpingaggies`.
 2. **Former students without a Google account** — acceptable to require one for
    file upload, or do we need a fallback path?
 3. **Retention period** for sensitive documents, and who runs deletions?
-4. **Who is on the Ring Committee** (the only people who should see documents),
-   and how does that map to the app's `Admin` role?
-5. **Which end-state from §7** (Google-only / split / status-quo+files)?
-6. **Integration depth** — confirm Option A (thin) to start, or is in-app status
-   automation (Option B) a hard requirement now?
-7. **Cycle handling** — do we run one Form with a cycle question, or separate
-   Forms per schedule?
+4. **Who is the Workspace super admin**, and **who is on the Ring Committee**
+   (should be narrower than the app's `Admin` role)?
+5. ~~Which end-state?~~ **Resolved:** Google-only + the `sponsored_students`
+   showcase exception (§6a, §7).
+6. **Integration depth** — confirm Option A (thin link-out) to start, or is
+   in-app status automation (Option B) a hard requirement now?
+7. **Cycle handling** — one Form with a cycle question, or separate Forms per
+   schedule (Current / Upcoming Graduates / Former Students)?
+8. **Showcase management** — is the sidebar recipient list admin-curated only
+   (recommended), and does the photo come from the applicant's consented
+   materials or a separately-provided marketing photo?
 
 ---
 
