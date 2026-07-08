@@ -78,15 +78,6 @@ export async function GET(request: Request) {
   // making it the only reliable identifier for phone-only users.
   const providerSub = (data.user.identities?.[0]?.identity_data?.sub as string | undefined) ?? null
 
-  // Diagnostic: log what Facebook actually returned so we can confirm the fix.
-  if (provider === 'facebook') {
-    console.log('[FB OAuth] user.email:', data.user.email)
-    console.log('[FB OAuth] identity_data.email:', data.user.identities?.[0]?.identity_data?.email)
-    console.log('[FB OAuth] user_metadata.email:', data.user.user_metadata?.email)
-    console.log('[FB OAuth] resolved rawEmail:', rawEmail)
-    console.log('[FB OAuth] providerSub:', providerSub)
-  }
-
   // --- Routing decision (modular – see lib/utils/auth-routing.ts) ---
   const decision = resolveAuthRoute(provider, email)
 
