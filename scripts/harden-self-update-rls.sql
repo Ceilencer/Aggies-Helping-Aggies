@@ -1,3 +1,13 @@
+-- ⚠️ DEPRECATED — DO NOT APPLY. Superseded by
+--    scripts/fix-recursive-rls-column-guard-triggers.sql
+--
+-- The WITH CHECK subqueries below reference the policy's own table, which
+-- Postgres rejects at runtime with "infinite recursion detected in policy",
+-- causing every owner UPDATE (e.g. attaching images to a post, editing profile
+-- flair) to fail. Kept only for history. The corrective migration replaces
+-- these policies with simple owner checks plus BEFORE UPDATE column-guard
+-- triggers.
+--
 -- Harden self-service UPDATE policies on profiles and posts.
 --
 -- Problem (privilege escalation):
