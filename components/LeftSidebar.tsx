@@ -110,7 +110,6 @@ export default function LeftSidebar({ channels, isAdmin }: LeftSidebarProps) {
               <Link href="/dashboard/admin/ring-sponsorship" className={linkClass('/dashboard/admin/ring-sponsorship')}>
                 <AggieRingIcon className="shrink-0" style={{ width: 17, height: 17 }} />
                 Ring Sponsorship
-                <Badge count={adminCounts.pendingRingApplications} />
               </Link>
             </nav>
 

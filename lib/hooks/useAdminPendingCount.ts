@@ -10,7 +10,6 @@ export interface AdminPendingCounts {
   pendingUsers: number
   unresolvedReports: number
   pendingNameChanges: number
-  pendingRingApplications: number
 }
 
 const DEFAULT_COUNTS: AdminPendingCounts = {
@@ -19,7 +18,6 @@ const DEFAULT_COUNTS: AdminPendingCounts = {
   pendingUsers: 0,
   unresolvedReports: 0,
   pendingNameChanges: 0,
-  pendingRingApplications: 0,
 }
 
 // Dispatch this event anywhere in the app to immediately trigger a badge re-fetch.
@@ -38,7 +36,7 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
   const channelNameRef = useRef(`admin-pending-count-${Math.random().toString(36).slice(2)}`)
 
   const fetchCounts = useCallback(async () => {
-    const [postsResult, vrResult, reportsResult, nameChangeResult, ringResult] = await Promise.all([
+    const [postsResult, vrResult, reportsResult, nameChangeResult] = await Promise.all([
       supabase
         .from('posts')
         .select('*', { count: 'exact', head: true })
@@ -55,10 +53,6 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
         .from('name_change_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending'),
-      supabase
-        .from('ring_sponsorship_applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending'),
     ])
 
     if (!mountedRef.current) return
@@ -67,15 +61,13 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
     const pendingUsers = vrResult.count ?? 0
     const unresolvedReports = reportsResult.count ?? 0
     const pendingNameChanges = nameChangeResult.count ?? 0
-    const pendingRingApplications = ringResult.count ?? 0
 
     setCounts({
       pendingPosts,
       pendingUsers,
       unresolvedReports,
       pendingNameChanges,
-      pendingRingApplications,
-      total: pendingPosts + pendingUsers + unresolvedReports + pendingNameChanges + pendingRingApplications,
+      total: pendingPosts + pendingUsers + unresolvedReports + pendingNameChanges,
     })
   // supabase is stable — created once per component mount
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,9 +105,6 @@ export function useAdminPendingCount(enabled = true): AdminPendingCounts {
           void fetchCounts()
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'name_change_requests' }, () => {
-          void fetchCounts()
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'ring_sponsorship_applications' }, () => {
           void fetchCounts()
         })
         .subscribe((status) => {
