@@ -16,6 +16,12 @@ var CONFIG = {
   // Ring Submissions folder ID (from its Drive URL: /folders/<THIS_ID>).
   SUBMISSIONS_FOLDER_ID: 'PASTE_RING_SUBMISSIONS_FOLDER_ID_HERE',
 
+  // The Form ID (from BuildForm's log, or the Form edit URL:
+  // docs.google.com/forms/d/<THIS_ID>/edit). Required when this script is NOT
+  // bound to the Form (e.g. running from the same standalone project as
+  // BuildForm). Leave as-is if the script is bound to the Form.
+  FORM_ID: 'PASTE_FORM_ID_HERE',
+
   // Optional: notify this group on each submission. '' to disable.
   NOTIFY_GROUP_EMAIL: '',
 
@@ -34,9 +40,25 @@ var CONFIG = {
   },
 };
 
+/** Resolve the Form whether this script is bound to it or standalone. */
+function getForm_() {
+  if (CONFIG.FORM_ID && CONFIG.FORM_ID !== 'PASTE_FORM_ID_HERE') {
+    return FormApp.openById(CONFIG.FORM_ID);
+  }
+  var form = FormApp.getActiveForm();
+  if (!form) {
+    throw new Error(
+      'No active form. This script is not bound to a Form. Set CONFIG.FORM_ID ' +
+      'to your Form ID (from the Form edit URL: docs.google.com/forms/d/<ID>/edit), ' +
+      'or paste this script into the Form-bound editor (Form ⋮ → Script editor).'
+    );
+  }
+  return form;
+}
+
 /** Run ONCE to install the on-submit trigger. */
 function installTrigger() {
-  var form = FormApp.getActiveForm();
+  var form = getForm_();
   // Avoid duplicates.
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'onRingFormSubmit') ScriptApp.deleteTrigger(t);

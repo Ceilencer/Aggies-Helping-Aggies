@@ -45,9 +45,14 @@ account** — expected and fine.
 
 ### 3. Wire up the organizer script
 1. In the Form editor: **⋮ → Script editor** (creates a script *bound* to the Form).
+   - If you instead keep this in the **same standalone project** as `BuildForm.gs`,
+     that's fine — just also set `CONFIG.FORM_ID` (next step). A standalone project
+     has no "active form," which is why `installTrigger()` otherwise fails with
+     *"Unexpected error … ScriptApp.FormTriggerBuilder … create"*.
 2. Paste **`OnSubmitOrganize.gs`**.
 3. Set `CONFIG.SUBMISSIONS_FOLDER_ID` to the **Ring Submissions** folder ID (from
-   its Drive URL: `drive.google.com/drive/folders/<THIS_ID>`).
+   its Drive URL: `drive.google.com/drive/folders/<THIS_ID>`), and — if standalone —
+   `CONFIG.FORM_ID` (from the Form edit URL: `docs.google.com/forms/d/<THIS_ID>/edit`).
 4. Run `installTrigger()` once and authorize. This installs the on-submit trigger.
 5. (Optional) set `CONFIG.NOTIFY_GROUP_EMAIL` to `ring-committee@aggieshelpingaggies.org`.
 
