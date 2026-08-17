@@ -258,7 +258,6 @@ export default function MobileBottomNav({ channels, isAdmin }: MobileBottomNavPr
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-4 pb-2">Fundraising</p>
                     <Link href="/dashboard/admin/ring-sponsorship" className={drawerLinkClass('/dashboard/admin/ring-sponsorship')} onClick={closeDrawer}>
                       <AggieRingIcon className="shrink-0" style={{ width: 17, height: 17 }} />Ring Sponsorship
-                      {adminCounts.pendingRingApplications > 0 && <InlineBadge count={adminCounts.pendingRingApplications} />}
                     </Link>
                   </nav>
 
